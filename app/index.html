@@ -11,6 +11,7 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root{
     --ink:#14213D; --deep:#1A2B4A; --coral:#FF6B5C; --coral-d:#E85746;
@@ -149,6 +150,22 @@
   .wkrow .wblk{flex:1;font-size:13px;border-left:3px solid var(--lagoon);padding-left:8px;line-height:1.3}
   .wkrow .wblk .wbt{font-size:11px;color:var(--muted)}
   .wkempty{padding:12px;font-size:12.5px;color:var(--muted);text-align:center}
+  /* itinerário interpretado (cards de etapa) */
+  .stageWrap{position:relative;padding-left:26px;margin-bottom:12px}
+  .stageWrap:before{content:'';position:absolute;left:9px;top:6px;bottom:-12px;width:2px;background:var(--line)}
+  .stageWrap:last-child:before{display:none}
+  .dotmark{position:absolute;left:3px;top:6px;width:14px;height:14px;border-radius:50%;border:3px solid var(--sand);box-shadow:0 0 0 2px var(--line)}
+  .stagebox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;box-shadow:var(--shadow)}
+  .stagebox .sbadge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:6px;color:#fff;margin-bottom:6px}
+  .stagebox .scity{font-family:'Sora';font-weight:700;font-size:16px}
+  .stagebox .siata{font-family:'JetBrains Mono';font-weight:700;font-size:12px;color:var(--muted);margin-left:5px}
+  .stagebox .sair{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .stagebox .stimes{display:flex;gap:16px;margin-top:9px;flex-wrap:wrap}
+  .stagebox .slab{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .stagebox .sval{font-family:'JetBrains Mono';font-weight:700;font-size:15px}
+  .stagebox .sdt{font-size:10px;color:var(--muted)}
+  .stagebox .slay{display:flex;align-items:center;gap:6px;background:#fffaf3;border:1px solid var(--amber);border-radius:9px;padding:6px 10px;margin-top:9px;font-size:12px;font-weight:600;color:#9a5b13}
+  .sfly{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:#eef5ff;color:#2c5dc7;margin:8px 6px 0 0}
   .actblk.conflict{border-left-color:var(--amber);background:#fffaf3}
   .actblk b{font-size:14px}
   .actblk .meta{font-size:12px;color:var(--muted);margin-top:2px}
@@ -335,6 +352,10 @@ const I18N = {
     origin:'Local de partida', destination:'Local de chegada', departDT:'Partida (data e hora)',
     arriveDT:'Chegada (data e hora)', createBlocks:'Adicionar ao cronograma', ticketRead:'Passagem lida: partida e chegada adicionadas',
     departure:'Partida', arrival:'Chegada', nothingDay:'Sem atividades neste dia',
+    lblOrigin:'Origem', lblLayover:'Escala', lblDestination:'Destino', nextDep:'Próxima partida',
+    layoverLabel:'Tempo de escala', interpreting:'Lendo a passagem…', interpretedRoute:'Roteiro interpretado',
+    addStages:'Adicionar etapas ao cronograma', editManual:'Preencher manualmente', stagesAdded:'Etapas adicionadas ao cronograma',
+    couldNotRead:'Não consegui interpretar o PDF automaticamente. Você pode preencher manualmente.',
   },
   'en-US':{
     welcome:'Everything about your trip, in one place.',
@@ -379,6 +400,10 @@ const I18N = {
     origin:'Departure location', destination:'Arrival location', departDT:'Departure (date & time)',
     arriveDT:'Arrival (date & time)', createBlocks:'Add to schedule', ticketRead:'Ticket read: departure and arrival added',
     departure:'Departure', arrival:'Arrival', nothingDay:'No activities this day',
+    lblOrigin:'Origin', lblLayover:'Layover', lblDestination:'Destination', nextDep:'Next departure',
+    layoverLabel:'Layover time', interpreting:'Reading the ticket…', interpretedRoute:'Interpreted itinerary',
+    addStages:'Add stages to schedule', editManual:'Fill in manually', stagesAdded:'Stages added to schedule',
+    couldNotRead:'Could not interpret the PDF automatically. You can fill it in manually.',
   }
 };
 const LANGS = [
@@ -740,7 +765,10 @@ const addMin=(hhmm,min)=>{const p=(hhmm||'00:00').split(':').map(Number);let m=p
 function locationAnchors(trip){
   const a=[];
   (trip.destinations||[]).forEach(d=>{ if(d.date&&d.name&&d.name!=='A definir') a.push({date:d.date,city:cityOf(d.name)}); });
-  (trip.docs||[]).forEach(doc=>{ const p=doc.seg; if(p&&p.arrDate&&p.toCity) a.push({date:p.arrDate,city:p.toCity,doc:true}); });
+  (trip.docs||[]).forEach(doc=>{
+    if(doc.itin&&doc.itin.legs){ doc.itin.legs.forEach(lg=>{ if(lg.arrDate&&lg.to&&lg.to.city) a.push({date:lg.arrDate,city:lg.to.city,doc:true}); }); }
+    else { const p=doc.seg; if(p&&p.arrDate&&p.toCity) a.push({date:p.arrDate,city:p.toCity,doc:true}); }
+  });
   return a.sort((x,y)=> x.date===y.date ? ((x.doc?1:0)-(y.doc?1:0)) : x.date.localeCompare(y.date));
 }
 // vale do dia da chegada/destino até o fim OU até o próximo destino
@@ -749,6 +777,96 @@ function locationForDay(trip,day){ const a=locationAnchors(trip).filter(x=>x.dat
 function weekDaysOf(dayStr){ const d=new Date(dayStr+'T00:00:00'); const dow=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-dow);
   const out=[]; for(let i=0;i<7;i++){const x=new Date(mon);x.setDate(mon.getDate()+i);out.push(x.toISOString().slice(0,10));} return out; }
 const DOW=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
+/* ===== Interpretador de roteiro de passagem aérea (parser testado) ===== */
+if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const AIRPORTS=[
+  [/GUARULHOS|GRU\b/i,{iata:'GRU',city:'São Paulo'}],[/CONGONHAS/i,{iata:'CGH',city:'São Paulo'}],
+  [/GALEAO|GALEÃO|RIO DE JANEIRO/i,{iata:'GIG',city:'Rio de Janeiro'}],
+  [/LISBON|LISBOA/i,{iata:'LIS',city:'Lisboa'}],[/PORTO/i,{iata:'OPO',city:'Porto'}],
+  [/LUXEMBOURG/i,{iata:'LUX',city:'Luxemburgo'}],[/MADRID/i,{iata:'MAD',city:'Madri'}],
+  [/BARCELONA/i,{iata:'BCN',city:'Barcelona'}],[/PARIS|CHARLES DE GAULLE/i,{iata:'CDG',city:'Paris'}],
+  [/LONDON|HEATHROW/i,{iata:'LHR',city:'Londres'}],[/FRANKFURT/i,{iata:'FRA',city:'Frankfurt'}],
+  [/ROME|ROMA|FIUMICINO/i,{iata:'FCO',city:'Roma'}],[/AMSTERDAM|SCHIPHOL/i,{iata:'AMS',city:'Amsterdã'}],
+];
+const MONTHS_T={jan:0,feb:1,fev:1,mar:2,apr:3,abr:3,may:4,mai:4,jun:5,jul:6,aug:7,ago:7,sep:8,set:8,oct:9,out:9,nov:10,dec:11,dez:11};
+const titleCase=s=>s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).replace(/\s+/g,' ').trim();
+function resolveAirport(rawName){const name=(rawName||'').trim();
+  for(const [re,info] of AIRPORTS){ if(re.test(name)) return {...info,airport:titleCase(name)}; }
+  const m=name.match(/\b([A-Z]{3})\b/);
+  return {iata:m?m[1]:'—',city:titleCase((name.split(/\s{2,}|,/)[0]||name)),airport:titleCase(name)};}
+function parseDateT(s){const m=s.match(/(\d{1,2})([A-Za-z]{3})(\d{4})/);if(!m)return null;
+  const mo=MONTHS_T[m[2].toLowerCase()];if(mo==null)return null;return new Date(Date.UTC(+m[3],mo,+m[1]));}
+const fmtDateT=d=>d?d.toISOString().slice(0,10):null;
+function diffHM(d1,t1,d2,t2){const a=new Date(d1+'T'+t1+':00Z'),b=new Date(d2+'T'+t2+':00Z');
+  let min=Math.round((b-a)/60000);if(min<0)min=0;return {min,label:Math.floor(min/60)+'h'+String(min%60).padStart(2,'0')};}
+function parseAirTicket(text){
+  const linesAll=text.split(/\r?\n/); let s=0,e=linesAll.length;
+  linesAll.forEach((l,i)=>{ if(/\bFlight\b/.test(l)&&/\bDeparture\b/.test(l))s=i+1;
+    if(/^\s*\(1\)\s*OK|OBSERVA(Ç|C)/i.test(l)&&e===linesAll.length&&i>s)e=i;});
+  const lines=linesAll.slice(s,e);
+  const legRe=/\b([A-Z]{2}\d{2,4})\b[^\d]*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/; const legs=[];
+  for(let i=0;i<lines.length;i++){ const m=lines[i].match(legRe); if(!m)continue;
+    const flight=m[1],depT=m[2],arrT=m[3];
+    const pre=lines[i].slice(0,lines[i].indexOf(flight)).trim();
+    const cols=pre.split(/\s{2,}/).filter(Boolean); let from=cols[0]||'',to=cols[1]||'';
+    if(!to){for(let k=i-1;k>=0&&k>i-4;k--){if(lines[k].trim()){to=from;from=lines[k].trim();break;}}}
+    let depDate=null,arrDate=null;
+    for(let k=i;k<Math.min(i+3,lines.length);k++){ const dts=lines[k].match(/\d{1,2}[A-Za-z]{3}\d{4}/g);
+      if(dts&&dts.length>=2){depDate=parseDateT(dts[0]);arrDate=parseDateT(dts[1]);break;}
+      if(dts&&dts.length===1){if(!depDate)depDate=parseDateT(dts[0]);else{arrDate=parseDateT(dts[0]);break;}}}
+    let dur=null;
+    for(let k=i;k<lines.length;k++){ if(k>i&&legRe.test(lines[k]))break;
+      const d=lines[k].match(/Dura(?:ç|c)(?:ão|ao)?\s*\/?\s*Duration:\s*(\d{1,2}:\d{2})|Duration:\s*(\d{1,2}:\d{2})/i);
+      if(d){dur=d[1]||d[2];break;}}
+    legs.push({flight,from:resolveAirport(from),to:resolveAirport(to),depTime:depT,arrTime:arrT,
+      depDate:fmtDateT(depDate),arrDate:fmtDateT(arrDate),duration:dur});}
+  const stages=[];
+  if(legs.length){ const f=legs[0];
+    stages.push({kind:'origin',city:f.from.city,airport:f.from.airport,iata:f.from.iata,depTime:f.depTime,depDate:f.depDate,flight:f.flight,duration:f.duration});
+    for(let i=0;i<legs.length-1;i++){const cur=legs[i],nxt=legs[i+1];
+      const lay=(cur.arrDate&&nxt.depDate)?diffHM(cur.arrDate,cur.arrTime,nxt.depDate,nxt.depTime):null;
+      stages.push({kind:'layover',city:cur.to.city,airport:cur.to.airport,iata:cur.to.iata,arrTime:cur.arrTime,arrDate:cur.arrDate,
+        depTime:nxt.depTime,depDate:nxt.depDate,layover:lay?lay.label:null,inFlight:cur.flight,outFlight:nxt.flight,nextDuration:nxt.duration});}
+    const l=legs[legs.length-1];
+    stages.push({kind:'destination',city:l.to.city,airport:l.to.airport,iata:l.to.iata,arrTime:l.arrTime,arrDate:l.arrDate,flight:l.flight});}
+  return {legs,stages};
+}
+async function pdfToText(buf){
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise; let rows=[];
+  for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const content=await page.getTextContent();
+    const byY={};
+    content.items.forEach(it=>{ if(!it.str.trim())return; const y=Math.round(it.transform[5]);
+      let key=Object.keys(byY).find(k=>Math.abs(k-y)<=2); if(key==null)key=y;
+      (byY[key]=byY[key]||[]).push({x:it.transform[4],w:it.width||it.str.length*4,s:it.str});});
+    Object.keys(byY).map(Number).sort((a,b)=>b-a).forEach(y=>{ const items=byY[y].sort((a,b)=>a.x-b.x);
+      let line='',lastEnd=null; items.forEach(it=>{ if(lastEnd!=null){const gap=it.x-lastEnd;
+        if(gap>14)line+='   '; else if(gap>1.5)line+=' ';} line+=it.s; lastEnd=it.x+it.w;});
+      rows.push(line);});}
+  return rows.join('\n');
+}
+const brDateT=iso=>{ if(!iso)return '—'; const p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+const STAGE_COL={origin:'#2DB5A3',layover:'#F4A259',destination:'#5B8DEF'};
+function ItinStageCard({st,lbl}){
+  const col=STAGE_COL[st.kind];
+  return(<div className="stageWrap">
+    <span className="dotmark" style={{background:col}}/>
+    <div className="stagebox">
+      <span className="sbadge" style={{background:col}}>{lbl[st.kind]}</span>
+      <div><span className="scity">{st.city}</span><span className="siata">{st.iata}</span></div>
+      <div className="sair">{st.airport}</div>
+      {st.kind==='origin'&&<><div className="stimes"><div><div className="slab">{lbl.dep}</div><div className="sval">{st.depTime}</div><div className="sdt">{brDateT(st.depDate)}</div></div></div>
+        <div><span className="sfly">✈️ {st.flight}</span>{st.duration&&<span className="sfly" style={{background:'#f1ede4',color:'#444'}}>⏱ {st.duration.replace(':','h')}</span>}</div></>}
+      {st.kind==='layover'&&<><div className="stimes">
+          <div><div className="slab">{lbl.arr}</div><div className="sval">{st.arrTime}</div><div className="sdt">{brDateT(st.arrDate)}</div></div>
+          <div><div className="slab">{lbl.nextDep}</div><div className="sval">{st.depTime}</div><div className="sdt">{brDateT(st.depDate)}</div></div></div>
+        {st.layover&&<div className="slay">⏳ {lbl.layoverTime}: {st.layover}</div>}
+        <div><span className="sfly">🛬 {st.inFlight}</span><span className="sfly">✈️ {st.outFlight}</span></div></>}
+      {st.kind==='destination'&&<><div className="stimes"><div><div className="slab">{lbl.arr}</div><div className="sval">{st.arrTime}</div><div className="sdt">{brDateT(st.arrDate)}</div></div></div>
+        <div><span className="sfly">🛬 {st.flight}</span></div></>}
+    </div>
+  </div>);
+}
 
 function ScheduleTab({t,trip,update,toast}){
   const [view,setView]=useState('day');
@@ -881,9 +999,13 @@ function WeekView({t,trip,curDay,openDay}){
 
 /* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
 function MapTab({t,trip}){
-  // sequência de pontos: combina destinos e os trechos lidos das passagens, ordenados por data
-  const segs=(trip.docs||[]).filter(d=>d.seg).map(d=>d.seg)
-    .sort((a,b)=>(a.depDate+a.depTime).localeCompare(b.depDate+b.depTime));
+  // trechos: usa o roteiro interpretado (com escalas) quando houver; senão o seg manual
+  const segs=[];
+  (trip.docs||[]).forEach(d=>{
+    if(d.itin&&d.itin.legs) d.itin.legs.forEach(lg=>segs.push({fromCity:lg.from.city,toCity:lg.to.city,depDate:lg.depDate,depTime:lg.depTime,arrDate:lg.arrDate,arrTime:lg.arrTime,iata:lg.from.iata+'→'+lg.to.iata}));
+    else if(d.seg) segs.push(d.seg);
+  });
+  segs.sort((a,b)=>((a.depDate||'')+ (a.depTime||'')).localeCompare((b.depDate||'')+(b.depTime||'')));
   // constrói lista ordenada de paradas (cidade + data) sem repetir cidade consecutiva
   const stops=[];
   const push=(city,date)=>{ if(!city)return; const last=stops[stops.length-1];
@@ -935,37 +1057,55 @@ function DocsTab({t,trip,update,toast}){
   const [cat,setCat]=useState('tickets');
   const [sub,setSub]=useState('Avião');
   const [readId,setReadId]=useState(null);   // doc sendo "lido" (passagem)
+  const [busy,setBusy]=useState(false);
   const fileRef=useRef(null);
   const cur=cats.find(c=>c[0]===cat);
   const catDocs=trip.docs.filter(d=>d.cat===cat && d.sub===sub);
   const icon=cat==='tickets'?'🎫':cat==='stays'?'🏨':cat==='events'?'🎭':'📎';
   const typeForCat={tickets:'typeTransport',stays:'typeStay',events:'typeEvent',extras:'typeOther'};
 
-  // Anexo real: abre os arquivos do dispositivo (PDF, imagem, qualquer tipo)
-  const onFile=e=>{
+  // Anexo real do dispositivo + interpretação automática quando é passagem em PDF
+  const onFile=async e=>{
     const file=e.target.files&&e.target.files[0]; if(!file)return;
-    const finish=(dataUrl)=>{
-      const doc={id:uid(),cat,sub,name:file.name.replace(/\.[^.]+$/,''),file:file.name,
-        mime:file.type||'arquivo',size:file.size,dataUrl:dataUrl||null,offline:!!dataUrl};
-      update({...trip,docs:[...trip.docs,doc]});
-      toast(t.docAttached);
-      if(cat==='tickets') setReadId(doc.id); // passagem: abre a leitura para preencher partida/chegada
-    };
-    if(file.size<2*1024*1024){ const r=new FileReader(); r.onload=()=>finish(r.result); r.readAsDataURL(file); }
-    else finish(null);
     e.target.value='';
+    const dataUrl = file.size<2*1024*1024 ? await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file);}) : null;
+    const doc={id:uid(),cat,sub,name:file.name.replace(/\.[^.]+$/,''),file:file.name,
+      mime:file.type||'arquivo',size:file.size,dataUrl,offline:!!dataUrl};
+    // tenta interpretar o roteiro se for passagem em PDF
+    if(cat==='tickets' && /pdf/i.test(file.type||file.name)){
+      setBusy(true);
+      try{ const buf=await file.arrayBuffer(); const txt=await pdfToText(buf); const itin=parseAirTicket(txt);
+        if(itin.stages.length) doc.itin=itin;
+      }catch(err){ /* segue sem interpretação */ }
+      setBusy(false);
+    }
+    update({...trip,docs:[...trip.docs,doc]});
+    toast(t.docAttached);
+    if(cat==='tickets') setReadId(doc.id);
   };
-  // remover doc também remove os blocos do cronograma que ele gerou
   const removeDoc=(id)=>{ update({...trip,docs:trip.docs.filter(d=>d.id!==id),
     activities:trip.activities.filter(a=>a.docId!==id)}); toast(t.docRemoved); };
-  // estadia/evento: bloco único manual
   const toSchedule=(d)=>{
     const act={id:uid(),docId:d.id,date:trip.startDate,start:'15:00',end:'16:00',title:d.name,
       type:typeForCat[d.cat]||'typeOther',loc:'',desc:'Criado a partir do documento: '+d.file,source:'doc',joined:['me']};
     update({...trip,activities:[...trip.activities,act]});
     toast(t.recAdded);
   };
-  // LEITURA da passagem: cria bloco de PARTIDA e bloco de CHEGADA + registra o trecho (seg)
+  // ROTEIRO INTERPRETADO -> um bloco de voo por trecho (origem→destino), com escala visível pelo intervalo
+  const addStages=(d)=>{
+    const legs=d.itin.legs;
+    const blocks=legs.map(lg=>({id:uid(),docId:d.id,date:lg.depDate,start:lg.depTime,
+      end:(lg.depDate===lg.arrDate?lg.arrTime:'23:59'), title:'✈️ '+lg.from.iata+' → '+lg.to.iata+' · '+lg.flight,
+      type:'typeTransport', loc:lg.from.city+' → '+lg.to.city,
+      desc:t.departure+' '+lg.from.airport+' '+lg.depTime+' '+brDateT(lg.depDate)+' · '+t.arrival+' '+lg.to.airport+' '+lg.arrTime+' '+brDateT(lg.arrDate)+(lg.duration?(' · '+lg.duration.replace(':','h')):''),
+      source:'doc', joined:['me']}));
+    const first=legs[0], last=legs[legs.length-1];
+    const seg={fromCity:first.from.city,toCity:last.to.city,depDate:first.depDate,depTime:first.depTime,arrDate:last.arrDate,arrTime:last.arrTime};
+    update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,seg}:x),
+      activities:[...trip.activities.filter(a=>a.docId!==d.id), ...blocks]});
+    setReadId(null); toast(t.stagesAdded);
+  };
+  // LEITURA MANUAL: bloco de PARTIDA e de CHEGADA + trecho (seg)
   const saveTicket=(d,seg)=>{
     const dep={id:uid(),docId:d.id,date:seg.depDate,start:seg.depTime,end:addMin(seg.depTime,40),
       title:'✈️ '+t.departure+' — '+seg.fromCity, type:'typeTransport', loc:seg.fromCity,
@@ -973,14 +1113,13 @@ function DocsTab({t,trip,update,toast}){
     const arr={id:uid(),docId:d.id,date:seg.arrDate,start:seg.arrTime,end:addMin(seg.arrTime,30),
       title:'🛬 '+t.arrival+' — '+seg.toCity, type:'typeTransport', loc:seg.toCity,
       desc:t.youAreIn+' '+seg.toCity+' · '+d.file, source:'doc', joined:['me']};
-    // remove blocos anteriores deste doc (caso seja releitura) e re-cria
-    update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,seg}:x),
+    update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,seg,itin:undefined}:x),
       activities:[...trip.activities.filter(a=>a.docId!==d.id), dep, arr]});
-    setReadId(null);
-    toast(t.ticketRead);
+    setReadId(null); toast(t.ticketRead);
   };
   const human=b=> b? (b<1024?b+' B':b<1048576?(b/1024).toFixed(0)+' KB':(b/1048576).toFixed(1)+' MB') : '';
   const readingDoc = readId?trip.docs.find(d=>d.id===readId):null;
+  const lbl={origin:t.lblOrigin,layover:t.lblLayover,destination:t.lblDestination,dep:t.departure,arr:t.arrival,nextDep:t.nextDep,layoverTime:t.layoverLabel};
 
   return(<div>
     <div className="subtabs">
@@ -992,15 +1131,24 @@ function DocsTab({t,trip,update,toast}){
     </div>
 
     {cat==='tickets'&&<div className="alert" style={{background:'#eef5ff',borderColor:'#b9d4ff'}}>
-      <span className="ai">🤖</span><div><b>Leitura da passagem</b>
-        <p>Ao anexar uma passagem, confirme partida e chegada: o cronograma recebe os dois blocos e o local passa a aparecer nos dias seguintes da viagem.</p></div></div>}
+      <span className="ai">🤖</span><div><b>Interpretador de passagem</b>
+        <p>Anexe o PDF da passagem: o roteiro é lido automaticamente (origem, escalas e destino com horários) e vira etapas no cronograma. PDF não reconhecido? Você preenche manualmente.</p></div></div>}
 
     {/* input real de arquivos do dispositivo: aceita qualquer tipo (PDF, PNG, JPEG, ...) */}
     <input ref={fileRef} type="file" accept="*/*" style={{display:'none'}} onChange={onFile}/>
-    <button className="btn btn-dark" style={{marginBottom:14}} onClick={()=>fileRef.current&&fileRef.current.click()}>📎 {t.attachDoc}</button>
+    <button className="btn btn-dark" style={{marginBottom:14}} disabled={busy} onClick={()=>fileRef.current&&fileRef.current.click()}>
+      {busy?'⏳ '+t.interpreting:'📎 '+t.attachDoc}</button>
 
-    {readingDoc&&<TicketReadForm t={t} trip={trip} doc={readingDoc}
-      onSave={seg=>saveTicket(readingDoc,seg)} onCancel={()=>setReadId(null)}/>}
+    {readingDoc&&(readingDoc.itin
+      ? <div className="card" style={{borderColor:'#b9d4ff'}}>
+          <b style={{fontFamily:'Sora',fontSize:14}}>🤖 {t.interpretedRoute}</b>
+          <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{readingDoc.file}</div>
+          {readingDoc.itin.stages.map((st,i)=><ItinStageCard key={i} st={st} lbl={lbl}/>)}
+          <button className="btn btn-primary" style={{marginTop:6}} onClick={()=>addStages(readingDoc)}>📅 {t.addStages}</button>
+          <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>update({...trip,docs:trip.docs.map(x=>x.id===readingDoc.id?{...x,itin:undefined}:x)})}>✏️ {t.editManual}</button>
+        </div>
+      : <TicketReadForm t={t} trip={trip} doc={readingDoc}
+          onSave={seg=>saveTicket(readingDoc,seg)} onCancel={()=>setReadId(null)}/>)}
 
     {catDocs.length===0
       ? <div className="empty"><div className="ei">📄</div>{t.noDocs}</div>
@@ -1009,15 +1157,17 @@ function DocsTab({t,trip,update,toast}){
           <span className="dt">
             <b>{d.name}</b>
             <span>{d.file}{d.size?' · '+human(d.size):''}</span>
-            {d.seg&&<div className="sub" style={{fontSize:12,marginTop:3}}>✈️ {d.seg.fromCity} → {d.seg.toCity} · {d.seg.depDate} {d.seg.depTime} → {d.seg.arrDate} {d.seg.arrTime}</div>}
+            {d.itin
+              ? <div className="sub" style={{fontSize:12,marginTop:3}}>🧭 {d.itin.stages[0].city} → {d.itin.stages[d.itin.stages.length-1].city} · {d.itin.legs.length} voo(s) · {d.itin.stages.filter(x=>x.kind==='layover').length} escala(s)</div>
+              : d.seg&&<div className="sub" style={{fontSize:12,marginTop:3}}>✈️ {d.seg.fromCity} → {d.seg.toCity} · {brDateT(d.seg.depDate)} {d.seg.depTime} → {brDateT(d.seg.arrDate)} {d.seg.arrTime}</div>}
             <div style={{marginTop:6,display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
               {d.offline&&<span className="offline">⬇ {t.offlineAvail}</span>}
               {d.dataUrl&&<a className="joinbtn" href={d.dataUrl} download={d.file} style={{textDecoration:'none'}}>⬇ Download</a>}
-              {d.cat==='tickets'&&<button className="joinbtn" onClick={()=>setReadId(d.id)}>🤖 {d.seg?'Reler':'Ler'} passagem</button>}
+              {d.cat==='tickets'&&<button className="joinbtn" onClick={()=>setReadId(d.id)}>🤖 {(d.itin||d.seg)?'Ver roteiro':'Ler passagem'}</button>}
               {d.cat==='stays'&&<button className="joinbtn" onClick={()=>toSchedule(d)}>📅 {t.addToSched}</button>}
             </div>
           </span>
-          <button className="blkbtn del" onClick={()=>removeDoc(d.id)}>✕</button>
+          <button className="blkbtn del" onClick={()=>removeDoc(d.id)}>✕</button>✕</button>
         </div>))}
   </div>);
 }

@@ -45,7 +45,8 @@ python3 -m http.server 8000
 ```
 tripping-claude-v1/
 ├── app/
-│   └── index.html          # ← o aplicativo V1 (abra este arquivo)
+│   ├── index.html              # ← o aplicativo V1 (abra este arquivo)
+│   └── interpretador-passagem.html  # interpretador de passagem aérea (PDF → etapas)
 ├── docs/
 │   ├── 01-VN-revisada.md    # VN-Reviewer
 │   ├── 02-UXUI-spec.md      # UX/UI Specialist

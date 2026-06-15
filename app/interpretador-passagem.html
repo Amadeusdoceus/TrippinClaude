@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Trippin — Interpretador de Passagem Aérea</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{--ink:#14213D;--deep:#1A2B4A;--coral:#FF6B5C;--lagoon:#2DB5A3;--sand:#F7F5F0;
+    --amber:#F4A259;--blue:#5B8DEF;--line:#E4E0D6;--muted:#6B7A90;--shadow:0 6px 24px rgba(20,33,61,.10)}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:#E9E5DC;color:var(--ink);
+    display:flex;justify-content:center;min-height:100vh}
+  .wrap{width:100%;max-width:480px;background:var(--sand);min-height:100vh;box-shadow:0 0 60px rgba(0,0,0,.12)}
+  h1,h2,h3,.display{font-family:'Sora',sans-serif;margin:0}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .hero{background:linear-gradient(160deg,#1A2B4A,#2c4a72);color:#fff;padding:26px 22px 22px}
+  .hero .logo{font-family:'Sora';font-weight:800;font-size:22px}
+  .hero .logo .dot{color:var(--coral)}
+  .hero p{margin:6px 0 0;opacity:.85;font-size:13.5px;line-height:1.5}
+  .pad{padding:20px 18px 60px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;
+    border-radius:13px;font-weight:600;font-size:15px;width:100%;border:none;cursor:pointer;font-family:inherit}
+  .btn-primary{background:var(--coral);color:#fff;box-shadow:0 6px 16px rgba(255,107,92,.3)}
+  .btn-dark{background:var(--ink);color:#fff}
+  .btn-ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  .btn:active{transform:scale(.99)}
+  .drop{border:2px dashed var(--line);border-radius:16px;background:#fff;padding:26px 18px;text-align:center;margin-bottom:12px}
+  .drop .ic{font-size:34px}
+  .drop p{margin:8px 0 0;color:var(--muted);font-size:13px}
+  textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-family:'JetBrains Mono';
+    font-size:12px;min-height:120px;outline:none;resize:vertical}
+  .muted{color:var(--muted);font-size:13px}
+  .err{background:#fff3f1;border:1px solid #ffc9c1;color:#b03a2e;border-radius:12px;padding:12px;font-size:13px;margin-top:12px}
+  .summary{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px;margin:14px 0;box-shadow:var(--shadow)}
+  .summary .rt{flex:1;font-family:'Sora';font-weight:700;font-size:15px}
+  .summary .rc{font-size:11px;color:var(--muted)}
+  /* stage cards */
+  .stage{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;
+    margin-bottom:0;box-shadow:var(--shadow)}
+  .stageWrap{position:relative;padding-left:30px;margin-bottom:14px}
+  .stageWrap:before{content:'';position:absolute;left:11px;top:8px;bottom:-14px;width:2px;background:var(--line)}
+  .stageWrap:last-child:before{display:none}
+  .dotmark{position:absolute;left:4px;top:8px;width:16px;height:16px;border-radius:50%;border:3px solid #fff;
+    box-shadow:0 0 0 2px var(--line)}
+  .stage .badge{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    padding:3px 9px;border-radius:6px;color:#fff;margin-bottom:8px}
+  .stage .city{font-family:'Sora';font-weight:700;font-size:19px;line-height:1.1}
+  .stage .iata{font-family:'JetBrains Mono';font-weight:700;font-size:13px;color:var(--muted);margin-left:6px}
+  .stage .airport{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .stage .times{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
+  .stage .tcol .lab{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+  .stage .tcol .val{font-family:'JetBrains Mono';font-weight:700;font-size:18px}
+  .stage .tcol .dt{font-size:11px;color:var(--muted)}
+  .stage .flightrow{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;
+    background:#f1ede4;color:var(--ink)}
+  .pill.fly{background:#eef5ff;color:#2c5dc7}
+  .layband{display:flex;align-items:center;gap:8px;background:#fffaf3;border:1px solid var(--amber);
+    border-radius:10px;padding:8px 12px;margin-top:12px;font-size:13px;font-weight:600;color:#9a5b13}
+  .legend{font-size:11px;color:var(--muted);text-align:center;margin-top:16px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="logo">Trippin<span class="dot">.</span> <span style="font-weight:600;font-size:14px;opacity:.8">Interpretador de Passagem</span></div>
+    <p>Anexe o PDF da passagem (ou cole o texto). O interpretador identifica origem, escalas e destino — com cidade, aeroporto, horários e tempo de escala — e gera um card por etapa.</p>
+  </div>
+  <div class="pad" id="app"></div>
+</div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+/* ===== Interpretador (mesmo núcleo testado em Node) ===== */
+const AIRPORTS=[
+  [/GUARULHOS|GRU\b/i,{iata:'GRU',city:'São Paulo'}],
+  [/CONGONHAS/i,{iata:'CGH',city:'São Paulo'}],
+  [/GALEAO|GALEÃO|RIO DE JANEIRO/i,{iata:'GIG',city:'Rio de Janeiro'}],
+  [/LISBON|LISBOA/i,{iata:'LIS',city:'Lisboa'}],
+  [/PORTO/i,{iata:'OPO',city:'Porto'}],
+  [/LUXEMBOURG/i,{iata:'LUX',city:'Luxemburgo'}],
+  [/MADRID/i,{iata:'MAD',city:'Madri'}],
+  [/BARCELONA/i,{iata:'BCN',city:'Barcelona'}],
+  [/PARIS|CHARLES DE GAULLE/i,{iata:'CDG',city:'Paris'}],
+  [/LONDON|HEATHROW/i,{iata:'LHR',city:'Londres'}],
+  [/FRANKFURT/i,{iata:'FRA',city:'Frankfurt'}],
+  [/ROME|ROMA|FIUMICINO/i,{iata:'FCO',city:'Roma'}],
+  [/AMSTERDAM|SCHIPHOL/i,{iata:'AMS',city:'Amsterdã'}],
+];
+const MONTHS={jan:0,feb:1,fev:1,mar:2,apr:3,abr:3,may:4,mai:4,jun:5,jul:6,aug:7,ago:7,sep:8,set:8,oct:9,out:9,nov:10,dec:11,dez:11};
+const titleCase=s=>s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).replace(/\s+/g,' ').trim();
+function resolveAirport(rawName){
+  const name=(rawName||'').trim();
+  for(const [re,info] of AIRPORTS){ if(re.test(name)) return {...info,airport:titleCase(name)}; }
+  const m=name.match(/\b([A-Z]{3})\b/);
+  return {iata:m?m[1]:'—',city:titleCase((name.split(/\s{2,}|,/)[0]||name)),airport:titleCase(name)};
+}
+function parseDate(s){const m=s.match(/(\d{1,2})([A-Za-z]{3})(\d{4})/);if(!m)return null;
+  const mo=MONTHS[m[2].toLowerCase()];if(mo==null)return null;return new Date(Date.UTC(+m[3],mo,+m[1]));}
+const fmtDate=d=>d?d.toISOString().slice(0,10):null;
+function diffHM(d1,t1,d2,t2){const a=new Date(d1+'T'+t1+':00Z'),b=new Date(d2+'T'+t2+':00Z');
+  let min=Math.round((b-a)/60000);if(min<0)min=0;return {min,label:Math.floor(min/60)+'h'+String(min%60).padStart(2,'0')};}
+function parseAirTicket(text){
+  const linesAll=text.split(/\r?\n/);
+  let s=0,e=linesAll.length;
+  linesAll.forEach((l,i)=>{ if(/\bFlight\b/.test(l)&&/\bDeparture\b/.test(l))s=i+1;
+    if(/^\s*\(1\)\s*OK|OBSERVA(Ç|C)/i.test(l)&&e===linesAll.length&&i>s)e=i;});
+  const lines=linesAll.slice(s,e);
+  const legRe=/\b([A-Z]{2}\d{2,4})\b[^\d]*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/;
+  const legs=[];
+  for(let i=0;i<lines.length;i++){
+    const m=lines[i].match(legRe); if(!m)continue;
+    const flight=m[1],depT=m[2],arrT=m[3];
+    const pre=lines[i].slice(0,lines[i].indexOf(flight)).trim();
+    const cols=pre.split(/\s{2,}/).filter(Boolean);
+    let from=cols[0]||'',to=cols[1]||'';
+    if(!to){for(let k=i-1;k>=0&&k>i-4;k--){if(lines[k].trim()){to=from;from=lines[k].trim();break;}}}
+    let depDate=null,arrDate=null;
+    for(let k=i;k<Math.min(i+3,lines.length);k++){
+      const dts=lines[k].match(/\d{1,2}[A-Za-z]{3}\d{4}/g);
+      if(dts&&dts.length>=2){depDate=parseDate(dts[0]);arrDate=parseDate(dts[1]);break;}
+      if(dts&&dts.length===1){if(!depDate)depDate=parseDate(dts[0]);else{arrDate=parseDate(dts[0]);break;}}
+    }
+    let dur=null;
+    for(let k=i;k<lines.length;k++){ if(k>i&&legRe.test(lines[k]))break;
+      const d=lines[k].match(/Dura(?:ç|c)(?:ão|ao)?\s*\/?\s*Duration:\s*(\d{1,2}:\d{2})|Duration:\s*(\d{1,2}:\d{2})/i);
+      if(d){dur=d[1]||d[2];break;} }
+    legs.push({flight,from:resolveAirport(from),to:resolveAirport(to),depTime:depT,arrTime:arrT,
+      depDate:fmtDate(depDate),arrDate:fmtDate(arrDate),duration:dur});
+  }
+  const stages=[];
+  if(legs.length){
+    const f=legs[0];
+    stages.push({kind:'origin',city:f.from.city,airport:f.from.airport,iata:f.from.iata,
+      depTime:f.depTime,depDate:f.depDate,flight:f.flight,duration:f.duration});
+    for(let i=0;i<legs.length-1;i++){const cur=legs[i],nxt=legs[i+1];
+      const lay=(cur.arrDate&&nxt.depDate)?diffHM(cur.arrDate,cur.arrTime,nxt.depDate,nxt.depTime):null;
+      stages.push({kind:'layover',city:cur.to.city,airport:cur.to.airport,iata:cur.to.iata,
+        arrTime:cur.arrTime,arrDate:cur.arrDate,depTime:nxt.depTime,depDate:nxt.depDate,
+        layover:lay?lay.label:null,inFlight:cur.flight,outFlight:nxt.flight,nextDuration:nxt.duration});}
+    const l=legs[legs.length-1];
+    stages.push({kind:'destination',city:l.to.city,airport:l.to.airport,iata:l.to.iata,
+      arrTime:l.arrTime,arrDate:l.arrDate,flight:l.flight});
+  }
+  return {legs,stages};
+}
+
+/* ===== Extração de PDF com reconstrução de linhas por coordenada (recria o layout) ===== */
+async function pdfToText(arrayBuffer){
+  const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+  let rows=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const content=await page.getTextContent();
+    const byY={};
+    content.items.forEach(it=>{ if(!it.str.trim())return;
+      const y=Math.round(it.transform[5]);
+      let key=Object.keys(byY).find(k=>Math.abs(k-y)<=2); if(key==null)key=y;
+      (byY[key]=byY[key]||[]).push({x:it.transform[4],w:it.width||it.str.length*4,s:it.str});});
+    Object.keys(byY).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const items=byY[y].sort((a,b)=>a.x-b.x);
+      let line='',lastEnd=null;
+      items.forEach(it=>{ if(lastEnd!=null){const gap=it.x-lastEnd;
+        if(gap>14)line+='   '; else if(gap>1.5)line+=' ';}
+        line+=it.s; lastEnd=it.x+it.w;});
+      rows.push(line);
+    });
+  }
+  return rows.join('\n');
+}
+
+/* ===== UI ===== */
+const app=document.getElementById('app');
+const COL={origin:'#2DB5A3',layover:'#F4A259',destination:'#5B8DEF'};
+const LBL={origin:'Origem',layover:'Escala',destination:'Destino'};
+const brDate=iso=>{ if(!iso)return '—'; const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+y; };
+
+function render(result,fileName){
+  if(!result||!result.stages.length){
+    app.innerHTML=home()+'<div class="err">Não consegui identificar os trechos. Verifique se é um recibo de bilhete eletrónico com a tabela de voos, ou cole o texto manualmente abaixo.</div>';
+    wire(); return;
+  }
+  const s=result.stages, legs=result.legs;
+  let html=home();
+  html+='<div class="summary"><span style="font-size:22px">🧭</span><div><div class="rt">'+
+    s[0].city+' → '+s[s.length-1].city+'</div><div class="rc">'+legs.length+' voo(s) · '+
+    (s.filter(x=>x.kind==='layover').length)+' escala(s)'+(fileName?' · '+fileName:'')+'</div></div></div>';
+  s.forEach(st=>{ html+=card(st); });
+  html+='<div class="legend">🟢 Origem · 🟠 Escala · 🔵 Destino<br/>Interpretado a partir do documento — confira sempre os dados oficiais da passagem.</div>';
+  app.innerHTML=html; wire();
+}
+function card(st){
+  const col=COL[st.kind];
+  let inner='<span class="dotmark" style="background:'+col+'"></span><div class="stage">';
+  inner+='<span class="badge" style="background:'+col+'">'+LBL[st.kind]+'</span>';
+  inner+='<div><span class="city">'+st.city+'</span><span class="iata">'+st.iata+'</span></div>';
+  inner+='<div class="airport">'+st.airport+'</div>';
+  if(st.kind==='origin'){
+    inner+='<div class="times"><div class="tcol"><div class="lab">Partida</div><div class="val">'+st.depTime+'</div><div class="dt">'+brDate(st.depDate)+'</div></div></div>';
+    inner+='<div class="flightrow"><span class="pill fly">✈️ Voo '+st.flight+'</span>'+(st.duration?'<span class="pill">⏱ '+st.duration.replace(':','h')+'</span>':'')+'</div>';
+  } else if(st.kind==='layover'){
+    inner+='<div class="times"><div class="tcol"><div class="lab">Chegada</div><div class="val">'+st.arrTime+'</div><div class="dt">'+brDate(st.arrDate)+'</div></div>'+
+      '<div class="tcol"><div class="lab">Próxima partida</div><div class="val">'+st.depTime+'</div><div class="dt">'+brDate(st.depDate)+'</div></div></div>';
+    if(st.layover)inner+='<div class="layband">⏳ Tempo de escala: '+st.layover+'</div>';
+    inner+='<div class="flightrow"><span class="pill fly">🛬 '+st.inFlight+'</span><span class="pill fly">✈️ '+st.outFlight+'</span>'+(st.nextDuration?'<span class="pill">⏱ '+st.nextDuration.replace(':','h')+'</span>':'')+'</div>';
+  } else {
+    inner+='<div class="times"><div class="tcol"><div class="lab">Chegada</div><div class="val">'+st.arrTime+'</div><div class="dt">'+brDate(st.arrDate)+'</div></div></div>';
+    inner+='<div class="flightrow"><span class="pill fly">🛬 Voo '+st.flight+'</span></div>';
+  }
+  inner+='</div>';
+  return '<div class="stageWrap">'+inner+'</div>';
+}
+function home(){
+  return '<div class="drop" id="drop"><div class="ic">📄</div><b>Anexar PDF da passagem</b>'+
+    '<p>Toque para escolher do dispositivo</p>'+
+    '<input type="file" id="file" accept="application/pdf" style="display:none"/></div>'+
+    '<button class="btn btn-dark" id="pick" style="margin-bottom:16px">📎 Escolher PDF</button>'+
+    '<div class="muted" style="margin-bottom:6px">Ou cole o texto da passagem:</div>'+
+    '<textarea id="paste" placeholder="Cole aqui o texto do recibo de bilhete eletrónico..."></textarea>'+
+    '<button class="btn btn-primary" id="parseBtn" style="margin-top:10px">Interpretar texto</button>';
+}
+function wire(){
+  const file=document.getElementById('file'), pick=document.getElementById('pick'),
+    drop=document.getElementById('drop'), parseBtn=document.getElementById('parseBtn'),
+    paste=document.getElementById('paste');
+  const openPick=()=>file&&file.click();
+  pick&&pick.addEventListener('click',openPick);
+  drop&&drop.addEventListener('click',openPick);
+  file&&file.addEventListener('change',async e=>{
+    const f=e.target.files[0]; if(!f)return;
+    drop.innerHTML='<div class="ic">⏳</div><b>Lendo '+f.name+'…</b>';
+    try{ const buf=await f.arrayBuffer(); const txt=await pdfToText(buf);
+      render(parseAirTicket(txt), f.name);
+    }catch(err){ app.innerHTML=home()+'<div class="err">Falha ao ler o PDF: '+err.message+'</div>'; wire(); }
+  });
+  parseBtn&&parseBtn.addEventListener('click',()=>{
+    const txt=paste.value||''; if(!txt.trim())return;
+    render(parseAirTicket(txt),'texto colado');
+  });
+}
+app.innerHTML=home(); wire();
+</script>
+</body>
+</html>
