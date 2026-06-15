@@ -39,3 +39,27 @@
 
 ## Veredito
 **Aprovado como protótipo V1** com ressalvas conhecidas (inteligência simulada, backend pendente). Pronto para revisão de V&V.
+
+---
+
+## Post-mortem V1 — Bugs que escaparam (e a correção do processo)
+
+Cinco bugs reportados após a entrega deveriam ter sido captados pelo QA. Cada um foi convertido em categoria **permanente** da Suíte de Regressão do skill de QA (R1–R6), para não reaparecer:
+
+| Bug reportado | Causa-raiz | Categoria de regressão criada |
+|---------------|-----------|-------------------------------|
+| Notificações abriam pela esquerda | Falta de conferência de lado/direção vs. spec | **R3** Fidelidade de lado/posição à spec |
+| "Perfil" não abria | Controle de menu sem ação (beco sem saída) | **R1** Nenhum controle morto |
+| Foto sem edição/câmera/galeria | Input de mídia não invocava recurso do dispositivo | **R4** Capacidades reais do dispositivo |
+| Cronograma sem editar/excluir | Entidade só tinha Create/Read (faltou U e D) | **R2** CRUD completo por entidade |
+| Docs sem upload real/remoção + anexos fixos | Mock se passando por funcionalidade | **R5** Sem dado falso passando por função |
+
+### Reteste após correção (todos passando)
+| ID | Verificação | Status |
+|----|-------------|--------|
+| R1 | Todos os itens do drawer navegam/agem | ✅ |
+| R2 | Cronograma e Docs com Create/Read/Update/Delete | ✅ |
+| R3 | Notificações abrem pela direita; ícones nos cantos corretos | ✅ |
+| R4 | Foto abre câmera/galeria; Docs acessa arquivos do dispositivo | ✅ |
+| R5 | Sem anexos pré-carregados; ação dirigida pelo usuário | ✅ |
+| R6 | Edições persistem ao recarregar; avatar reflete a foto | ✅ |

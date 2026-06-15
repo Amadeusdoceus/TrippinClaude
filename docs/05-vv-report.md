@@ -36,3 +36,19 @@ Protótipo V1 roda 100% no cliente (sem backend), com persistência em `localSto
 
 ## Recomendação
 **Aprovado para release como protótipo/demo V1.** Para produção, executar o plano de banco/carga/segurança acima após implementação do backend.
+
+---
+
+## Post-mortem V1 — Cobertura E2E ampliada
+
+Os bugs da V1 também passaram pela validação de sistema sem serem notados. O skill do V-V tester ganhou a **Suíte de Regressão E2E (VR1–VR6)**, executada em toda validação de release a partir de agora:
+
+- **VR1** — percorrer 100% da navegação (caça a becos sem saída: ex. "Perfil").
+- **VR2** — ciclo de vida completo (CRUD) de cada entidade, com persistência (ex. cronograma e Docs).
+- **VR3** — conformidade visual de lado/posição em telas reais (ex. notificações à direita).
+- **VR4** — integrações reais do dispositivo: câmera, galeria, sistema de arquivos, offline.
+- **VR5** — sem seed/mock se passando por dado real; cada ação gera log em banco.
+- **VR6** — matriz Android/iOS e múltiplas resoluções.
+
+### Princípio incorporado
+**Todo bug que escapou vira teste permanente.** A suíte só cresce — nada que já falhou volta a falhar silenciosamente.
