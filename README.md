@@ -34,7 +34,7 @@ python3 -m http.server 8000
 - **Home** — viagens ativas, criar nova, participar por código, viagens anteriores
 - **Criar viagem** — nome, datas, múltiplos destinos com busca (≥3 letras), código de 12 dígitos copiável
 - **Cronograma** — calendário mês/semana/dia, adicionar atividades, conflitos visíveis, ingressar em atividade
-- **Docs com inteligência** ⭐ — anexe uma passagem/reserva e o **cronograma é preenchido automaticamente**, com alerta de conflito
+- **Interpretador de passagem (PDF) ⭐** — anexe o PDF em **Docs → Passagens**: o roteiro é lido (origem, escalas e destino), os cards são exibidos e, ao clicar **Adicionar ao cronograma**, uma confirmação envia os cards para o **cronograma nas datas corretas** (partida e chegada de cada trecho)
 - **Mapa, Galeria, Sugestões, Integrantes** — rota da viagem, fotos por cidade, recomendações, convite por e-mail e despesas
 - **Notificações** e **menu lateral** acionáveis
 

@@ -352,7 +352,7 @@ const I18N = {
     origin:'Local de partida', destination:'Local de chegada', departDT:'Partida (data e hora)',
     arriveDT:'Chegada (data e hora)', createBlocks:'Adicionar ao cronograma', ticketRead:'Passagem lida: partida e chegada adicionadas',
     departure:'Partida', arrival:'Chegada', nothingDay:'Sem atividades neste dia',
-    lblOrigin:'Origem', lblLayover:'Escala', lblDestination:'Destino', nextDep:'Próxima partida',
+    flight:'voo', cardsWillAdd:'serão adicionados ao cronograma nas datas:', lblOrigin:'Origem', lblLayover:'Escala', lblDestination:'Destino', nextDep:'Próxima partida',
     layoverLabel:'Tempo de escala', interpreting:'Lendo a passagem…', interpretedRoute:'Roteiro interpretado',
     addStages:'Adicionar etapas ao cronograma', editManual:'Preencher manualmente', stagesAdded:'Etapas adicionadas ao cronograma',
     couldNotRead:'Não consegui interpretar o PDF automaticamente. Você pode preencher manualmente.',
@@ -400,7 +400,7 @@ const I18N = {
     origin:'Departure location', destination:'Arrival location', departDT:'Departure (date & time)',
     arriveDT:'Arrival (date & time)', createBlocks:'Add to schedule', ticketRead:'Ticket read: departure and arrival added',
     departure:'Departure', arrival:'Arrival', nothingDay:'No activities this day',
-    lblOrigin:'Origin', lblLayover:'Layover', lblDestination:'Destination', nextDep:'Next departure',
+    flight:'flight', cardsWillAdd:'will be added to the schedule on:', lblOrigin:'Origin', lblLayover:'Layover', lblDestination:'Destination', nextDep:'Next departure',
     layoverLabel:'Layover time', interpreting:'Reading the ticket…', interpretedRoute:'Interpreted itinerary',
     addStages:'Add stages to schedule', editManual:'Fill in manually', stagesAdded:'Stages added to schedule',
     couldNotRead:'Could not interpret the PDF automatically. You can fill it in manually.',
@@ -715,7 +715,7 @@ function TripScreen({lang,trip,update,onBack,toast,openDrawer,openNotif,notifCou
     <div className="pad">
       {tab==='schedule'&&<ScheduleTab t={t} trip={trip} update={update} toast={toast}/>}
       {tab==='map'&&<MapTab t={t} trip={trip}/>}
-      {tab==='docs'&&<DocsTab t={t} trip={trip} update={update} toast={toast}/>}
+      {tab==='docs'&&<DocsTab t={t} trip={trip} update={update} toast={toast} goTab={setTab}/>}
       {tab==='gallery'&&<GalleryTab t={t} trip={trip} update={update} toast={toast}/>}
       {tab==='suggestions'&&<SuggestTab t={t} trip={trip} update={update} toast={toast}/>}
       {tab==='members'&&<MembersTab t={t} trip={trip} update={update} toast={toast}/>}
@@ -878,7 +878,11 @@ function ScheduleTab({t,trip,update,toast}){
   const dayActs = trip.activities.filter(a=>a.date===curDay).sort((a,b)=>a.start.localeCompare(b.start));
   const hasConflict=(a)=>dayActs.some(b=>b.id!==a.id && b.start<a.end && a.start<b.end);
   const conflictExists = dayActs.some(a=>hasConflict(a));
-  const allDays=(()=>{const out=[];let d=new Date(trip.startDate);const e=new Date(trip.endDate);
+  const allDays=(()=>{
+    const dates=trip.activities.map(a=>a.date).filter(Boolean);
+    const lo=[trip.startDate,...dates].sort()[0];
+    const hi=[trip.endDate,...dates].sort().slice(-1)[0];
+    const out=[];let d=new Date(lo+'T00:00:00');const e=new Date(hi+'T00:00:00');
     while(d<=e){out.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1);}return out;})();
   const idx=allDays.indexOf(curDay);
   const move=dir=>{const ni=Math.min(Math.max(idx+dir,0),allDays.length-1);setCurDay(allDays[ni]);};
@@ -1049,7 +1053,7 @@ function MapTab({t,trip}){
 }
 
 /* --- Docs (anexo real do dispositivo + remoção; inteligência sob controle do usuário) --- */
-function DocsTab({t,trip,update,toast}){
+function DocsTab({t,trip,update,toast,goTab}){
   const cats=[['tickets',t.tickets,'🎫',['Avião','Trem','Ônibus']],
     ['stays',t.stays,'🏨',['Airbnb','Hotel','Booking']],
     ['events',t.events,'🎭',['Esporte','Festa','Teatro','Culinária']],
@@ -1058,6 +1062,7 @@ function DocsTab({t,trip,update,toast}){
   const [sub,setSub]=useState('Avião');
   const [readId,setReadId]=useState(null);   // doc sendo "lido" (passagem)
   const [busy,setBusy]=useState(false);
+  const [confirmDoc,setConfirmDoc]=useState(null); // doc aguardando confirmação p/ cronograma
   const fileRef=useRef(null);
   const cur=cats.find(c=>c[0]===cat);
   const catDocs=trip.docs.filter(d=>d.cat===cat && d.sub===sub);
@@ -1091,19 +1096,31 @@ function DocsTab({t,trip,update,toast}){
     update({...trip,activities:[...trip.activities,act]});
     toast(t.recAdded);
   };
-  // ROTEIRO INTERPRETADO -> um bloco de voo por trecho (origem→destino), com escala visível pelo intervalo
-  const addStages=(d)=>{
-    const legs=d.itin.legs;
-    const blocks=legs.map(lg=>({id:uid(),docId:d.id,date:lg.depDate,start:lg.depTime,
-      end:(lg.depDate===lg.arrDate?lg.arrTime:'23:59'), title:'✈️ '+lg.from.iata+' → '+lg.to.iata+' · '+lg.flight,
-      type:'typeTransport', loc:lg.from.city+' → '+lg.to.city,
-      desc:t.departure+' '+lg.from.airport+' '+lg.depTime+' '+brDateT(lg.depDate)+' · '+t.arrival+' '+lg.to.airport+' '+lg.arrTime+' '+brDateT(lg.arrDate)+(lg.duration?(' · '+lg.duration.replace(':','h')):''),
-      source:'doc', joined:['me']}));
+  // ROTEIRO INTERPRETADO -> cria um card de PARTIDA e um de CHEGADA por trecho, em CADA data correta
+  const buildStageBlocks=(d)=>{
+    const legs=d.itin.legs; const blocks=[];
+    legs.forEach((lg,i)=>{
+      const isLay = i>0; // chegada deste trecho num aeroporto de escala
+      blocks.push({id:uid(),docId:d.id,date:lg.depDate,start:lg.depTime,end:addMin(lg.depTime,40),
+        title:'✈️ '+t.departure+' — '+lg.from.city+' ('+lg.from.iata+')', type:'typeTransport', loc:lg.from.airport,
+        desc:t.departure+' '+lg.from.airport+' · '+t.flight+' '+lg.flight+' → '+lg.to.city+(lg.duration?(' · '+lg.duration.replace(':','h')):''),
+        source:'doc', joined:['me']});
+      const isFinal = i===legs.length-1;
+      blocks.push({id:uid(),docId:d.id,date:lg.arrDate,start:lg.arrTime,end:addMin(lg.arrTime,30),
+        title:(isFinal?'🛬 ':'🛬 ')+t.arrival+' — '+lg.to.city+' ('+lg.to.iata+')', type:'typeTransport', loc:lg.to.airport,
+        desc:t.arrival+' '+lg.to.airport+' · '+t.flight+' '+lg.flight+(isFinal?'':' · '+t.lblLayover), source:'doc', joined:['me']});
+    });
     const first=legs[0], last=legs[legs.length-1];
     const seg={fromCity:first.from.city,toCity:last.to.city,depDate:first.depDate,depTime:first.depTime,arrDate:last.arrDate,arrTime:last.arrTime};
+    const dates=[...new Set(blocks.map(b=>b.date))].sort();
+    return {blocks,seg,dates};
+  };
+  const applyStages=(d)=>{
+    const {blocks,seg}=buildStageBlocks(d);
     update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,seg}:x),
       activities:[...trip.activities.filter(a=>a.docId!==d.id), ...blocks]});
-    setReadId(null); toast(t.stagesAdded);
+    setConfirmDoc(null); setReadId(null); toast(t.stagesAdded);
+    if(goTab) goTab('schedule'); // encaminha o usuário ao cronograma
   };
   // LEITURA MANUAL: bloco de PARTIDA e de CHEGADA + trecho (seg)
   const saveTicket=(d,seg)=>{
@@ -1144,7 +1161,7 @@ function DocsTab({t,trip,update,toast}){
           <b style={{fontFamily:'Sora',fontSize:14}}>🤖 {t.interpretedRoute}</b>
           <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{readingDoc.file}</div>
           {readingDoc.itin.stages.map((st,i)=><ItinStageCard key={i} st={st} lbl={lbl}/>)}
-          <button className="btn btn-primary" style={{marginTop:6}} onClick={()=>addStages(readingDoc)}>📅 {t.addStages}</button>
+          <button className="btn btn-primary" style={{marginTop:6}} onClick={()=>setConfirmDoc(readingDoc)}>📅 {t.addStages}</button>
           <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>update({...trip,docs:trip.docs.map(x=>x.id===readingDoc.id?{...x,itin:undefined}:x)})}>✏️ {t.editManual}</button>
         </div>
       : <TicketReadForm t={t} trip={trip} doc={readingDoc}
@@ -1167,8 +1184,16 @@ function DocsTab({t,trip,update,toast}){
               {d.cat==='stays'&&<button className="joinbtn" onClick={()=>toSchedule(d)}>📅 {t.addToSched}</button>}
             </div>
           </span>
-          <button className="blkbtn del" onClick={()=>removeDoc(d.id)}>✕</button>✕</button>
+          <button className="blkbtn del" onClick={()=>removeDoc(d.id)}>✕</button>
         </div>))}
+
+    {confirmDoc&&confirmDoc.itin&&(()=>{ const {dates,blocks}=buildStageBlocks(confirmDoc);
+      const fmt=ds=>{const p=ds.split('-');return p[2]+'/'+p[1];};
+      return <ConfirmModal icon="📅" title={t.addStages+'?'}
+        msg={blocks.length+' '+(blocks.length===1?'card':'cards')+' · '+t.cardsWillAdd+' '+dates.map(fmt).join(', ')+'.'}
+        confirmLabel={'📅 '+t.addStages} cancelLabel={t.cancel}
+        onConfirm={()=>applyStages(confirmDoc)} onCancel={()=>setConfirmDoc(null)}/>;
+    })()}
   </div>);
 }
 
