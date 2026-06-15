@@ -122,7 +122,15 @@
   .tslot{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
   .tslot .tm{font-size:12px;color:var(--muted);width:48px;flex-shrink:0;font-weight:600}
   .actblk{background:#fff;border:1px solid var(--line);border-left:4px solid var(--lagoon);
-    border-radius:10px;padding:10px 12px;flex:1;margin-bottom:6px}
+    border-radius:10px;padding:10px 12px;flex:1;margin-bottom:6px;position:relative}
+  .blkbtns{position:absolute;top:8px;right:8px;display:flex;gap:6px}
+  .blkbtn{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:13px;background:#f1ede4;color:var(--ink)}
+  .blkbtn.del{background:#ffece9;color:var(--danger)}
+  .blkbtn:active{opacity:.7}
+  .typetag{display:inline-block;font-size:10px;font-weight:700;color:var(--lagoon);background:#e7f7f4;
+    padding:2px 7px;border-radius:6px;margin-bottom:4px}
+  .actblk .adesc{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.4}
   .actblk.conflict{border-left-color:var(--amber);background:#fffaf3}
   .actblk b{font-size:14px}
   .actblk .meta{font-size:12px;color:var(--muted);margin-top:2px}
@@ -208,8 +216,8 @@
     background:rgba(20,33,61,.45);z-index:50;animation:fade .2s}
   .drawer{position:absolute;top:0;left:0;bottom:0;width:78%;max-width:320px;background:var(--sand);
     box-shadow:8px 0 30px rgba(0,0,0,.2);animation:slideL .25s ease;display:flex;flex-direction:column}
-  .notifpanel{position:absolute;top:0;left:0;bottom:0;width:86%;max-width:340px;background:var(--sand);
-    animation:slideL .25s ease;display:flex;flex-direction:column}
+  .notifpanel{position:absolute;top:0;right:0;left:auto;bottom:0;width:86%;max-width:340px;background:var(--sand);
+    box-shadow:-8px 0 30px rgba(0,0,0,.2);animation:slideR .25s ease;display:flex;flex-direction:column}
   .drawer .dh{background:var(--deep);color:#fff;padding:22px 18px}
   .drawer .dh .ava{width:54px;height:54px;font-size:20px;margin-bottom:10px}
   .navitem{display:flex;align-items:center;gap:13px;padding:15px 18px;font-size:15px;font-weight:500;color:var(--ink)}
@@ -298,6 +306,13 @@ const I18N = {
     finalize:'Finalizar viagem', finalized:'Viagem finalizada', activityTitle:'Nome da atividade',
     time:'Horário', save:'Salvar', desc:'Descrição', amount:'Valor', paidBy:'Pago por', expAdded:'Despesa adicionada',
     appsHint:'Abrir apps parceiros',
+    date:'Data', editProfile:'Editar perfil', profileSaved:'Perfil atualizado!', changePhoto:'Toque para alterar a foto',
+    eventType:'Tipo do evento', descOpt:'Descrição (opcional)', editActivity:'Editar atividade',
+    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc',
+    docAttached:'Documento anexado!', docRemoved:'Documento removido', addToSched:'Adicionar ao cronograma',
+    noDocs:'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
+    typeTransport:'Transporte', typeStay:'Hospedagem', typeFood:'Refeição', typeTour:'Passeio',
+    typeEvent:'Evento', typeOther:'Outro',
   },
   'en-US':{
     welcome:'Everything about your trip, in one place.',
@@ -331,6 +346,13 @@ const I18N = {
     finalize:'Finalize trip', finalized:'Trip finalized', activityTitle:'Activity name',
     time:'Time', save:'Save', desc:'Description', amount:'Amount', paidBy:'Paid by', expAdded:'Expense added',
     appsHint:'Open partner apps',
+    date:'Date', editProfile:'Edit profile', profileSaved:'Profile updated!', changePhoto:'Tap to change photo',
+    eventType:'Event type', descOpt:'Description (optional)', editActivity:'Edit activity',
+    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc',
+    docAttached:'Document attached!', docRemoved:'Document removed', addToSched:'Add to schedule',
+    noDocs:'No documents here. Tap "Attach doc" to add from your device.',
+    typeTransport:'Transport', typeStay:'Stay', typeFood:'Meal', typeTour:'Tour',
+    typeEvent:'Event', typeOther:'Other',
   }
 };
 const LANGS = [
@@ -417,9 +439,22 @@ function LanguageScreen({onPick}){
   </div>);
 }
 
+function PhotoPicker({photo,onPick,hint}){
+  const ref=useRef(null);
+  const handle=e=>{const file=e.target.files&&e.target.files[0]; if(!file)return;
+    const r=new FileReader(); r.onload=()=>onPick(r.result); r.readAsDataURL(file);};
+  return(<div style={{textAlign:'center',marginBottom:18}}>
+    <button type="button" className="photoadd" style={photo?{backgroundImage:'url('+photo+')',backgroundSize:'cover',backgroundPosition:'center',border:'2px solid var(--lagoon)'}:{}}
+      onClick={()=>ref.current&&ref.current.click()}>{photo?'':'📷'}</button>
+    <div className="sub" style={{fontSize:12,marginTop:-10}}>{hint}</div>
+    {/* accept image/* deixa o dispositivo oferecer Câmera, Galeria ou Arquivos (PNG, JPEG...) */}
+    <input ref={ref} type="file" accept="image/*" style={{display:'none'}} onChange={handle}/>
+  </div>);
+}
+
 function ProfileScreen({lang,onDone}){
   const t=dict(lang);
-  const [f,setF]=useState({firstName:'',lastName:'',birth:'',cpf:'',email:'',country:'🇧🇷 +55',phone:''});
+  const [f,setF]=useState({firstName:'',lastName:'',birth:'',cpf:'',email:'',country:'🇧🇷 +55',phone:'',photo:''});
   const [touched,setTouched]=useState(false);
   const set=(k,v)=>setF({...f,[k]:v});
   const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
@@ -430,7 +465,7 @@ function ProfileScreen({lang,onDone}){
     <div className="appbar"><div className="ttl">{t.createProfile}</div></div>
     <div className="pad">
       <p className="sub" style={{marginBottom:18}}>{t.profileSub}</p>
-      <div className="photoadd">📷</div>
+      <PhotoPicker photo={f.photo} onPick={v=>set('photo',v)} hint={t.changePhoto}/>
       <div className="field"><label>{t.firstName} <span className="req">*</span></label>
         <input className={"inp"+(touched&&!f.firstName?' err':'')} value={f.firstName} onChange={e=>set('firstName',e.target.value)}/></div>
       <div className="field"><label>{t.lastName} <span className="req">*</span></label>
@@ -449,6 +484,44 @@ function ProfileScreen({lang,onDone}){
           <input className={"inp"+(touched&&!f.phone?' err':'')} placeholder="11 99999-9999" value={f.phone} onChange={e=>set('phone',e.target.value)}/>
         </div></div>
       <button className="btn btn-primary" style={{marginTop:8}} onClick={submit}>{t.confirm}</button>
+    </div>
+  </div>);
+}
+
+function ProfileEditScreen({lang,user,onSave,onBack}){
+  const t=dict(lang);
+  const [f,setF]=useState({...user});
+  const [touched,setTouched]=useState(false);
+  const set=(k,v)=>setF({...f,[k]:v});
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+  const valid=f.firstName&&f.lastName&&f.birth&&emailOk&&f.phone;
+  const submit=()=>{ setTouched(true); if(!valid)return; onSave(f); };
+  return(<div className="screen">
+    <div className="appbar"><button className="iconbtn" onClick={onBack}>←</button>
+      <div className="ttl">{t.editProfile}</div><div style={{width:38}}/></div>
+    <div className="pad">
+      <PhotoPicker photo={f.photo} onPick={v=>set('photo',v)} hint={t.changePhoto}/>
+      <div className="field"><label>{t.firstName} <span className="req">*</span></label>
+        <input className={"inp"+(touched&&!f.firstName?' err':'')} value={f.firstName} onChange={e=>set('firstName',e.target.value)}/></div>
+      <div className="field"><label>{t.lastName} <span className="req">*</span></label>
+        <input className={"inp"+(touched&&!f.lastName?' err':'')} value={f.lastName} onChange={e=>set('lastName',e.target.value)}/></div>
+      <div className="field"><label>{t.birth} <span className="req">*</span></label>
+        <input type="date" className={"inp"+(touched&&!f.birth?' err':'')} value={f.birth} onChange={e=>set('birth',e.target.value)}/></div>
+      <div className="field"><label>{t.cpf}</label>
+        <input className="inp" placeholder="000.000.000-00" value={f.cpf||''} onChange={e=>set('cpf',e.target.value)}/></div>
+      <div className="field"><label>{t.email} <span className="req">*</span></label>
+        <input className={"inp"+(touched&&!emailOk?' err':'')} value={f.email} onChange={e=>set('email',e.target.value)}/>
+        {touched&&!emailOk&&<div className="errmsg">{t.invalidEmail}</div>}</div>
+      <div className="field"><label>{t.phone} <span className="req">*</span></label>
+        <div className="row">
+          <select className="inp" style={{maxWidth:120}} value={f.country} onChange={e=>set('country',e.target.value)}>
+            {COUNTRIES.map(c=><option key={c}>{c}</option>)}</select>
+          <input className={"inp"+(touched&&!f.phone?' err':'')} value={f.phone} onChange={e=>set('phone',e.target.value)}/>
+        </div></div>
+      <div className="card" style={{textAlign:'center'}}>
+        <div className="sub" style={{fontSize:12}}>{t.yourCode}</div>
+        <div className="mono" style={{fontSize:20,fontWeight:600}}>{f.code}</div></div>
+      <button className="btn btn-primary" style={{marginTop:4}} onClick={submit}>{t.save}</button>
     </div>
   </div>);
 }
@@ -600,26 +673,58 @@ function TripScreen({lang,trip,update,onBack,toast,openDrawer,openNotif,notifCou
 }
 
 /* --- Schedule --- */
+const EVENT_TYPES=['typeTransport','typeStay','typeFood','typeTour','typeEvent','typeOther'];
+const TYPE_COLOR={typeTransport:'#2DB5A3',typeStay:'#FF6B5C',typeFood:'#F4A259',typeTour:'#5B8DEF',typeEvent:'#9B7BE0',typeOther:'#6B7A90'};
+
+function ActivityForm({t,init,onSave,onCancel}){
+  const [a,setA]=useState({...init,type:init.type||'typeTour',desc:init.desc||''});
+  const set=(k,v)=>setA({...a,[k]:v});
+  return(<div className="card">
+    <div className="field"><label>{t.activityTitle}</label>
+      <input className="inp" value={a.title} onChange={e=>set('title',e.target.value)}/></div>
+    <div className="field"><label>{t.eventType}</label>
+      <select className="inp" value={a.type} onChange={e=>set('type',e.target.value)}>
+        {EVENT_TYPES.map(k=><option key={k} value={k}>{t[k]}</option>)}</select></div>
+    <div className="field"><label>📅 {t.date||'Data'}</label>
+      <input type="date" className="inp" value={a.date} onChange={e=>set('date',e.target.value)}/></div>
+    <div className="row">
+      <div className="field" style={{flex:1}}><label>{t.start}</label>
+        <input type="time" className="inp" value={a.start} onChange={e=>set('start',e.target.value)}/></div>
+      <div className="field" style={{flex:1}}><label>{t.end}</label>
+        <input type="time" className="inp" value={a.end} onChange={e=>set('end',e.target.value)}/></div>
+    </div>
+    <div className="field"><label>📍</label>
+      <input className="inp" value={a.loc} onChange={e=>set('loc',e.target.value)}/></div>
+    <div className="field"><label>{t.descOpt}</label>
+      <textarea className="inp" rows="3" style={{resize:'vertical'}} value={a.desc||''} onChange={e=>set('desc',e.target.value)}/></div>
+    <div className="row">
+      <button className="btn btn-ghost" onClick={onCancel}>{t.cancel}</button>
+      <button className="btn btn-primary" disabled={!a.title} onClick={()=>onSave(a)}>{t.save}</button>
+    </div>
+  </div>);
+}
+
 function ScheduleTab({t,trip,update,toast}){
   const [view,setView]=useState('day');
   const days = [...new Set(trip.activities.map(a=>a.date))].sort();
   const [curDay,setCurDay]=useState(days[0]||trip.startDate);
   const [adding,setAdding]=useState(false);
-  const [na,setNa]=useState({title:'',start:'09:00',end:'10:00',loc:''});
+  const [editId,setEditId]=useState(null);
+  const [delId,setDelId]=useState(null);
   const dayActs = trip.activities.filter(a=>a.date===curDay).sort((a,b)=>a.start.localeCompare(b.start));
-  // conflict detection: overlapping time on same day
   const hasConflict=(a)=>dayActs.some(b=>b.id!==a.id && b.start<a.end && a.start<b.end);
   const conflictExists = dayActs.some(a=>hasConflict(a));
   const allDays=(()=>{const out=[];let d=new Date(trip.startDate);const e=new Date(trip.endDate);
     while(d<=e){out.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1);}return out;})();
   const idx=allDays.indexOf(curDay);
   const move=dir=>{const ni=Math.min(Math.max(idx+dir,0),allDays.length-1);setCurDay(allDays[ni]);};
-  const addAct=()=>{ if(!na.title)return;
-    const act={id:uid(),date:curDay,start:na.start,end:na.end,title:na.title,loc:na.loc,source:'manual',joined:['me']};
-    update({...trip,activities:[...trip.activities,act]}); setAdding(false); setNa({title:'',start:'09:00',end:'10:00',loc:''}); toast(t.addActivity+' ✓');
-  };
+  const saveNew=(a)=>{ update({...trip,activities:[...trip.activities,{...a,id:uid(),source:'manual',joined:['me']}]});
+    setAdding(false); toast(t.addActivity+' ✓'); };
+  const saveEdit=(a)=>{ update({...trip,activities:trip.activities.map(x=>x.id===a.id?a:x)}); setEditId(null); toast(t.profileSaved); };
+  const doDelete=(id)=>{ update({...trip,activities:trip.activities.filter(x=>x.id!==id)}); setDelId(null); toast(t.activityDeleted); };
   const toggleJoin=(id)=>{ update({...trip,activities:trip.activities.map(a=>a.id===id?
     {...a,joined:a.joined.includes('me')?a.joined.filter(x=>x!=='me'):[...a.joined,'me']}:a)}); };
+  const editing = editId?trip.activities.find(a=>a.id===editId):null;
   return(<div>
     <div className="calhead">
       <div className="segbtns">
@@ -637,29 +742,36 @@ function ScheduleTab({t,trip,update,toast}){
       <div style={{fontWeight:700,fontFamily:'Sora',margin:'4px 0 12px'}}>📅 {curDay}</div>
       {conflictExists&&<div className="alert"><span className="ai">⚠️</span>
         <div><b>{t.conflict}</b><p>Há atividades sobrepostas. Escolha em qual ingressar.</p></div></div>}
-      {dayActs.length===0&&<div className="empty"><div className="ei">🗓️</div>Nada planejado neste dia.</div>}
-      {dayActs.map(a=>{const cf=hasConflict(a);return(
-        <div className="tslot" key={a.id}>
+      {dayActs.length===0&&!adding&&<div className="empty"><div className="ei">🗓️</div>Nada planejado neste dia.</div>}
+      {dayActs.map(a=>{const cf=hasConflict(a);const tc=TYPE_COLOR[a.type]||'#2DB5A3';return(
+        editId===a.id
+        ? <ActivityForm key={a.id} t={t} init={a} onSave={saveEdit} onCancel={()=>setEditId(null)}/>
+        : <div className="tslot" key={a.id}>
           <div className="tm">{a.start}</div>
           <div style={{flex:1}}>
-            <div className={"actblk"+(cf?' conflict':'')}>
-              <b>{a.title}</b>
+            <div className={"actblk"+(cf?' conflict':'')} style={{borderLeftColor:cf?'var(--amber)':tc}}>
+              <div className="blkbtns">
+                <button className="blkbtn" title={t.editActivity} onClick={()=>{setAdding(false);setEditId(a.id);}}>✎</button>
+                <button className="blkbtn del" title={t.deleteActivity} onClick={()=>setDelId(a.id)}>✕</button>
+              </div>
+              {a.type&&<span className="typetag" style={{color:tc,background:tc+'1A'}}>{t[a.type]}</span>}
+              <b style={{display:'block',paddingRight:60}}>{a.title}</b>
               <div className="meta">🕐 {a.start}–{a.end} {a.loc&&'· 📍 '+a.loc} {a.source==='doc'&&'· 🤖 auto'}</div>
+              {a.desc&&<div className="adesc">{a.desc}</div>}
               {cf&&<button className={"joinbtn"+(a.joined.includes('me')?' joined':'')} onClick={()=>toggleJoin(a.id)}>
                 {a.joined.includes('me')?'✓ '+t.joined:t.join}</button>}
             </div>
           </div>
         </div>);})}
       {adding
-        ? <div className="card">
-            <div className="field"><label>{t.activityTitle}</label><input className="inp" value={na.title} onChange={e=>setNa({...na,title:e.target.value})}/></div>
-            <div className="row"><div className="field" style={{flex:1}}><label>{t.start}</label><input type="time" className="inp" value={na.start} onChange={e=>setNa({...na,start:e.target.value})}/></div>
-              <div className="field" style={{flex:1}}><label>{t.end}</label><input type="time" className="inp" value={na.end} onChange={e=>setNa({...na,end:e.target.value})}/></div></div>
-            <div className="field"><label>📍</label><input className="inp" value={na.loc} onChange={e=>setNa({...na,loc:e.target.value})}/></div>
-            <button className="btn btn-primary" onClick={addAct}>{t.save}</button>
-          </div>
-        : <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>setAdding(true)}>+ {t.addActivity}</button>}
+        ? <ActivityForm t={t} init={{title:'',type:'typeTour',date:curDay,start:'09:00',end:'10:00',loc:'',desc:''}}
+            onSave={saveNew} onCancel={()=>setAdding(false)}/>
+        : <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>{setEditId(null);setAdding(true);}}>+ {t.addActivity}</button>}
     </>}
+
+    {delId&&<ConfirmModal icon="🗑️" title={t.deleteActivity} msg=""
+      confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger
+      onConfirm={()=>doDelete(delId)} onCancel={()=>setDelId(null)}/>}
   </div>);
 }
 
@@ -717,7 +829,7 @@ function MapTab({t,trip}){
   </div>);
 }
 
-/* --- Docs (com inteligência: anexo alimenta o cronograma) --- */
+/* --- Docs (anexo real do dispositivo + remoção; inteligência sob controle do usuário) --- */
 function DocsTab({t,trip,update,toast}){
   const cats=[['tickets',t.tickets,'🎫',['Avião','Trem','Ônibus']],
     ['stays',t.stays,'🏨',['Airbnb','Hotel','Booking']],
@@ -725,28 +837,36 @@ function DocsTab({t,trip,update,toast}){
     ['extras',t.extras,'📎',['Diversos']]];
   const [cat,setCat]=useState('tickets');
   const [sub,setSub]=useState('Avião');
-  const [conflict,setConflict]=useState(null);
+  const fileRef=useRef(null);
   const cur=cats.find(c=>c[0]===cat);
-  const catDocs=trip.docs.filter(d=>d.cat===cat);
+  const catDocs=trip.docs.filter(d=>d.cat===cat && d.sub===sub);
+  const icon=cat==='tickets'?'🎫':cat==='stays'?'🏨':cat==='events'?'🎭':'📎';
+  const typeForCat={tickets:'typeTransport',stays:'typeStay',events:'typeEvent',extras:'typeOther'};
 
-  // Simula a "inteligência": lê o anexo e cria/atualiza atividade no cronograma
-  const attachFlight=()=>{
-    const date=trip.startDate;
-    const newAct={id:uid(),date,start:'10:00',end:'13:30',title:'Voo TAP TP1234 · GRU→LIS',loc:'Lisboa',source:'doc',joined:['me']};
-    // detecta conflito com bloco manual existente no mesmo dia/horário
-    const clash=trip.activities.find(a=>a.date===date && a.start<newAct.end && newAct.start<a.end);
-    const doc={id:uid(),cat:'tickets',sub:'Avião',name:'Passagem GRU→LIS',file:'tap_tp1234.pdf',offline:true,parsed:{from:'GRU',to:'LIS',date}};
-    update({...trip,docs:[...trip.docs,doc],activities:[...trip.activities,newAct]});
-    if(clash){ setConflict({date,clash:clash.title}); }
-    else toast(t.docIntel);
+  // Anexo real: abre os arquivos do dispositivo (PDF, imagem, qualquer tipo)
+  const onFile=e=>{
+    const file=e.target.files&&e.target.files[0]; if(!file)return;
+    const finish=(dataUrl)=>{
+      const doc={id:uid(),cat,sub,name:file.name.replace(/\.[^.]+$/,''),file:file.name,
+        mime:file.type||'arquivo',size:file.size,dataUrl:dataUrl||null,offline:!!dataUrl};
+      update({...trip,docs:[...trip.docs,doc]});
+      toast(t.docAttached);
+    };
+    // guarda o conteúdo para visualização offline quando o arquivo é pequeno (<2MB)
+    if(file.size<2*1024*1024){ const r=new FileReader(); r.onload=()=>finish(r.result); r.readAsDataURL(file); }
+    else finish(null);
+    e.target.value='';
   };
-  const attachStay=()=>{
-    const date=trip.destinations[1]?.date||trip.startDate;
-    const newAct={id:uid(),date,start:'15:00',end:'16:00',title:'Check-in Airbnb Barcelona',loc:'Barcelona',source:'doc',joined:['me']};
-    const doc={id:uid(),cat:'stays',sub:'Airbnb',name:'Reserva Airbnb Barcelona',file:'airbnb_bcn.pdf',offline:true,parsed:{city:'Barcelona',date}};
-    update({...trip,docs:[...trip.docs,doc],activities:[...trip.activities,newAct]});
-    toast(t.docIntel);
+  const removeDoc=(id)=>{ update({...trip,docs:trip.docs.filter(d=>d.id!==id)}); toast(t.docRemoved); };
+  // inteligência manual: usuário decide criar o bloco no cronograma a partir do doc
+  const toSchedule=(d)=>{
+    const act={id:uid(),date:trip.startDate,start:'10:00',end:'12:00',title:d.name,
+      type:typeForCat[d.cat]||'typeOther',loc:'',desc:'Criado a partir do documento: '+d.file,source:'doc',joined:['me']};
+    update({...trip,activities:[...trip.activities,act]});
+    toast(t.recAdded);
   };
+  const human=b=> b? (b<1024?b+' B':b<1048576?(b/1024).toFixed(0)+' KB':(b/1048576).toFixed(1)+' MB') : '';
+
   return(<div>
     <div className="subtabs">
       {cats.map(c=><button key={c[0]} className={"subtab"+(cat===c[0]?' on':'')} onClick={()=>{setCat(c[0]);setSub(c[3][0]);}}>{c[2]} {c[1]}</button>)}
@@ -756,25 +876,25 @@ function DocsTab({t,trip,update,toast}){
       <button className="subtab">+</button>
     </div>
 
-    <div className="alert" style={{background:'#eef5ff',borderColor:'#b9d4ff'}}>
-      <span className="ai">🤖</span><div><b>Inteligência Trippin</b>
-        <p>Anexe um documento e o cronograma é preenchido automaticamente (datas, deslocamento, estadia).</p></div></div>
-
-    {cat==='tickets'&&<button className="btn btn-dark" style={{marginBottom:12}} onClick={attachFlight}>📎 {t.attachExample}</button>}
-    {cat==='stays'&&<button className="btn btn-dark" style={{marginBottom:12}} onClick={attachStay}>📎 {t.attachStay}</button>}
+    {/* input real de arquivos do dispositivo: aceita qualquer tipo (PDF, PNG, JPEG, ...) */}
+    <input ref={fileRef} type="file" accept="*/*" style={{display:'none'}} onChange={onFile}/>
+    <button className="btn btn-dark" style={{marginBottom:14}} onClick={()=>fileRef.current&&fileRef.current.click()}>📎 {t.attachDoc}</button>
 
     {catDocs.length===0
-      ? <div className="empty"><div className="ei">📄</div>Nenhum documento aqui ainda.</div>
+      ? <div className="empty"><div className="ei">📄</div>{t.noDocs}</div>
       : catDocs.map(d=>(<div className="docitem" key={d.id}>
-          <span className="di">{cat==='tickets'?'🎫':cat==='stays'?'🏨':cat==='events'?'🎭':'📎'}</span>
-          <span className="dt"><b>{d.name}</b><span>{d.file}</span></span>
-          {d.offline&&<span className="offline">⬇ {t.offlineAvail}</span>}
+          <span className="di">{icon}</span>
+          <span className="dt">
+            <b>{d.name}</b>
+            <span>{d.file}{d.size?' · '+human(d.size):''}</span>
+            <div style={{marginTop:6,display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+              {d.offline&&<span className="offline">⬇ {t.offlineAvail}</span>}
+              {d.dataUrl&&<a className="joinbtn" href={d.dataUrl} download={d.file} style={{textDecoration:'none'}}>⬇ Download</a>}
+              {(d.cat==='tickets'||d.cat==='stays')&&<button className="joinbtn" onClick={()=>toSchedule(d)}>📅 {t.addToSched}</button>}
+            </div>
+          </span>
+          <button className="blkbtn del" onClick={()=>removeDoc(d.id)}>✕</button>
         </div>))}
-
-    {conflict&&<ConfirmModal icon="⚠️" title={t.conflictTitle}
-      msg={t.conflictMsg+' ('+conflict.clash+')'}
-      confirmLabel={t.adjust} cancelLabel={t.cancel}
-      onConfirm={()=>{setConflict(null);toast(t.docIntel);}} onCancel={()=>setConflict(null)}/>}
   </div>);
 }
 
@@ -870,14 +990,14 @@ function Drawer({t,user,onClose,onNav,onLogout}){
   return(<div className="overlay" onClick={onClose}>
     <div className="drawer" onClick={e=>e.stopPropagation()}>
       <div className="dh">
-        <div className="ava">{user.firstName?user.firstName[0]:'U'}</div>
+        <div className="ava" style={user.photo?{backgroundImage:'url('+user.photo+')',backgroundSize:'cover',backgroundPosition:'center'}:{}}>{user.photo?'':(user.firstName?user.firstName[0]:'U')}</div>
         <div style={{fontFamily:'Sora',fontWeight:700,fontSize:18}}>{user.firstName} {user.lastName}</div>
         <div style={{fontSize:12,opacity:.8}}>{t.yourCode}: <span className="mono">{user.code}</span></div>
       </div>
       <button className="navitem" onClick={()=>onNav('home')}><span className="ni">🏠</span>{t.home}</button>
       <button className="navitem" onClick={()=>onNav('new')}><span className="ni">✈️</span>{t.newTrip}</button>
       <button className="navitem" onClick={()=>onNav('join')}><span className="ni">🔑</span>{t.joinTrip}</button>
-      <button className="navitem"><span className="ni">👤</span>{t.profile}</button>
+      <button className="navitem" onClick={()=>onNav('profile')}><span className="ni">👤</span>{t.profile}</button>
       <button className="navitem"><span className="ni">🧩</span>{t.apps}</button>
       <button className="navitem"><span className="ni">⚙️</span>{t.settings}</button>
       <div style={{flex:1}}/>
@@ -952,11 +1072,18 @@ function App(){
       onCreate={nt=>{ setTrips([...(trips||[]),nt]); toast(t.tripCreated);
         setTimeout(()=>{setActiveTrip(nt.id);setScreen('trip');},700); }}/>}
     {screen==='join'&&<JoinScreen lang={lang} onBack={goHome} toast={toast}/>}
+    {screen==='profile-edit'&&user&&<ProfileEditScreen lang={lang} user={user}
+      onSave={u=>{setUser(u);setScreen('home');toast(t.profileSaved);}} onBack={goHome}/>}
     {screen==='trip'&&curTrip&&<TripScreen lang={lang} trip={curTrip} update={updateTrip}
       onBack={goHome} toast={toast} openDrawer={()=>setDrawer(true)} openNotif={()=>setNotifOpen(true)} notifCount={notifCount}/>}
 
     {drawer&&<Drawer t={t} user={user||{}} onClose={()=>setDrawer(false)}
-      onNav={s=>{setDrawer(false); s==='home'?goHome():setScreen(s==='new'?'new':'join');}} onLogout={logout}/>}
+      onNav={s=>{ setDrawer(false);
+        if(s==='home')goHome();
+        else if(s==='new')setScreen('new');
+        else if(s==='join')setScreen('join');
+        else if(s==='profile')setScreen('profile-edit');
+      }} onLogout={logout}/>}
     {notifOpen&&<NotifPanel t={t} notifs={notifs} onClose={()=>setNotifOpen(false)}
       onAct={id=>{setNotifs(notifs.map(n=>n.id===id?{...n,read:true}:n));toast('✓');}}/>}
 
