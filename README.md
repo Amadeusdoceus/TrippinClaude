@@ -1,0 +1,92 @@
+<div align="center">
+
+# ✈️ Trippin — V1
+
+**Tudo da sua viagem, num lugar só.**
+
+Protótipo funcional do aplicativo de viagens *Trippin*, construído a partir da Visão de Negócio pelo time de agentes do projeto **Tripping - Claude**.
+
+</div>
+
+---
+
+## 🚀 Como rodar
+
+O app V1 é uma aplicação React autocontida que **roda offline em qualquer navegador** — sem build, sem instalação.
+
+```bash
+# Opção 1 — abrir direto
+abra app/index.html no seu navegador
+
+# Opção 2 — servir localmente (recomendado)
+cd app
+python3 -m http.server 8000
+# acesse http://localhost:8000
+```
+
+> Os dados ficam salvos no seu navegador (offline-first). Para recomeçar do zero, use **Sair** no menu lateral.
+
+---
+
+## 🧭 O que dá para fazer no V1
+
+- **Onboarding** — escolher idioma (10 opções) e criar perfil (gera código de 6 dígitos)
+- **Home** — viagens ativas, criar nova, participar por código, viagens anteriores
+- **Criar viagem** — nome, datas, múltiplos destinos com busca (≥3 letras), código de 12 dígitos copiável
+- **Cronograma** — calendário mês/semana/dia, adicionar atividades, conflitos visíveis, ingressar em atividade
+- **Docs com inteligência** ⭐ — anexe uma passagem/reserva e o **cronograma é preenchido automaticamente**, com alerta de conflito
+- **Mapa, Galeria, Sugestões, Integrantes** — rota da viagem, fotos por cidade, recomendações, convite por e-mail e despesas
+- **Notificações** e **menu lateral** acionáveis
+
+---
+
+## 📂 Estrutura
+
+```
+tripping-claude-v1/
+├── app/
+│   └── index.html          # ← o aplicativo V1 (abra este arquivo)
+├── docs/
+│   ├── 01-VN-revisada.md    # VN-Reviewer
+│   ├── 02-UXUI-spec.md      # UX/UI Specialist
+│   ├── 03-backlog.md        # Task-Creator
+│   ├── 04-qa-report.md      # QA
+│   ├── 05-vv-report.md      # V-V tester
+│   └── 06-rollout-plan.md   # Rollout team
+├── README.md
+├── LICENSE
+└── .gitignore
+```
+
+Cada documento em `docs/` foi produzido por um dos agentes do fluxo, na ordem:
+**VN-Reviewer → UX/UI Specialist → Task-Creator → Backend/Frontend Dev (app) → QA → V&V → Rollout.**
+
+---
+
+## 🗺️ Roadmap (próximas versões)
+
+- **v1.1** — avaliação de atividades, aprovação de pedidos de ingresso por código, acessibilidade completa.
+- **v2** — backend real (API + banco + logs por funcionalidade), sincronização multiusuário, OCR/LLM real na leitura de documentos, mapa com percurso em tempo real (cores quentes/frias), Recomendações Trippin baseadas na base de usuários, tradução dos 10 idiomas.
+- **Produção mobile** — port para React Native (Android/iOS), conforme requisito da VN.
+
+---
+
+## 📤 Como subir este projeto para o GitHub
+
+Este repositório já está com Git inicializado e um commit inicial. Para publicá-lo:
+
+```bash
+# 1. Crie um repositório vazio no GitHub chamado "Tripping---Claude-V1" (sem README)
+# 2. No terminal, dentro desta pasta:
+git remote add origin https://github.com/SEU_USUARIO/Tripping---Claude-V1.git
+git branch -M main
+git push -u origin main
+```
+
+> Não foi possível criar o repositório remoto automaticamente (requer suas credenciais do GitHub). Os comandos acima fazem isso em segundos.
+
+---
+
+<div align="center">
+<sub>Projeto <b>Tripping - Claude</b> · V1 gerado a partir de <code>VN_-_Trippin_V1_-_Amadeu_14_06_26.docx</code></sub>
+</div>

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#1A2B4A" />
+<title>Trippin — V1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root{
+    --ink:#14213D; --deep:#1A2B4A; --coral:#FF6B5C; --coral-d:#E85746;
+    --lagoon:#2DB5A3; --sand:#F7F5F0; --amber:#F4A259; --danger:#D9534F;
+    --line:#E4E0D6; --muted:#6B7A90; --card:#FFFFFF; --shadow:0 6px 24px rgba(20,33,61,.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:#E9E5DC;color:var(--ink);
+    display:flex;justify-content:center;min-height:100vh}
+  #root{width:100%;max-width:430px;background:var(--sand);min-height:100vh;
+    box-shadow:0 0 60px rgba(0,0,0,.12);position:relative;overflow:hidden}
+  h1,h2,h3,h4,.display{font-family:'Sora',sans-serif;margin:0}
+  .mono{font-family:'JetBrains Mono',monospace}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  input,select{font-family:inherit;font-size:15px}
+  .screen{padding:0 0 90px;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+  @keyframes slideL{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+  @keyframes slideR{from{transform:translateX(100%)}to{transform:translateX(0)}}
+
+  /* App bar */
+  .appbar{position:sticky;top:0;z-index:30;background:var(--deep);color:#fff;
+    display:flex;align-items:center;gap:12px;padding:14px 16px;}
+  .appbar .ttl{font-family:'Sora';font-weight:700;font-size:17px;flex:1;text-align:center;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .iconbtn{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
+    justify-content:center;color:#fff;background:rgba(255,255,255,.08);font-size:18px;position:relative}
+  .iconbtn:active{background:rgba(255,255,255,.18)}
+  .badge{position:absolute;top:-3px;right:-3px;background:var(--coral);color:#fff;
+    font-size:10px;font-weight:700;min-width:17px;height:17px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;font-family:'Inter'}
+
+  .pad{padding:20px 18px}
+  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);
+    font-weight:700;margin-bottom:6px}
+  .muted{color:var(--muted)}
+  .sub{color:var(--muted);font-size:14px;line-height:1.5}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:14px 18px;border-radius:14px;font-weight:600;font-size:15px;width:100%;
+    transition:transform .08s}
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--coral);color:#fff;box-shadow:0 6px 16px rgba(255,107,92,.32)}
+  .btn-dark{background:var(--ink);color:#fff}
+  .btn-ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  .btn-lagoon{background:var(--lagoon);color:#fff}
+  .btn-danger{background:#fff;color:var(--danger);border:1.5px solid #f0caca}
+  .btn:disabled{opacity:.45;pointer-events:none}
+
+  /* Fields */
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+  .field .req{color:var(--coral)}
+  .inp{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;
+    background:#fff;outline:none;transition:border .15s}
+  .inp:focus{border-color:var(--lagoon)}
+  .inp.err{border-color:var(--danger)}
+  .errmsg{color:var(--danger);font-size:12px;margin-top:5px}
+  .row{display:flex;gap:10px}
+
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+  .tripcard{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding:18px;
+    margin-bottom:14px;box-shadow:var(--shadow);min-height:120px;
+    background:linear-gradient(135deg,#1A2B4A,#23406b)}
+  .tripcard.past{background:linear-gradient(135deg,#4a4a52,#6b6b78)}
+  .stamp{position:absolute;top:14px;right:14px;border:2px solid rgba(255,255,255,.55);
+    color:rgba(255,255,255,.92);font-family:'Sora';font-weight:700;font-size:10px;
+    letter-spacing:.1em;padding:4px 9px;border-radius:6px;transform:rotate(6deg);text-transform:uppercase}
+  .tripcode{font-size:11px;opacity:.7;margin-top:2px;display:flex;align-items:center;gap:6px}
+  .copybtn{background:rgba(255,255,255,.15);border-radius:6px;padding:2px 7px;font-size:10px;color:#fff}
+
+  .opt{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);
+    border-radius:16px;padding:16px;margin-bottom:12px;width:100%;text-align:left}
+  .opt:active{background:#fafafa}
+  .opt .ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;
+    justify-content:center;font-size:20px;flex-shrink:0}
+  .opt .tx{flex:1}
+  .opt .tx b{display:block;font-size:15px}
+  .opt .tx span{font-size:12.5px;color:var(--muted)}
+  .opt .arr{color:var(--muted)}
+
+  /* Tabs (trip) */
+  .tabbar{position:sticky;top:66px;z-index:20;background:var(--sand);display:flex;
+    gap:6px;padding:10px 12px;overflow-x:auto;border-bottom:1px solid var(--line)}
+  .tabbar::-webkit-scrollbar{display:none}
+  .tab{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;color:var(--muted);
+    white-space:nowrap;background:#fff;border:1px solid var(--line)}
+  .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* Calendar */
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .segbtns{display:flex;background:#fff;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .segbtns button{padding:7px 12px;font-size:12.5px;font-weight:600;color:var(--muted)}
+  .segbtns button.on{background:var(--ink);color:#fff}
+  .navarrow{width:34px;height:34px;border-radius:10px;background:#fff;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink)}
+  .daygrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .dcell{aspect-ratio:1;border-radius:10px;background:#fff;border:1px solid var(--line);
+    padding:4px;font-size:11px;position:relative;overflow:hidden}
+  .dcell .dn{font-weight:700;font-size:11px}
+  .dcell.dim{opacity:.35}
+  .dcell .dot{width:6px;height:6px;border-radius:50%;background:var(--lagoon);position:absolute;bottom:5px;left:5px}
+  .dcell .stay{position:absolute;bottom:4px;right:4px;font-size:9px}
+  .tslot{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .tslot .tm{font-size:12px;color:var(--muted);width:48px;flex-shrink:0;font-weight:600}
+  .actblk{background:#fff;border:1px solid var(--line);border-left:4px solid var(--lagoon);
+    border-radius:10px;padding:10px 12px;flex:1;margin-bottom:6px}
+  .actblk.conflict{border-left-color:var(--amber);background:#fffaf3}
+  .actblk b{font-size:14px}
+  .actblk .meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .joinbtn{margin-top:8px;font-size:12px;font-weight:600;color:var(--lagoon);
+    border:1px solid var(--lagoon);border-radius:8px;padding:5px 10px;background:#fff}
+  .joinbtn.joined{background:var(--lagoon);color:#fff}
+
+  .alert{background:#fffaf3;border:1px solid var(--amber);border-radius:14px;padding:14px;
+    margin-bottom:14px;display:flex;gap:12px}
+  .alert .ai{font-size:20px}
+  .alert b{font-size:14px;display:block;margin-bottom:3px}
+  .alert p{margin:0;font-size:13px;color:var(--muted)}
+
+  /* Docs */
+  .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .subtab{padding:8px 13px;border-radius:11px;font-size:13px;font-weight:600;background:#fff;
+    border:1px solid var(--line);color:var(--muted)}
+  .subtab.on{background:var(--lagoon);color:#fff;border-color:var(--lagoon)}
+  .docitem{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
+    border-radius:13px;padding:13px;margin-bottom:10px}
+  .docitem .di{font-size:22px}
+  .docitem .dt{flex:1}
+  .docitem .dt b{font-size:14px;display:block}
+  .docitem .dt span{font-size:12px;color:var(--muted)}
+  .offline{font-size:10px;font-weight:700;color:var(--lagoon);background:#e7f7f4;
+    padding:3px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:3px}
+
+  /* members */
+  .member{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
+    border-radius:13px;padding:12px;margin-bottom:10px}
+  .ava{width:42px;height:42px;border-radius:50%;background:var(--lagoon);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0}
+  .ava.adm{background:var(--coral)}
+  .admtag{font-size:10px;font-weight:700;color:var(--coral);background:#ffecea;padding:2px 7px;border-radius:6px}
+
+  /* gallery */
+  .gal{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .gal .ph{aspect-ratio:1;border-radius:10px;background:linear-gradient(135deg,#cfe6e2,#a9d4cd);
+    display:flex;align-items:center;justify-content:center;font-size:22px;color:#2c6e64}
+
+  /* suggestions */
+  .sug{display:flex;gap:12px;background:#fff;border:1px solid var(--line);border-radius:13px;
+    padding:13px;margin-bottom:10px}
+  .sug .si{width:46px;height:46px;border-radius:11px;background:#f1ede4;display:flex;
+    align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .sug .st{flex:1}
+  .sug .st b{font-size:14px;display:block}
+  .sug .st .rt{font-size:12px;color:var(--amber);font-weight:600}
+  .sug .st span{font-size:12px;color:var(--muted)}
+
+  /* expenses */
+  .expense{display:flex;align-items:center;justify-content:space-between;background:#fff;
+    border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:10px}
+  .expense .el b{font-size:14px;display:block}
+  .expense .el span{font-size:12px;color:var(--muted)}
+  .expense .ev{font-family:'JetBrains Mono';font-weight:600;color:var(--ink)}
+
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);
+    border-radius:20px;padding:6px 12px;font-size:13px;margin:0 6px 6px 0}
+  .chip .x{color:var(--danger);font-weight:700}
+  .dest{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+    border-radius:13px;padding:12px;margin-bottom:10px}
+  .dest .pin{font-size:18px}
+  .dest .dd{flex:1}
+  .dest .dd b{font-size:14px;display:block}
+  .dest .dd span{font-size:12px;color:var(--muted)}
+
+  /* search dropdown */
+  .searchwrap{position:relative}
+  .results{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--line);
+    border-radius:12px;margin-top:4px;box-shadow:var(--shadow);z-index:10;overflow:hidden}
+  .results button{display:block;width:100%;text-align:left;padding:12px 14px;font-size:14px;
+    border-bottom:1px solid var(--line)}
+  .results button:active{background:#f6f6f6}
+
+  /* sticky footer actions (new trip) */
+  .footactions{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;
+    max-width:430px;display:flex;gap:10px;padding:14px 16px;background:linear-gradient(transparent,var(--sand) 30%)}
+
+  /* drawer + notif overlay */
+  .overlay{position:fixed;inset:0;max-width:430px;left:50%;transform:translateX(-50%);
+    background:rgba(20,33,61,.45);z-index:50;animation:fade .2s}
+  .drawer{position:absolute;top:0;left:0;bottom:0;width:78%;max-width:320px;background:var(--sand);
+    box-shadow:8px 0 30px rgba(0,0,0,.2);animation:slideL .25s ease;display:flex;flex-direction:column}
+  .notifpanel{position:absolute;top:0;left:0;bottom:0;width:86%;max-width:340px;background:var(--sand);
+    animation:slideL .25s ease;display:flex;flex-direction:column}
+  .drawer .dh{background:var(--deep);color:#fff;padding:22px 18px}
+  .drawer .dh .ava{width:54px;height:54px;font-size:20px;margin-bottom:10px}
+  .navitem{display:flex;align-items:center;gap:13px;padding:15px 18px;font-size:15px;font-weight:500;color:var(--ink)}
+  .navitem:active{background:#efeae0}
+  .navitem .ni{width:24px;text-align:center;font-size:17px}
+
+  .notifitem{background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:10px}
+  .notifitem.unread{border-left:4px solid var(--coral)}
+  .notifitem p{margin:0 0 8px;font-size:13.5px;line-height:1.45}
+  .notifitem .nt{font-size:11px;color:var(--muted)}
+
+  /* modal */
+  .modal{position:fixed;inset:0;max-width:430px;left:50%;transform:translateX(-50%);
+    background:rgba(20,33,61,.5);z-index:60;display:flex;align-items:center;justify-content:center;
+    padding:24px;animation:fade .2s}
+  .modalbox{background:#fff;border-radius:20px;padding:24px;width:100%;animation:pop .2s ease;text-align:center}
+  .modalbox .mi{font-size:34px;margin-bottom:8px}
+  .modalbox h3{font-size:18px;margin-bottom:8px}
+  .modalbox p{font-size:14px;color:var(--muted);margin:0 0 20px;line-height:1.5}
+
+  /* toast */
+  .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);
+    color:#fff;padding:13px 20px;border-radius:30px;font-size:14px;font-weight:500;z-index:70;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .2s;display:flex;align-items:center;gap:8px}
+
+  /* lang grid */
+  .langgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .langbtn{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px;
+    text-align:left;display:flex;align-items:center;gap:10px}
+  .langbtn.on{border-color:var(--coral);background:#fff5f3}
+  .langbtn .fl{font-size:24px}
+  .langbtn .ln{font-size:13.5px;font-weight:600}
+  .langbtn .lc{font-size:11px;color:var(--muted)}
+
+  .hero{background:linear-gradient(160deg,#1A2B4A,#2c4a72);color:#fff;padding:32px 22px 26px;
+    border-radius:0 0 26px 26px}
+  .hero .logo{font-family:'Sora';font-weight:800;font-size:30px;letter-spacing:-.02em}
+  .hero .logo .dot{color:var(--coral)}
+  .hero p{margin:6px 0 0;opacity:.8;font-size:14px}
+
+  .photoadd{width:84px;height:84px;border-radius:50%;border:2px dashed var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--muted);
+    margin:0 auto 18px;background:#fff}
+  .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+  .empty .ei{font-size:40px;margin-bottom:10px}
+  .sectiontitle{font-family:'Sora';font-weight:700;font-size:16px;margin:18px 0 12px}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#e7f7f4;color:var(--lagoon)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useRef} = React;
+
+/* ---------------- i18n ---------------- */
+const I18N = {
+  'pt-BR':{
+    welcome:'Tudo da sua viagem, num lugar só.',
+    chooseLang:'Escolha o idioma', langSub:'Define o idioma de todo o app.',
+    continue:'Continuar', createProfile:'Criar perfil', profileSub:'Preencha seus dados para começar.',
+    firstName:'Nome', lastName:'Sobrenome', birth:'Data de nascimento', cpf:'CPF (opcional)',
+    email:'E-mail', phone:'Telefone', country:'País', confirm:'Confirmar e entrar', addPhoto:'Foto',
+    invalidEmail:'Informe um e-mail válido', required:'Campo obrigatório',
+    profileCreated:'Perfil criado!', yourCode:'Seu código',
+    home:'Início', activeTrips:'Viagens ativas', newTrip:'Nova viagem', joinTrip:'Participar de uma viagem',
+    pastTrips:'Viagens anteriores', newTripSub:'Crie e organize uma viagem', joinSub:'Entre com o código de uma viagem',
+    pastSub:'Acesse o histórico das suas viagens', noTrips:'Nenhuma viagem ainda. Crie a primeira!',
+    tripName:'Nome do grupo', start:'Início', end:'Fim', addDest:'Adicionar destino',
+    searchDest:'Buscar destino (≥3 letras)', destDate:'Data neste destino', createTrip:'Criar viagem',
+    deleteEdit:'Excluir edição', tripCreated:'Viagem criada!', deleteConfirm:'Excluir esta edição?',
+    deleteConfirmSub:'As informações preenchidas serão perdidas.', deleted:'Edição excluída', cancel:'Cancelar',
+    yesDelete:'Sim, excluir', copyCode:'copiar', copied:'Código copiado!',
+    enterCode:'Código da viagem', askJoin:'Pedir para participar', joinSent:'Pedido enviado! Aguarde aprovação do administrador.',
+    schedule:'Cronograma', map:'Mapa', docs:'Docs', gallery:'Galeria', suggestions:'Sugestões', members:'Integrantes',
+    month:'Mês', week:'Semana', day:'Dia', addActivity:'Adicionar atividade', join:'Ingressar', joined:'Participando',
+    conflict:'Conflito', tickets:'Passagens', stays:'Estadias', events:'Eventos', extras:'Extras',
+    attachExample:'Anexar passagem (exemplo)', attachStay:'Anexar reserva (exemplo)', offlineAvail:'Offline',
+    docIntel:'Documento lido. Cronograma atualizado automaticamente.',
+    conflictTitle:'Conflito no cronograma', conflictMsg:'Há conflito com a passagem anexada para este dia e horário. Deseja ajustar?',
+    adjust:'Ajustar', generalRec:'Recomendações Gerais', trippinRec:'Recomendações Trippin',
+    addToSchedule:'Adicionar ao cronograma', recAdded:'Adicionado ao cronograma!',
+    addMember:'Adicionar integrante', inviteEmail:'E-mail do convidado', sendInvite:'Enviar convite',
+    inviteSent:'Convite enviado para o e-mail!', admin:'Admin', remove:'Remover', addPhotoGal:'Adicionar foto',
+    expenses:'Despesas', addExpense:'Adicionar despesa', notifications:'Notificações', noNotif:'Sem notificações',
+    logout:'Sair', profile:'Perfil', back:'Voltar', settings:'Configurações', apps:'Apps de viagem',
+    finalize:'Finalizar viagem', finalized:'Viagem finalizada', activityTitle:'Nome da atividade',
+    time:'Horário', save:'Salvar', desc:'Descrição', amount:'Valor', paidBy:'Pago por', expAdded:'Despesa adicionada',
+    appsHint:'Abrir apps parceiros',
+  },
+  'en-US':{
+    welcome:'Everything about your trip, in one place.',
+    chooseLang:'Choose your language', langSub:'Sets the language across the app.',
+    continue:'Continue', createProfile:'Create profile', profileSub:'Fill in your details to start.',
+    firstName:'First name', lastName:'Last name', birth:'Date of birth', cpf:'Tax ID (optional)',
+    email:'Email', phone:'Phone', country:'Country', confirm:'Confirm and enter', addPhoto:'Photo',
+    invalidEmail:'Enter a valid email', required:'Required field',
+    profileCreated:'Profile created!', yourCode:'Your code',
+    home:'Home', activeTrips:'Active trips', newTrip:'New trip', joinTrip:'Join a trip',
+    pastTrips:'Past trips', newTripSub:'Create and organize a trip', joinSub:'Enter a trip code',
+    pastSub:'Access your trip history', noTrips:'No trips yet. Create your first!',
+    tripName:'Group name', start:'Start', end:'End', addDest:'Add destination',
+    searchDest:'Search destination (≥3 letters)', destDate:'Date at this destination', createTrip:'Create trip',
+    deleteEdit:'Discard', tripCreated:'Trip created!', deleteConfirm:'Discard this edit?',
+    deleteConfirmSub:'The information entered will be lost.', deleted:'Edit discarded', cancel:'Cancel',
+    yesDelete:'Yes, discard', copyCode:'copy', copied:'Code copied!',
+    enterCode:'Trip code', askJoin:'Ask to join', joinSent:'Request sent! Wait for admin approval.',
+    schedule:'Schedule', map:'Map', docs:'Docs', gallery:'Gallery', suggestions:'Suggestions', members:'Members',
+    month:'Month', week:'Week', day:'Day', addActivity:'Add activity', join:'Join', joined:'Joined',
+    conflict:'Conflict', tickets:'Tickets', stays:'Stays', events:'Events', extras:'Extras',
+    attachExample:'Attach flight (sample)', attachStay:'Attach booking (sample)', offlineAvail:'Offline',
+    docIntel:'Document read. Schedule updated automatically.',
+    conflictTitle:'Schedule conflict', conflictMsg:'There is a conflict with the attached flight for this day and time. Adjust?',
+    adjust:'Adjust', generalRec:'General Recommendations', trippinRec:'Trippin Recommendations',
+    addToSchedule:'Add to schedule', recAdded:'Added to schedule!',
+    addMember:'Add member', inviteEmail:'Guest email', sendInvite:'Send invite',
+    inviteSent:'Invite sent to the email!', admin:'Admin', remove:'Remove', addPhotoGal:'Add photo',
+    expenses:'Expenses', addExpense:'Add expense', notifications:'Notifications', noNotif:'No notifications',
+    logout:'Log out', profile:'Profile', back:'Back', settings:'Settings', apps:'Travel apps',
+    finalize:'Finalize trip', finalized:'Trip finalized', activityTitle:'Activity name',
+    time:'Time', save:'Save', desc:'Description', amount:'Amount', paidBy:'Paid by', expAdded:'Expense added',
+    appsHint:'Open partner apps',
+  }
+};
+const LANGS = [
+  {code:'pt-BR',fl:'🇧🇷',name:'Português',sub:'Brasil'},
+  {code:'pt-PT',fl:'🇵🇹',name:'Português',sub:'Portugal'},
+  {code:'en-US',fl:'🇺🇸',name:'English',sub:'American'},
+  {code:'en-GB',fl:'🇬🇧',name:'English',sub:'British'},
+  {code:'de-DE',fl:'🇩🇪',name:'Deutsch',sub:'Deutschland'},
+  {code:'fr-FR',fl:'🇫🇷',name:'Français',sub:'France'},
+  {code:'es-ES',fl:'🇪🇸',name:'Español',sub:'España'},
+  {code:'es-AR',fl:'🇦🇷',name:'Español',sub:'Argentina'},
+  {code:'it-IT',fl:'🇮🇹',name:'Italiano',sub:'Italia'},
+  {code:'hr-HR',fl:'🇭🇷',name:'Hrvatski',sub:'Hrvatska'},
+];
+// fallback: idiomas não traduzidos usam EN-US (infra i18n pronta, tradução é trabalho contínuo)
+const dict = code => I18N[code] || I18N['en-US'];
+
+const CITIES = ['Lisboa, Portugal','Porto, Portugal','Barcelona, Espanha','Madrid, Espanha',
+  'Paris, França','Roma, Itália','Florença, Itália','Berlim, Alemanha','Munique, Alemanha',
+  'Zagreb, Croácia','Dubrovnik, Croácia','Buenos Aires, Argentina','Londres, Reino Unido',
+  'Amsterdã, Holanda','Praga, Tchéquia','Viena, Áustria','Atenas, Grécia','Veneza, Itália'];
+const COUNTRIES=['🇧🇷 +55','🇵🇹 +351','🇺🇸 +1','🇬🇧 +44','🇩🇪 +49','🇫🇷 +33','🇪🇸 +34','🇮🇹 +39','🇦🇷 +54','🇭🇷 +385'];
+
+/* ---------------- storage ---------------- */
+const KEY='trippin_v1';
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}};
+const save=s=>{try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}};
+const rid=n=>{const c='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';let r='';for(let i=0;i<n;i++)r+=c[Math.floor(Math.random()*c.length)];return r};
+const rnum=n=>{let r='';for(let i=0;i<n;i++)r+=Math.floor(Math.random()*10);return r};
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+/* seed demo trip so the app isn't empty */
+function seedTrip(){
+  return {
+    id:rid(12), name:'Eurotrip 2026', startDate:'2026-07-10', endDate:'2026-07-20',
+    destinations:[{name:'Lisboa, Portugal',date:'2026-07-10'},{name:'Barcelona, Espanha',date:'2026-07-14'},{name:'Roma, Itália',date:'2026-07-17'}],
+    status:'active',
+    members:[{id:'me',name:'Você',email:'voce@trippin.app',isAdmin:true},
+             {id:uid(),name:'Marina Alves',email:'marina@email.com',isAdmin:false},
+             {id:uid(),name:'João Pedro',email:'joao@email.com',isAdmin:false}],
+    activities:[
+      {id:uid(),date:'2026-07-10',start:'14:00',end:'16:00',title:'Check-in Hotel Lisboa',loc:'Lisboa',source:'manual',joined:['me']},
+      {id:uid(),date:'2026-07-11',start:'10:00',end:'12:00',title:'Torre de Belém',loc:'Lisboa',source:'manual',joined:['me']},
+    ],
+    docs:[], gallery:[{city:'Lisboa'},{city:'Lisboa'},{city:'Barcelona'}],
+    expenses:[{id:uid(),desc:'Hotel Lisboa (3 noites)',amount:420,paidBy:'Você',note:'Reserva Booking'}],
+  };
+}
+
+/* ---------------- small UI helpers ---------------- */
+function Toast({msg}){return msg?<div className="toast">✓ {msg}</div>:null;}
+
+function ConfirmModal({icon,title,msg,confirmLabel,cancelLabel,onConfirm,onCancel,danger}){
+  return(<div className="modal" onClick={onCancel}>
+    <div className="modalbox" onClick={e=>e.stopPropagation()}>
+      <div className="mi">{icon}</div><h3>{title}</h3><p>{msg}</p>
+      <button className={"btn "+(danger?"btn-primary":"btn-primary")} style={danger?{background:'var(--danger)',boxShadow:'none'}:{}} onClick={onConfirm}>{confirmLabel}</button>
+      {cancelLabel&&<button className="btn btn-ghost" style={{marginTop:10}} onClick={onCancel}>{cancelLabel}</button>}
+    </div>
+  </div>);
+}
+
+/* ---------------- SCREENS ---------------- */
+
+function LanguageScreen({onPick}){
+  const [sel,setSel]=useState('pt-BR');
+  const t=dict(sel);
+  return(<div className="screen">
+    <div className="hero"><div className="logo">Trippin<span className="dot">.</span></div>
+      <p>{dict('pt-BR').welcome}</p></div>
+    <div className="pad">
+      <div className="eyebrow">Idioma · Language</div>
+      <h2 style={{fontSize:22,marginBottom:6}}>{t.chooseLang}</h2>
+      <p className="sub" style={{marginBottom:18}}>{t.langSub}</p>
+      <div className="langgrid">
+        {LANGS.map(l=>(
+          <button key={l.code} className={"langbtn"+(sel===l.code?' on':'')} onClick={()=>setSel(l.code)}>
+            <span className="fl">{l.fl}</span>
+            <span><span className="ln">{l.name}</span><br/><span className="lc">{l.sub}</span></span>
+          </button>))}
+      </div>
+      <button className="btn btn-primary" style={{marginTop:20}} onClick={()=>onPick(sel)}>{t.continue} →</button>
+    </div>
+  </div>);
+}
+
+function ProfileScreen({lang,onDone}){
+  const t=dict(lang);
+  const [f,setF]=useState({firstName:'',lastName:'',birth:'',cpf:'',email:'',country:'🇧🇷 +55',phone:''});
+  const [touched,setTouched]=useState(false);
+  const set=(k,v)=>setF({...f,[k]:v});
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+  const valid=f.firstName&&f.lastName&&f.birth&&emailOk&&f.phone;
+  const submit=()=>{ setTouched(true); if(!valid)return;
+    onDone({...f, code:rnum(6), createdAt:new Date().toISOString()}); };
+  return(<div className="screen">
+    <div className="appbar"><div className="ttl">{t.createProfile}</div></div>
+    <div className="pad">
+      <p className="sub" style={{marginBottom:18}}>{t.profileSub}</p>
+      <div className="photoadd">📷</div>
+      <div className="field"><label>{t.firstName} <span className="req">*</span></label>
+        <input className={"inp"+(touched&&!f.firstName?' err':'')} value={f.firstName} onChange={e=>set('firstName',e.target.value)}/></div>
+      <div className="field"><label>{t.lastName} <span className="req">*</span></label>
+        <input className={"inp"+(touched&&!f.lastName?' err':'')} value={f.lastName} onChange={e=>set('lastName',e.target.value)}/></div>
+      <div className="field"><label>{t.birth} <span className="req">*</span></label>
+        <input type="date" className={"inp"+(touched&&!f.birth?' err':'')} value={f.birth} onChange={e=>set('birth',e.target.value)}/></div>
+      <div className="field"><label>{t.cpf}</label>
+        <input className="inp" placeholder="000.000.000-00" value={f.cpf} onChange={e=>set('cpf',e.target.value)}/></div>
+      <div className="field"><label>{t.email} <span className="req">*</span></label>
+        <input className={"inp"+(touched&&!emailOk?' err':'')} placeholder="voce@email.com" value={f.email} onChange={e=>set('email',e.target.value)}/>
+        {touched&&!emailOk&&<div className="errmsg">{t.invalidEmail}</div>}</div>
+      <div className="field"><label>{t.phone} <span className="req">*</span></label>
+        <div className="row">
+          <select className="inp" style={{maxWidth:120}} value={f.country} onChange={e=>set('country',e.target.value)}>
+            {COUNTRIES.map(c=><option key={c}>{c}</option>)}</select>
+          <input className={"inp"+(touched&&!f.phone?' err':'')} placeholder="11 99999-9999" value={f.phone} onChange={e=>set('phone',e.target.value)}/>
+        </div></div>
+      <button className="btn btn-primary" style={{marginTop:8}} onClick={submit}>{t.confirm}</button>
+    </div>
+  </div>);
+}
+
+function HomeScreen({lang,user,trips,onNew,onJoin,onOpen}){
+  const t=dict(lang);
+  const active=trips.filter(x=>x.status==='active');
+  const past=trips.filter(x=>x.status==='past');
+  return(<div className="screen">
+    <div className="pad">
+      <div className="eyebrow">{t.home}</div>
+      <h2 style={{fontSize:24}}>Olá, {user.firstName} 👋</h2>
+      <p className="sub" style={{marginTop:4,marginBottom:20}}>{dict(lang).welcome}</p>
+
+      {active.length>0&&<>
+        <div className="sectiontitle">{t.activeTrips}</div>
+        {active.map(tr=><TripCard key={tr.id} t={t} tr={tr} onOpen={()=>onOpen(tr.id)}/>)}
+      </>}
+
+      <button className="opt" onClick={onNew}>
+        <span className="ic" style={{background:'#ffece9'}}>✈️</span>
+        <span className="tx"><b>{t.newTrip}</b><span>{t.newTripSub}</span></span><span className="arr">→</span>
+      </button>
+      <button className="opt" onClick={onJoin}>
+        <span className="ic" style={{background:'#e7f7f4'}}>🔑</span>
+        <span className="tx"><b>{t.joinTrip}</b><span>{t.joinSub}</span></span><span className="arr">→</span>
+      </button>
+
+      <div className="sectiontitle">{t.pastTrips}</div>
+      {past.length===0
+        ? <div className="card sub" style={{textAlign:'center'}}>{t.pastSub}</div>
+        : past.map(tr=><TripCard key={tr.id} t={t} tr={tr} onOpen={()=>onOpen(tr.id)}/>)}
+    </div>
+  </div>);
+}
+
+function TripCard({t,tr,onOpen}){
+  const [cp,setCp]=useState(false);
+  const copy=e=>{e.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText(tr.id);setCp(true);setTimeout(()=>setCp(false),1500);};
+  return(<div className={"tripcard"+(tr.status==='past'?' past':'')} onClick={onOpen}>
+    <div className="stamp">{tr.status==='active'?'Ativa':'Anterior'}</div>
+    <h3 style={{fontSize:20,paddingRight:70}}>{tr.name}</h3>
+    <div className="tripcode mono">{tr.id}
+      <button className="copybtn" onClick={copy}>{cp?t.copied:t.copyCode}</button></div>
+    <p style={{margin:'12px 0 0',fontSize:13,opacity:.85}}>📅 {tr.startDate} → {tr.endDate}</p>
+    <p style={{margin:'4px 0 0',fontSize:13,opacity:.85}}>📍 {tr.destinations.map(d=>d.name.split(',')[0]).join(' · ')}</p>
+    <p style={{margin:'4px 0 0',fontSize:13,opacity:.85}}>👥 {tr.members.length}</p>
+  </div>);
+}
+
+function JoinScreen({lang,onBack,toast}){
+  const t=dict(lang); const [code,setCode]=useState('');
+  return(<div className="screen">
+    <div className="appbar"><button className="iconbtn" onClick={onBack}>←</button><div className="ttl">{t.joinTrip}</div><div style={{width:38}}/></div>
+    <div className="pad">
+      <div className="eyebrow">{t.joinTrip}</div>
+      <p className="sub" style={{marginBottom:18}}>{t.joinSub}</p>
+      <div className="field"><label>{t.enterCode}</label>
+        <input className="inp mono" placeholder="XXXXXXXXXXXX" maxLength={12} value={code} onChange={e=>setCode(e.target.value.toUpperCase())}/></div>
+      <button className="btn btn-primary" disabled={code.length<6} onClick={()=>{toast(t.joinSent);onBack();}}>{t.askJoin}</button>
+    </div>
+  </div>);
+}
+
+/* ---------------- NEW TRIP ---------------- */
+function NewTripScreen({lang,onCreate,onCancel,toast}){
+  const t=dict(lang);
+  const [name,setName]=useState('');
+  const [start,setStart]=useState('');
+  const [end,setEnd]=useState('');
+  const [dests,setDests]=useState([]);
+  const [q,setQ]=useState(''); const [dq,setDq]=useState('');
+  const [askDel,setAskDel]=useState(false);
+  const matches = q.length>=3 ? CITIES.filter(c=>c.toLowerCase().includes(q.toLowerCase())).slice(0,5):[];
+  const addDest=(city)=>{ setDests([...dests,{name:city,date:dq||start}]); setQ(''); setDq(''); };
+  const create=()=>{
+    if(!name||!start||!end) return;
+    const trip={ id:rid(12), name, startDate:start, endDate:end,
+      destinations:dests.length?dests:[{name:'A definir',date:start}], status:'active',
+      members:[{id:'me',name:'Você',email:'voce@trippin.app',isAdmin:true}],
+      activities:[], docs:[], gallery:[], expenses:[] };
+    onCreate(trip);
+  };
+  return(<div className="screen">
+    <div className="appbar"><button className="iconbtn" onClick={onCancel}>←</button><div className="ttl">{t.newTrip}</div><div style={{width:38}}/></div>
+    <div className="pad">
+      <div className="field"><label>{t.tripName} <span className="req">*</span></label>
+        <input className="inp" placeholder="Eurotrip 2026" value={name} onChange={e=>setName(e.target.value)}/></div>
+      <div className="row">
+        <div className="field" style={{flex:1}}><label>{t.start} <span className="req">*</span></label>
+          <input type="date" className="inp" value={start} onChange={e=>setStart(e.target.value)}/></div>
+        <div className="field" style={{flex:1}}><label>{t.end} <span className="req">*</span></label>
+          <input type="date" className="inp" value={end} onChange={e=>setEnd(e.target.value)}/></div>
+      </div>
+
+      <div className="sectiontitle">📍 {t.addDest}</div>
+      {dests.map((d,i)=>(<div className="dest" key={i}>
+        <span className="pin">📍</span>
+        <span className="dd"><b>{d.name}</b><span>{d.date||'—'}</span></span>
+        <button className="copybtn" style={{background:'#ffece9',color:'var(--danger)'}} onClick={()=>setDests(dests.filter((_,j)=>j!==i))}>✕</button>
+      </div>))}
+
+      <div className="field searchwrap"><label>{t.searchDest}</label>
+        <input className="inp" placeholder="Lis..." value={q} onChange={e=>setQ(e.target.value)}/>
+        {matches.length>0&&<div className="results">
+          {matches.map(c=><button key={c} onClick={()=>addDest(c)}>📍 {c}</button>)}
+        </div>}
+      </div>
+      {q.length>=3&&<div className="field"><label>{t.destDate}</label>
+        <input type="date" className="inp" value={dq} onChange={e=>setDq(e.target.value)}/></div>}
+    </div>
+
+    <div className="footactions">
+      <button className="btn btn-danger" onClick={()=>setAskDel(true)}>{t.deleteEdit}</button>
+      <button className="btn btn-primary" disabled={!name||!start||!end} onClick={create}>{t.createTrip}</button>
+    </div>
+
+    {askDel&&<ConfirmModal icon="🗑️" title={t.deleteConfirm} msg={t.deleteConfirmSub}
+      confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger
+      onConfirm={()=>{setAskDel(false);toast(t.deleted);onCancel();}} onCancel={()=>setAskDel(false)}/>}
+  </div>);
+}
+
+/* ---------------- TRIP VIEW ---------------- */
+function TripScreen({lang,trip,update,onBack,toast,openDrawer,openNotif,notifCount}){
+  const t=dict(lang);
+  const [tab,setTab]=useState('schedule');
+  const tabs=[['schedule',t.schedule,'📅'],['map',t.map,'🗺️'],['docs',t.docs,'📄'],
+    ['gallery',t.gallery,'🖼️'],['suggestions',t.suggestions,'✨'],['members',t.members,'👥']];
+  return(<div className="screen">
+    <div className="appbar">
+      <button className="iconbtn" onClick={openDrawer}>☰</button>
+      <div className="ttl">{trip.name}</div>
+      <button className="iconbtn" onClick={openNotif}>🔔{notifCount>0&&<span className="badge">{notifCount}</span>}</button>
+    </div>
+    <div className="tabbar">
+      {tabs.map(([k,label,ic])=>(
+        <button key={k} className={"tab"+(tab===k?' on':'')} onClick={()=>setTab(k)}>{ic} {label}</button>))}
+    </div>
+    <div className="pad">
+      {tab==='schedule'&&<ScheduleTab t={t} trip={trip} update={update} toast={toast}/>}
+      {tab==='map'&&<MapTab t={t} trip={trip}/>}
+      {tab==='docs'&&<DocsTab t={t} trip={trip} update={update} toast={toast}/>}
+      {tab==='gallery'&&<GalleryTab t={t} trip={trip} update={update} toast={toast}/>}
+      {tab==='suggestions'&&<SuggestTab t={t} trip={trip} update={update} toast={toast}/>}
+      {tab==='members'&&<MembersTab t={t} trip={trip} update={update} toast={toast}/>}
+    </div>
+  </div>);
+}
+
+/* --- Schedule --- */
+function ScheduleTab({t,trip,update,toast}){
+  const [view,setView]=useState('day');
+  const days = [...new Set(trip.activities.map(a=>a.date))].sort();
+  const [curDay,setCurDay]=useState(days[0]||trip.startDate);
+  const [adding,setAdding]=useState(false);
+  const [na,setNa]=useState({title:'',start:'09:00',end:'10:00',loc:''});
+  const dayActs = trip.activities.filter(a=>a.date===curDay).sort((a,b)=>a.start.localeCompare(b.start));
+  // conflict detection: overlapping time on same day
+  const hasConflict=(a)=>dayActs.some(b=>b.id!==a.id && b.start<a.end && a.start<b.end);
+  const conflictExists = dayActs.some(a=>hasConflict(a));
+  const allDays=(()=>{const out=[];let d=new Date(trip.startDate);const e=new Date(trip.endDate);
+    while(d<=e){out.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1);}return out;})();
+  const idx=allDays.indexOf(curDay);
+  const move=dir=>{const ni=Math.min(Math.max(idx+dir,0),allDays.length-1);setCurDay(allDays[ni]);};
+  const addAct=()=>{ if(!na.title)return;
+    const act={id:uid(),date:curDay,start:na.start,end:na.end,title:na.title,loc:na.loc,source:'manual',joined:['me']};
+    update({...trip,activities:[...trip.activities,act]}); setAdding(false); setNa({title:'',start:'09:00',end:'10:00',loc:''}); toast(t.addActivity+' ✓');
+  };
+  const toggleJoin=(id)=>{ update({...trip,activities:trip.activities.map(a=>a.id===id?
+    {...a,joined:a.joined.includes('me')?a.joined.filter(x=>x!=='me'):[...a.joined,'me']}:a)}); };
+  return(<div>
+    <div className="calhead">
+      <div className="segbtns">
+        {['month','week','day'].map(v=><button key={v} className={view===v?'on':''} onClick={()=>setView(v)}>{t[v]}</button>)}
+      </div>
+      <div style={{display:'flex',gap:6}}>
+        <button className="navarrow" onClick={()=>move(-1)}>‹</button>
+        <button className="navarrow" onClick={()=>move(1)}>›</button>
+      </div>
+    </div>
+
+    {view==='month'&&<MonthGrid trip={trip} curDay={curDay} setCurDay={d=>{setCurDay(d);setView('day');}}/>}
+    {view==='week'&&<WeekStrip allDays={allDays} curDay={curDay} setCurDay={d=>{setCurDay(d);setView('day');}} trip={trip}/>}
+    {view==='day'&&<>
+      <div style={{fontWeight:700,fontFamily:'Sora',margin:'4px 0 12px'}}>📅 {curDay}</div>
+      {conflictExists&&<div className="alert"><span className="ai">⚠️</span>
+        <div><b>{t.conflict}</b><p>Há atividades sobrepostas. Escolha em qual ingressar.</p></div></div>}
+      {dayActs.length===0&&<div className="empty"><div className="ei">🗓️</div>Nada planejado neste dia.</div>}
+      {dayActs.map(a=>{const cf=hasConflict(a);return(
+        <div className="tslot" key={a.id}>
+          <div className="tm">{a.start}</div>
+          <div style={{flex:1}}>
+            <div className={"actblk"+(cf?' conflict':'')}>
+              <b>{a.title}</b>
+              <div className="meta">🕐 {a.start}–{a.end} {a.loc&&'· 📍 '+a.loc} {a.source==='doc'&&'· 🤖 auto'}</div>
+              {cf&&<button className={"joinbtn"+(a.joined.includes('me')?' joined':'')} onClick={()=>toggleJoin(a.id)}>
+                {a.joined.includes('me')?'✓ '+t.joined:t.join}</button>}
+            </div>
+          </div>
+        </div>);})}
+      {adding
+        ? <div className="card">
+            <div className="field"><label>{t.activityTitle}</label><input className="inp" value={na.title} onChange={e=>setNa({...na,title:e.target.value})}/></div>
+            <div className="row"><div className="field" style={{flex:1}}><label>{t.start}</label><input type="time" className="inp" value={na.start} onChange={e=>setNa({...na,start:e.target.value})}/></div>
+              <div className="field" style={{flex:1}}><label>{t.end}</label><input type="time" className="inp" value={na.end} onChange={e=>setNa({...na,end:e.target.value})}/></div></div>
+            <div className="field"><label>📍</label><input className="inp" value={na.loc} onChange={e=>setNa({...na,loc:e.target.value})}/></div>
+            <button className="btn btn-primary" onClick={addAct}>{t.save}</button>
+          </div>
+        : <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>setAdding(true)}>+ {t.addActivity}</button>}
+    </>}
+  </div>);
+}
+
+function MonthGrid({trip,curDay,setCurDay}){
+  const base=new Date(curDay||trip.startDate);
+  const y=base.getFullYear(),m=base.getMonth();
+  const first=new Date(y,m,1); const start=new Date(first); start.setDate(1-((first.getDay()+6)%7));
+  const cells=[]; for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);cells.push(d);}
+  const has=ds=>trip.activities.some(a=>a.date===ds);
+  const stay=ds=>trip.destinations.some(d=>d.date===ds);
+  return(<>
+    <div style={{textAlign:'center',fontWeight:700,fontFamily:'Sora',marginBottom:8}}>
+      {base.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</div>
+    <div className="daygrid" style={{marginBottom:6}}>{['S','T','Q','Q','S','S','D'].map((d,i)=><div key={i} style={{textAlign:'center',fontSize:10,color:'var(--muted)',fontWeight:700}}>{d}</div>)}</div>
+    <div className="daygrid">
+      {cells.map((d,i)=>{const ds=d.toISOString().slice(0,10);
+        return(<button key={i} className={"dcell"+(d.getMonth()!==m?' dim':'')} onClick={()=>setCurDay(ds)}>
+          <div className="dn">{d.getDate()}</div>
+          {has(ds)&&<span className="dot"/>}{stay(ds)&&<span className="stay">🏨</span>}
+        </button>);})}
+    </div>
+  </>);
+}
+function WeekStrip({allDays,curDay,setCurDay,trip}){
+  const i=allDays.indexOf(curDay); const wk=allDays.slice(Math.max(0,i-3),i+4);
+  return(<div style={{display:'flex',gap:6,overflowX:'auto',marginBottom:10}}>
+    {wk.map(d=>{const has=trip.activities.some(a=>a.date===d);
+      return(<button key={d} className="dcell" style={{minWidth:60,aspectRatio:'auto',padding:'10px 6px',textAlign:'center'}} onClick={()=>setCurDay(d)}>
+        <div className="dn">{d.slice(8)}/{d.slice(5,7)}</div>{has&&<span className="pill" style={{marginTop:4,display:'inline-block'}}>•</span>}
+      </button>);})}
+  </div>);
+}
+
+/* --- Map (resumido v1; percurso em tempo real fica v2 conforme VN revisada) --- */
+function MapTab({t,trip}){
+  return(<div>
+    <div className="card" style={{background:'linear-gradient(135deg,#dceee9,#bfe0d8)',border:'none',minHeight:200,
+      display:'flex',flexDirection:'column',justifyContent:'flex-end',position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',top:14,left:14,right:14,display:'flex',justifyContent:'space-between'}}>
+        {trip.destinations.map((d,i)=><div key={i} style={{textAlign:'center',fontSize:11,color:'#2c6e64',fontWeight:700}}>
+          📍<br/>{d.name.split(',')[0]}</div>)}
+      </div>
+      <svg viewBox="0 0 300 100" style={{width:'100%',height:80}}>
+        <polyline points="30,70 150,40 270,60" fill="none" stroke="#FF6B5C" strokeWidth="3" strokeDasharray="2 6" strokeLinecap="round"/>
+        {[30,150,270].map((x,i)=><circle key={i} cx={x} cy={[70,40,60][i]} r="6" fill="#1A2B4A"/>)}
+      </svg>
+    </div>
+    <div className="sectiontitle">Rota da viagem</div>
+    {trip.destinations.map((d,i)=>(<div className="dest" key={i}>
+      <span className="pin">{i===0?'🟠':i===trip.destinations.length-1?'🔵':'⚪'}</span>
+      <span className="dd"><b>{d.name}</b><span>{d.date}</span></span>
+      <button className="copybtn" style={{background:'#e7f7f4',color:'var(--lagoon)'}}>📷</button>
+    </div>))}
+    <div className="card sub" style={{textAlign:'center',fontSize:12}}>🔵 Trecho a percorrer · 🟠 Início · Percurso em tempo real chega na v2</div>
+  </div>);
+}
+
+/* --- Docs (com inteligência: anexo alimenta o cronograma) --- */
+function DocsTab({t,trip,update,toast}){
+  const cats=[['tickets',t.tickets,'🎫',['Avião','Trem','Ônibus']],
+    ['stays',t.stays,'🏨',['Airbnb','Hotel','Booking']],
+    ['events',t.events,'🎭',['Esporte','Festa','Teatro','Culinária']],
+    ['extras',t.extras,'📎',['Diversos']]];
+  const [cat,setCat]=useState('tickets');
+  const [sub,setSub]=useState('Avião');
+  const [conflict,setConflict]=useState(null);
+  const cur=cats.find(c=>c[0]===cat);
+  const catDocs=trip.docs.filter(d=>d.cat===cat);
+
+  // Simula a "inteligência": lê o anexo e cria/atualiza atividade no cronograma
+  const attachFlight=()=>{
+    const date=trip.startDate;
+    const newAct={id:uid(),date,start:'10:00',end:'13:30',title:'Voo TAP TP1234 · GRU→LIS',loc:'Lisboa',source:'doc',joined:['me']};
+    // detecta conflito com bloco manual existente no mesmo dia/horário
+    const clash=trip.activities.find(a=>a.date===date && a.start<newAct.end && newAct.start<a.end);
+    const doc={id:uid(),cat:'tickets',sub:'Avião',name:'Passagem GRU→LIS',file:'tap_tp1234.pdf',offline:true,parsed:{from:'GRU',to:'LIS',date}};
+    update({...trip,docs:[...trip.docs,doc],activities:[...trip.activities,newAct]});
+    if(clash){ setConflict({date,clash:clash.title}); }
+    else toast(t.docIntel);
+  };
+  const attachStay=()=>{
+    const date=trip.destinations[1]?.date||trip.startDate;
+    const newAct={id:uid(),date,start:'15:00',end:'16:00',title:'Check-in Airbnb Barcelona',loc:'Barcelona',source:'doc',joined:['me']};
+    const doc={id:uid(),cat:'stays',sub:'Airbnb',name:'Reserva Airbnb Barcelona',file:'airbnb_bcn.pdf',offline:true,parsed:{city:'Barcelona',date}};
+    update({...trip,docs:[...trip.docs,doc],activities:[...trip.activities,newAct]});
+    toast(t.docIntel);
+  };
+  return(<div>
+    <div className="subtabs">
+      {cats.map(c=><button key={c[0]} className={"subtab"+(cat===c[0]?' on':'')} onClick={()=>{setCat(c[0]);setSub(c[3][0]);}}>{c[2]} {c[1]}</button>)}
+    </div>
+    <div className="subtabs">
+      {cur[3].map(s=><button key={s} className={"subtab"+(sub===s?' on':'')} style={sub===s?{}:{opacity:.7}} onClick={()=>setSub(s)}>{s}</button>)}
+      <button className="subtab">+</button>
+    </div>
+
+    <div className="alert" style={{background:'#eef5ff',borderColor:'#b9d4ff'}}>
+      <span className="ai">🤖</span><div><b>Inteligência Trippin</b>
+        <p>Anexe um documento e o cronograma é preenchido automaticamente (datas, deslocamento, estadia).</p></div></div>
+
+    {cat==='tickets'&&<button className="btn btn-dark" style={{marginBottom:12}} onClick={attachFlight}>📎 {t.attachExample}</button>}
+    {cat==='stays'&&<button className="btn btn-dark" style={{marginBottom:12}} onClick={attachStay}>📎 {t.attachStay}</button>}
+
+    {catDocs.length===0
+      ? <div className="empty"><div className="ei">📄</div>Nenhum documento aqui ainda.</div>
+      : catDocs.map(d=>(<div className="docitem" key={d.id}>
+          <span className="di">{cat==='tickets'?'🎫':cat==='stays'?'🏨':cat==='events'?'🎭':'📎'}</span>
+          <span className="dt"><b>{d.name}</b><span>{d.file}</span></span>
+          {d.offline&&<span className="offline">⬇ {t.offlineAvail}</span>}
+        </div>))}
+
+    {conflict&&<ConfirmModal icon="⚠️" title={t.conflictTitle}
+      msg={t.conflictMsg+' ('+conflict.clash+')'}
+      confirmLabel={t.adjust} cancelLabel={t.cancel}
+      onConfirm={()=>{setConflict(null);toast(t.docIntel);}} onCancel={()=>setConflict(null)}/>}
+  </div>);
+}
+
+/* --- Gallery --- */
+function GalleryTab({t,trip,update,toast}){
+  const cities=[...new Set(trip.destinations.map(d=>d.name.split(',')[0]))];
+  const add=city=>{update({...trip,gallery:[...trip.gallery,{city}]});toast(t.addPhotoGal+' ✓');};
+  return(<div>
+    {cities.map(city=>{const ph=trip.gallery.filter(g=>g.city===city);
+      return(<div key={city}>
+        <div className="sectiontitle">📍 {city} <span className="pill">{ph.length}</span></div>
+        <div className="gal">
+          {ph.map((_,i)=><div className="ph" key={i}>🏞️</div>)}
+          <button className="ph" style={{background:'#fff',border:'1.5px dashed var(--line)',color:'var(--muted)'}} onClick={()=>add(city)}>＋</button>
+        </div>
+      </div>);})}
+  </div>);
+}
+
+/* --- Suggestions (Recomendações Gerais via mock Maps) --- */
+const RECS={
+  'Geral':[['Bairro Alto','Bar · ⭐ 4.7','Lisboa'],['Sagrada Família','Turismo · ⭐ 4.8','Barcelona'],['Coliseu','Turismo · ⭐ 4.9','Roma']],
+  'Culinária':[['Time Out Market','Gastronomia · ⭐ 4.6','Lisboa'],['La Boqueria','Mercado · ⭐ 4.7','Barcelona'],['Trastevere','Gastronomia · ⭐ 4.8','Roma']],
+  'Eventos':[['Fado ao Vivo','Música · ⭐ 4.7','Lisboa'],['Camp Nou Tour','Esporte · ⭐ 4.8','Barcelona']],
+};
+function SuggestTab({t,trip,update,toast}){
+  const [sub,setSub]=useState('general');
+  const [filter,setFilter]=useState('Geral');
+  const list=RECS[filter]||RECS['Geral'];
+  return(<div>
+    <div className="subtabs">
+      <button className={"subtab"+(sub==='general'?' on':'')} onClick={()=>setSub('general')}>🌍 {t.generalRec}</button>
+      <button className={"subtab"+(sub==='trippin'?' on':'')} onClick={()=>setSub('trippin')}>⭐ {t.trippinRec}</button>
+    </div>
+    <div className="subtabs">
+      {Object.keys(RECS).map(k=><button key={k} className={"subtab"+(filter===k?' on':'')} style={filter===k?{}:{opacity:.7}} onClick={()=>setFilter(k)}>{k}</button>)}
+    </div>
+    {sub==='trippin'&&<div className="alert" style={{background:'#fff5f3',borderColor:'#ffc9c1'}}>
+      <span className="ai">⭐</span><div><b>{t.trippinRec}</b><p>Ranking pela base de usuários Trippin chega na v2.</p></div></div>}
+    {list.map((r,i)=>(<div className="sug" key={i}>
+      <span className="si">📍</span>
+      <span className="st"><b>{r[0]}</b><span className="rt">{r[1]}</span><br/><span>{r[2]}</span></span>
+      <button className="joinbtn" onClick={()=>toast(t.recAdded)}>+ {t.addToSchedule}</button>
+    </div>))}
+  </div>);
+}
+
+/* --- Members --- */
+function MembersTab({t,trip,update,toast}){
+  const [email,setEmail]=useState('');
+  const [exp,setExp]=useState(false);
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const invite=()=>{ if(!emailOk)return; setEmail(''); toast(t.inviteSent); };
+  const remove=id=>update({...trip,members:trip.members.filter(m=>m.id!==id)});
+  const addExpense=(d,a)=>{update({...trip,expenses:[...trip.expenses,{id:uid(),desc:d,amount:a,paidBy:'Você'}]});toast(t.expAdded);};
+  return(<div>
+    {trip.members.map(m=>(<div className="member" key={m.id}>
+      <div className={"ava"+(m.isAdmin?' adm':'')}>{m.name[0]}</div>
+      <div style={{flex:1}}><b style={{fontSize:14}}>{m.name}</b>
+        <div style={{fontSize:12,color:'var(--muted)'}}>{m.email}</div></div>
+      {m.isAdmin&&<span className="admtag">{t.admin}</span>}
+      {!m.isAdmin&&<button className="copybtn" style={{background:'#ffece9',color:'var(--danger)'}} onClick={()=>remove(m.id)}>{t.remove}</button>}
+    </div>))}
+
+    <div className="card">
+      <b style={{fontFamily:'Sora',fontSize:14}}>➕ {t.addMember}</b>
+      <div className="field" style={{marginTop:10}}><label>{t.inviteEmail}</label>
+        <input className={"inp"+(email&&!emailOk?' err':'')} placeholder="amigo@email.com" value={email} onChange={e=>setEmail(e.target.value)}/>
+        {email&&!emailOk&&<div className="errmsg">{t.invalidEmail}</div>}</div>
+      <button className="btn btn-lagoon" disabled={!emailOk} onClick={invite}>📧 {t.sendInvite}</button>
+    </div>
+
+    <div className="sectiontitle">💰 {t.expenses}</div>
+    {trip.expenses.map(e=>(<div className="expense" key={e.id}>
+      <div className="el"><b>{e.desc}</b><span>{t.paidBy}: {e.paidBy}</span></div>
+      <div className="ev">€ {e.amount}</div>
+    </div>))}
+    {exp ? <ExpenseForm t={t} onSave={(d,a)=>{addExpense(d,a);setExp(false);}} onCancel={()=>setExp(false)}/>
+      : <button className="btn btn-ghost" onClick={()=>setExp(true)}>+ {t.addExpense}</button>}
+  </div>);
+}
+function ExpenseForm({t,onSave,onCancel}){
+  const [d,setD]=useState('');const [a,setA]=useState('');
+  return(<div className="card">
+    <div className="field"><label>{t.desc}</label><input className="inp" value={d} onChange={e=>setD(e.target.value)}/></div>
+    <div className="field"><label>{t.amount} (€)</label><input type="number" className="inp" value={a} onChange={e=>setA(e.target.value)}/></div>
+    <button className="btn btn-primary" disabled={!d||!a} onClick={()=>onSave(d,Number(a))}>{t.save}</button>
+  </div>);
+}
+
+/* ---------------- Drawer + Notifications ---------------- */
+function Drawer({t,user,onClose,onNav,onLogout}){
+  return(<div className="overlay" onClick={onClose}>
+    <div className="drawer" onClick={e=>e.stopPropagation()}>
+      <div className="dh">
+        <div className="ava">{user.firstName?user.firstName[0]:'U'}</div>
+        <div style={{fontFamily:'Sora',fontWeight:700,fontSize:18}}>{user.firstName} {user.lastName}</div>
+        <div style={{fontSize:12,opacity:.8}}>{t.yourCode}: <span className="mono">{user.code}</span></div>
+      </div>
+      <button className="navitem" onClick={()=>onNav('home')}><span className="ni">🏠</span>{t.home}</button>
+      <button className="navitem" onClick={()=>onNav('new')}><span className="ni">✈️</span>{t.newTrip}</button>
+      <button className="navitem" onClick={()=>onNav('join')}><span className="ni">🔑</span>{t.joinTrip}</button>
+      <button className="navitem"><span className="ni">👤</span>{t.profile}</button>
+      <button className="navitem"><span className="ni">🧩</span>{t.apps}</button>
+      <button className="navitem"><span className="ni">⚙️</span>{t.settings}</button>
+      <div style={{flex:1}}/>
+      <button className="navitem" style={{color:'var(--danger)'}} onClick={onLogout}><span className="ni">↩</span>{t.logout}</button>
+    </div>
+  </div>);
+}
+function NotifPanel({t,notifs,onClose,onAct}){
+  return(<div className="overlay" onClick={onClose}>
+    <div className="notifpanel" onClick={e=>e.stopPropagation()}>
+      <div className="appbar"><div className="ttl">🔔 {t.notifications}</div><button className="iconbtn" onClick={onClose}>✕</button></div>
+      <div className="pad" style={{flex:1,overflowY:'auto'}}>
+        {notifs.length===0&&<div className="empty"><div className="ei">🔔</div>{t.noNotif}</div>}
+        {notifs.map(n=>(<div key={n.id} className={"notifitem"+(n.read?'':' unread')}>
+          <p>{n.text}</p>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <span className="nt">{n.time}</span>
+            {!n.read&&<button className="joinbtn" onClick={()=>onAct(n.id)}>{n.action||'Ver'}</button>}
+          </div>
+        </div>))}
+      </div>
+    </div>
+  </div>);
+}
+
+/* ---------------- ROOT APP ---------------- */
+function App(){
+  const persisted=load();
+  const [lang,setLang]=useState(persisted.lang||null);
+  const [user,setUser]=useState(persisted.user||null);
+  const [trips,setTrips]=useState(persisted.trips||null);
+  const [screen,setScreen]=useState(persisted.user?'home':'lang');
+  const [activeTrip,setActiveTrip]=useState(null);
+  const [toastMsg,setToastMsg]=useState('');
+  const [drawer,setDrawer]=useState(false);
+  const [notifOpen,setNotifOpen]=useState(false);
+  const [notifs,setNotifs]=useState(persisted.notifs||[
+    {id:'n1',text:'Marina alterou a despesa "Hotel Lisboa" para € 420. Justificativa: ajuste 3 noites.',time:'há 2h',read:false,action:'Revisar'},
+    {id:'n2',text:'João Pedro ingressou na viagem Eurotrip 2026.',time:'ontem',read:false,action:'Ver'},
+  ]);
+
+  // persist
+  useEffect(()=>{ if(lang||user||trips) save({lang,user,trips,notifs}); },[lang,user,trips,notifs]);
+  // seed trips on first profile creation
+  useEffect(()=>{ if(user&&trips===null){ setTrips([seedTrip()]); } },[user]);
+
+  const t=dict(lang||'pt-BR');
+  const toast=m=>{setToastMsg(m);setTimeout(()=>setToastMsg(''),2200);};
+  const notifCount=notifs.filter(n=>!n.read).length;
+
+  const updateTrip=(nt)=>setTrips(trips.map(x=>x.id===nt.id?nt:x));
+  const openTrip=id=>{setActiveTrip(id);setScreen('trip');};
+  const curTrip=trips&&trips.find(x=>x.id===activeTrip);
+
+  // navigation helpers
+  const goHome=()=>{setScreen('home');setDrawer(false);};
+  const logout=()=>{ localStorage.removeItem(KEY); setLang(null);setUser(null);setTrips(null);setScreen('lang');setDrawer(false); };
+
+  return(<>
+    {screen==='lang'&&<LanguageScreen onPick={l=>{setLang(l);setScreen('profile');}}/>}
+    {screen==='profile'&&<ProfileScreen lang={lang} onDone={u=>{setUser(u);setScreen('home');toast(t.profileCreated);}}/>}
+    {screen==='home'&&user&&trips&&<>
+      <div className="appbar">
+        <button className="iconbtn" onClick={()=>setDrawer(true)}>☰</button>
+        <div className="ttl">Trippin</div>
+        <button className="iconbtn" onClick={()=>setNotifOpen(true)}>🔔{notifCount>0&&<span className="badge">{notifCount}</span>}</button>
+      </div>
+      <HomeScreen lang={lang} user={user} trips={trips} onNew={()=>setScreen('new')} onJoin={()=>setScreen('join')} onOpen={openTrip}/>
+    </>}
+    {screen==='new'&&<NewTripScreen lang={lang} toast={toast}
+      onCancel={goHome}
+      onCreate={nt=>{ setTrips([...(trips||[]),nt]); toast(t.tripCreated);
+        setTimeout(()=>{setActiveTrip(nt.id);setScreen('trip');},700); }}/>}
+    {screen==='join'&&<JoinScreen lang={lang} onBack={goHome} toast={toast}/>}
+    {screen==='trip'&&curTrip&&<TripScreen lang={lang} trip={curTrip} update={updateTrip}
+      onBack={goHome} toast={toast} openDrawer={()=>setDrawer(true)} openNotif={()=>setNotifOpen(true)} notifCount={notifCount}/>}
+
+    {drawer&&<Drawer t={t} user={user||{}} onClose={()=>setDrawer(false)}
+      onNav={s=>{setDrawer(false); s==='home'?goHome():setScreen(s==='new'?'new':'join');}} onLogout={logout}/>}
+    {notifOpen&&<NotifPanel t={t} notifs={notifs} onClose={()=>setNotifOpen(false)}
+      onAct={id=>{setNotifs(notifs.map(n=>n.id===id?{...n,read:true}:n));toast('✓');}}/>}
+
+    <Toast msg={toastMsg}/>
+  </>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
