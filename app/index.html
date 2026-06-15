@@ -131,6 +131,24 @@
   .typetag{display:inline-block;font-size:10px;font-weight:700;color:var(--lagoon);background:#e7f7f4;
     padding:2px 7px;border-radius:6px;margin-bottom:4px}
   .actblk .adesc{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.4}
+  /* location marker (small block at top of day / on week & month) */
+  .locmark{display:flex;align-items:center;gap:7px;color:#fff;font-weight:700;font-size:12.5px;
+    padding:7px 12px;border-radius:10px;margin-bottom:12px;box-shadow:0 3px 10px rgba(20,33,61,.12)}
+  .locchip{display:inline-flex;align-items:center;gap:4px;color:#fff;font-weight:700;font-size:10px;
+    padding:2px 8px;border-radius:20px}
+  /* week view: vertical day cards with time column */
+  .wkday{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden}
+  .wkday .wkh{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;
+    background:#faf8f3;border-bottom:1px solid var(--line)}
+  .wkday .wkh .wd{font-family:'Sora';font-weight:700;font-size:14px}
+  .wkday .wkh .wdsub{font-size:11px;color:var(--muted)}
+  .wkday.today .wkh{background:#eef5ff}
+  .wkrow{display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid #f0ece3}
+  .wkrow:last-child{border-bottom:none}
+  .wkrow .wt{font-size:11px;color:var(--muted);font-weight:600;width:42px;flex-shrink:0;padding-top:2px}
+  .wkrow .wblk{flex:1;font-size:13px;border-left:3px solid var(--lagoon);padding-left:8px;line-height:1.3}
+  .wkrow .wblk .wbt{font-size:11px;color:var(--muted)}
+  .wkempty{padding:12px;font-size:12.5px;color:var(--muted);text-align:center}
   .actblk.conflict{border-left-color:var(--amber);background:#fffaf3}
   .actblk b{font-size:14px}
   .actblk .meta{font-size:12px;color:var(--muted);margin-top:2px}
@@ -313,6 +331,10 @@ const I18N = {
     noDocs:'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
     typeTransport:'Transporte', typeStay:'Hospedagem', typeFood:'Refeição', typeTour:'Passeio',
     typeEvent:'Evento', typeOther:'Outro',
+    youAreIn:'Você está em', readTicket:'Confirme os dados lidos da passagem',
+    origin:'Local de partida', destination:'Local de chegada', departDT:'Partida (data e hora)',
+    arriveDT:'Chegada (data e hora)', createBlocks:'Adicionar ao cronograma', ticketRead:'Passagem lida: partida e chegada adicionadas',
+    departure:'Partida', arrival:'Chegada', nothingDay:'Sem atividades neste dia',
   },
   'en-US':{
     welcome:'Everything about your trip, in one place.',
@@ -353,6 +375,10 @@ const I18N = {
     noDocs:'No documents here. Tap "Attach doc" to add from your device.',
     typeTransport:'Transport', typeStay:'Stay', typeFood:'Meal', typeTour:'Tour',
     typeEvent:'Event', typeOther:'Other',
+    youAreIn:'You are in', readTicket:'Confirm the data read from the ticket',
+    origin:'Departure location', destination:'Arrival location', departDT:'Departure (date & time)',
+    arriveDT:'Arrival (date & time)', createBlocks:'Add to schedule', ticketRead:'Ticket read: departure and arrival added',
+    departure:'Departure', arrival:'Arrival', nothingDay:'No activities this day',
   }
 };
 const LANGS = [
@@ -704,6 +730,26 @@ function ActivityForm({t,init,onSave,onCancel}){
   </div>);
 }
 
+/* ---- localização por dia (destinos da viagem + chegadas das passagens anexadas) ---- */
+const CITY_PALETTE=['#2DB5A3','#FF6B5C','#5B8DEF','#9B7BE0','#F4A259','#3FA796','#E0729B'];
+function cityColor(city){ if(!city)return '#6B7A90'; let h=0; for(let i=0;i<city.length;i++)h=(h*31+city.charCodeAt(i))%CITY_PALETTE.length; return CITY_PALETTE[h]; }
+const cityOf=name=> (name||'').split(',')[0].trim();
+const addMin=(hhmm,min)=>{const p=(hhmm||'00:00').split(':').map(Number);let m=p[0]*60+p[1]+min;m=Math.max(0,Math.min(m,1439));
+  return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
+// âncoras ordenadas por data: destinos definidos na criação + chegadas lidas das passagens
+function locationAnchors(trip){
+  const a=[];
+  (trip.destinations||[]).forEach(d=>{ if(d.date&&d.name&&d.name!=='A definir') a.push({date:d.date,city:cityOf(d.name)}); });
+  (trip.docs||[]).forEach(doc=>{ const p=doc.seg; if(p&&p.arrDate&&p.toCity) a.push({date:p.arrDate,city:p.toCity,doc:true}); });
+  return a.sort((x,y)=> x.date===y.date ? ((x.doc?1:0)-(y.doc?1:0)) : x.date.localeCompare(y.date));
+}
+// vale do dia da chegada/destino até o fim OU até o próximo destino
+function locationForDay(trip,day){ const a=locationAnchors(trip).filter(x=>x.date<=day); return a.length?a[a.length-1].city:null; }
+// 7 dias (segunda→domingo) da semana que contém o dia
+function weekDaysOf(dayStr){ const d=new Date(dayStr+'T00:00:00'); const dow=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-dow);
+  const out=[]; for(let i=0;i<7;i++){const x=new Date(mon);x.setDate(mon.getDate()+i);out.push(x.toISOString().slice(0,10));} return out; }
+const DOW=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+
 function ScheduleTab({t,trip,update,toast}){
   const [view,setView]=useState('day');
   const days = [...new Set(trip.activities.map(a=>a.date))].sort();
@@ -737,9 +783,11 @@ function ScheduleTab({t,trip,update,toast}){
     </div>
 
     {view==='month'&&<MonthGrid trip={trip} curDay={curDay} setCurDay={d=>{setCurDay(d);setView('day');}}/>}
-    {view==='week'&&<WeekStrip allDays={allDays} curDay={curDay} setCurDay={d=>{setCurDay(d);setView('day');}} trip={trip}/>}
+    {view==='week'&&<WeekView t={t} trip={trip} curDay={curDay} openDay={d=>{setCurDay(d);setView('day');}}/>}
     {view==='day'&&<>
       <div style={{fontWeight:700,fontFamily:'Sora',margin:'4px 0 12px'}}>📅 {curDay}</div>
+      {(()=>{const loc=locationForDay(trip,curDay);return loc?
+        <div className="locmark" style={{background:cityColor(loc)}}>📍 {t.youAreIn} {loc}</div>:null;})()}
       {conflictExists&&<div className="alert"><span className="ai">⚠️</span>
         <div><b>{t.conflict}</b><p>Há atividades sobrepostas. Escolha em qual ingressar.</p></div></div>}
       {dayActs.length===0&&!adding&&<div className="empty"><div className="ei">🗓️</div>Nada planejado neste dia.</div>}
@@ -776,56 +824,105 @@ function ScheduleTab({t,trip,update,toast}){
 }
 
 function MonthGrid({trip,curDay,setCurDay}){
-  const base=new Date(curDay||trip.startDate);
+  const base=new Date((curDay||trip.startDate)+'T00:00:00');
   const y=base.getFullYear(),m=base.getMonth();
   const first=new Date(y,m,1); const start=new Date(first); start.setDate(1-((first.getDay()+6)%7));
   const cells=[]; for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);cells.push(d);}
   const has=ds=>trip.activities.some(a=>a.date===ds);
-  const stay=ds=>trip.destinations.some(d=>d.date===ds);
   return(<>
     <div style={{textAlign:'center',fontWeight:700,fontFamily:'Sora',marginBottom:8}}>
       {base.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</div>
-    <div className="daygrid" style={{marginBottom:6}}>{['S','T','Q','Q','S','S','D'].map((d,i)=><div key={i} style={{textAlign:'center',fontSize:10,color:'var(--muted)',fontWeight:700}}>{d}</div>)}</div>
+    <div className="daygrid" style={{marginBottom:6}}>{DOW.map((d,i)=><div key={i} style={{textAlign:'center',fontSize:10,color:'var(--muted)',fontWeight:700}}>{d[0]}</div>)}</div>
     <div className="daygrid">
-      {cells.map((d,i)=>{const ds=d.toISOString().slice(0,10);
-        return(<button key={i} className={"dcell"+(d.getMonth()!==m?' dim':'')} onClick={()=>setCurDay(ds)}>
+      {cells.map((d,i)=>{const ds=d.toISOString().slice(0,10);const loc=locationForDay(trip,ds);const col=loc?cityColor(loc):null;
+        return(<button key={i} className={"dcell"+(d.getMonth()!==m?' dim':'')}
+          style={loc&&d.getMonth()===m?{background:col+'14',borderColor:col+'55'}:{}} onClick={()=>setCurDay(ds)}>
           <div className="dn">{d.getDate()}</div>
-          {has(ds)&&<span className="dot"/>}{stay(ds)&&<span className="stay">🏨</span>}
+          {has(ds)&&<span className="dot"/>}
+          {loc&&<span style={{position:'absolute',bottom:3,right:3,left:3,fontSize:8,fontWeight:700,
+            color:col,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{loc}</span>}
         </button>);})}
     </div>
+    <div className="card sub" style={{textAlign:'center',fontSize:11,marginTop:10}}>📍 Dias coloridos = dias de viagem, com o local de cada dia · • = há atividades</div>
   </>);
 }
-function WeekStrip({allDays,curDay,setCurDay,trip}){
-  const i=allDays.indexOf(curDay); const wk=allDays.slice(Math.max(0,i-3),i+4);
-  return(<div style={{display:'flex',gap:6,overflowX:'auto',marginBottom:10}}>
-    {wk.map(d=>{const has=trip.activities.some(a=>a.date===d);
-      return(<button key={d} className="dcell" style={{minWidth:60,aspectRatio:'auto',padding:'10px 6px',textAlign:'center'}} onClick={()=>setCurDay(d)}>
-        <div className="dn">{d.slice(8)}/{d.slice(5,7)}</div>{has&&<span className="pill" style={{marginTop:4,display:'inline-block'}}>•</span>}
-      </button>);})}
+
+function WeekView({t,trip,curDay,openDay}){
+  const week=weekDaysOf(curDay);
+  const today=new Date().toISOString().slice(0,10);
+  const inTrip=ds=>ds>=trip.startDate&&ds<=trip.endDate;
+  return(<div>
+    <div style={{textAlign:'center',fontWeight:700,fontFamily:'Sora',marginBottom:10,fontSize:13}}>
+      {week[0].slice(8)}/{week[0].slice(5,7)} – {week[6].slice(8)}/{week[6].slice(5,7)}</div>
+    {week.map((ds,wi)=>{
+      const acts=trip.activities.filter(a=>a.date===ds).sort((a,b)=>a.start.localeCompare(b.start));
+      const loc=locationForDay(trip,ds);
+      const dd=new Date(ds+'T00:00:00');
+      return(<div key={ds} className={"wkday"+(ds===today?' today':'')} style={inTrip(ds)?{}:{opacity:.5}}>
+        <div className="wkh" onClick={()=>openDay(ds)}>
+          <div><div className="wd">{DOW[wi]} {dd.getDate()}/{String(dd.getMonth()+1).padStart(2,'0')}</div>
+            <div className="wdsub">{acts.length?acts.length+' '+(acts.length===1?'atividade':'atividades'):t.nothingDay}</div></div>
+          {loc&&<span className="locchip" style={{background:cityColor(loc)}}>📍 {loc}</span>}
+        </div>
+        {acts.length===0
+          ? <div className="wkempty">—</div>
+          : acts.map(a=>{const tc=TYPE_COLOR[a.type]||'#2DB5A3';return(
+              <div className="wkrow" key={a.id} onClick={()=>openDay(ds)}>
+                <div className="wt">{a.start}</div>
+                <div className="wblk" style={{borderLeftColor:tc}}>
+                  {a.title}
+                  <div className="wbt">{a.start}–{a.end}{a.loc?' · '+a.loc:''}{a.source==='doc'?' · 🤖':''}</div>
+                </div>
+              </div>);})}
+      </div>);
+    })}
   </div>);
 }
 
-/* --- Map (resumido v1; percurso em tempo real fica v2 conforme VN revisada) --- */
+/* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
 function MapTab({t,trip}){
+  // sequência de pontos: combina destinos e os trechos lidos das passagens, ordenados por data
+  const segs=(trip.docs||[]).filter(d=>d.seg).map(d=>d.seg)
+    .sort((a,b)=>(a.depDate+a.depTime).localeCompare(b.depDate+b.depTime));
+  // constrói lista ordenada de paradas (cidade + data) sem repetir cidade consecutiva
+  const stops=[];
+  const push=(city,date)=>{ if(!city)return; const last=stops[stops.length-1];
+    if(!last||last.city!==city) stops.push({city,date}); };
+  (trip.destinations||[]).filter(d=>d.name&&d.name!=='A definir').forEach(d=>push(cityOf(d.name),d.date));
+  segs.forEach(s=>{ push(s.fromCity,s.depDate); push(s.toCity,s.arrDate); });
+  const pts=stops.length?stops:[{city:'A definir',date:trip.startDate}];
+  const n=pts.length;
+  const xs=i=> n===1?150 : 30+(240*i/(n-1));
+  const ys=i=> 55+(i%2===0?-15:15);
+
   return(<div>
     <div className="card" style={{background:'linear-gradient(135deg,#dceee9,#bfe0d8)',border:'none',minHeight:200,
-      display:'flex',flexDirection:'column',justifyContent:'flex-end',position:'relative',overflow:'hidden'}}>
-      <div style={{position:'absolute',top:14,left:14,right:14,display:'flex',justifyContent:'space-between'}}>
-        {trip.destinations.map((d,i)=><div key={i} style={{textAlign:'center',fontSize:11,color:'#2c6e64',fontWeight:700}}>
-          📍<br/>{d.name.split(',')[0]}</div>)}
-      </div>
-      <svg viewBox="0 0 300 100" style={{width:'100%',height:80}}>
-        <polyline points="30,70 150,40 270,60" fill="none" stroke="#FF6B5C" strokeWidth="3" strokeDasharray="2 6" strokeLinecap="round"/>
-        {[30,150,270].map((x,i)=><circle key={i} cx={x} cy={[70,40,60][i]} r="6" fill="#1A2B4A"/>)}
+      display:'flex',flexDirection:'column',justifyContent:'center',position:'relative',overflow:'hidden'}}>
+      <svg viewBox="0 0 300 120" style={{width:'100%',height:150}}>
+        <polyline points={pts.map((_,i)=>xs(i)+','+ys(i)).join(' ')} fill="none" stroke="#FF6B5C" strokeWidth="2.5" strokeDasharray="2 6" strokeLinecap="round"/>
+        {pts.map((p,i)=>(<g key={i}>
+          <circle cx={xs(i)} cy={ys(i)} r="6" fill={i===0?'#F4A259':i===n-1?'#5B8DEF':'#1A2B4A'}/>
+          <text x={xs(i)} y={ys(i)+(i%2===0?-12:20)} fontSize="9" fontWeight="700" fill="#234" textAnchor="middle">{p.city}</text>
+        </g>))}
       </svg>
     </div>
-    <div className="sectiontitle">Rota da viagem</div>
-    {trip.destinations.map((d,i)=>(<div className="dest" key={i}>
-      <span className="pin">{i===0?'🟠':i===trip.destinations.length-1?'🔵':'⚪'}</span>
-      <span className="dd"><b>{d.name}</b><span>{d.date}</span></span>
-      <button className="copybtn" style={{background:'#e7f7f4',color:'var(--lagoon)'}}>📷</button>
+
+    {segs.length>0&&<>
+      <div className="sectiontitle">✈️ Trechos (das passagens)</div>
+      {segs.map((s,i)=>(<div className="dest" key={i}>
+        <span className="pin">✈️</span>
+        <span className="dd"><b>{s.fromCity} → {s.toCity}</b>
+          <span>{s.depDate} {s.depTime} → {s.arrDate} {s.arrTime}</span></span>
+      </div>))}
+    </>}
+
+    <div className="sectiontitle">📍 Rota da viagem</div>
+    {pts.map((p,i)=>(<div className="dest" key={i}>
+      <span className="pin">{i===0?'🟠':i===n-1?'🔵':'⚪'}</span>
+      <span className="dd"><b>{p.city}</b><span>{p.date||'—'}</span></span>
+      <span className="locchip" style={{background:cityColor(p.city)}}>📍</span>
     </div>))}
-    <div className="card sub" style={{textAlign:'center',fontSize:12}}>🔵 Trecho a percorrer · 🟠 Início · Percurso em tempo real chega na v2</div>
+    <div className="card sub" style={{textAlign:'center',fontSize:12}}>🟠 Início · 🔵 Destino final · Anexe passagens em Docs para enriquecer a rota · Percurso em tempo real chega na v2</div>
   </div>);
 }
 
@@ -837,6 +934,7 @@ function DocsTab({t,trip,update,toast}){
     ['extras',t.extras,'📎',['Diversos']]];
   const [cat,setCat]=useState('tickets');
   const [sub,setSub]=useState('Avião');
+  const [readId,setReadId]=useState(null);   // doc sendo "lido" (passagem)
   const fileRef=useRef(null);
   const cur=cats.find(c=>c[0]===cat);
   const catDocs=trip.docs.filter(d=>d.cat===cat && d.sub===sub);
@@ -851,21 +949,38 @@ function DocsTab({t,trip,update,toast}){
         mime:file.type||'arquivo',size:file.size,dataUrl:dataUrl||null,offline:!!dataUrl};
       update({...trip,docs:[...trip.docs,doc]});
       toast(t.docAttached);
+      if(cat==='tickets') setReadId(doc.id); // passagem: abre a leitura para preencher partida/chegada
     };
-    // guarda o conteúdo para visualização offline quando o arquivo é pequeno (<2MB)
     if(file.size<2*1024*1024){ const r=new FileReader(); r.onload=()=>finish(r.result); r.readAsDataURL(file); }
     else finish(null);
     e.target.value='';
   };
-  const removeDoc=(id)=>{ update({...trip,docs:trip.docs.filter(d=>d.id!==id)}); toast(t.docRemoved); };
-  // inteligência manual: usuário decide criar o bloco no cronograma a partir do doc
+  // remover doc também remove os blocos do cronograma que ele gerou
+  const removeDoc=(id)=>{ update({...trip,docs:trip.docs.filter(d=>d.id!==id),
+    activities:trip.activities.filter(a=>a.docId!==id)}); toast(t.docRemoved); };
+  // estadia/evento: bloco único manual
   const toSchedule=(d)=>{
-    const act={id:uid(),date:trip.startDate,start:'10:00',end:'12:00',title:d.name,
+    const act={id:uid(),docId:d.id,date:trip.startDate,start:'15:00',end:'16:00',title:d.name,
       type:typeForCat[d.cat]||'typeOther',loc:'',desc:'Criado a partir do documento: '+d.file,source:'doc',joined:['me']};
     update({...trip,activities:[...trip.activities,act]});
     toast(t.recAdded);
   };
+  // LEITURA da passagem: cria bloco de PARTIDA e bloco de CHEGADA + registra o trecho (seg)
+  const saveTicket=(d,seg)=>{
+    const dep={id:uid(),docId:d.id,date:seg.depDate,start:seg.depTime,end:addMin(seg.depTime,40),
+      title:'✈️ '+t.departure+' — '+seg.fromCity, type:'typeTransport', loc:seg.fromCity,
+      desc:seg.fromCity+' → '+seg.toCity+' · '+d.file, source:'doc', joined:['me']};
+    const arr={id:uid(),docId:d.id,date:seg.arrDate,start:seg.arrTime,end:addMin(seg.arrTime,30),
+      title:'🛬 '+t.arrival+' — '+seg.toCity, type:'typeTransport', loc:seg.toCity,
+      desc:t.youAreIn+' '+seg.toCity+' · '+d.file, source:'doc', joined:['me']};
+    // remove blocos anteriores deste doc (caso seja releitura) e re-cria
+    update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,seg}:x),
+      activities:[...trip.activities.filter(a=>a.docId!==d.id), dep, arr]});
+    setReadId(null);
+    toast(t.ticketRead);
+  };
   const human=b=> b? (b<1024?b+' B':b<1048576?(b/1024).toFixed(0)+' KB':(b/1048576).toFixed(1)+' MB') : '';
+  const readingDoc = readId?trip.docs.find(d=>d.id===readId):null;
 
   return(<div>
     <div className="subtabs">
@@ -876,9 +991,16 @@ function DocsTab({t,trip,update,toast}){
       <button className="subtab">+</button>
     </div>
 
+    {cat==='tickets'&&<div className="alert" style={{background:'#eef5ff',borderColor:'#b9d4ff'}}>
+      <span className="ai">🤖</span><div><b>Leitura da passagem</b>
+        <p>Ao anexar uma passagem, confirme partida e chegada: o cronograma recebe os dois blocos e o local passa a aparecer nos dias seguintes da viagem.</p></div></div>}
+
     {/* input real de arquivos do dispositivo: aceita qualquer tipo (PDF, PNG, JPEG, ...) */}
     <input ref={fileRef} type="file" accept="*/*" style={{display:'none'}} onChange={onFile}/>
     <button className="btn btn-dark" style={{marginBottom:14}} onClick={()=>fileRef.current&&fileRef.current.click()}>📎 {t.attachDoc}</button>
+
+    {readingDoc&&<TicketReadForm t={t} trip={trip} doc={readingDoc}
+      onSave={seg=>saveTicket(readingDoc,seg)} onCancel={()=>setReadId(null)}/>}
 
     {catDocs.length===0
       ? <div className="empty"><div className="ei">📄</div>{t.noDocs}</div>
@@ -887,14 +1009,47 @@ function DocsTab({t,trip,update,toast}){
           <span className="dt">
             <b>{d.name}</b>
             <span>{d.file}{d.size?' · '+human(d.size):''}</span>
+            {d.seg&&<div className="sub" style={{fontSize:12,marginTop:3}}>✈️ {d.seg.fromCity} → {d.seg.toCity} · {d.seg.depDate} {d.seg.depTime} → {d.seg.arrDate} {d.seg.arrTime}</div>}
             <div style={{marginTop:6,display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
               {d.offline&&<span className="offline">⬇ {t.offlineAvail}</span>}
               {d.dataUrl&&<a className="joinbtn" href={d.dataUrl} download={d.file} style={{textDecoration:'none'}}>⬇ Download</a>}
-              {(d.cat==='tickets'||d.cat==='stays')&&<button className="joinbtn" onClick={()=>toSchedule(d)}>📅 {t.addToSched}</button>}
+              {d.cat==='tickets'&&<button className="joinbtn" onClick={()=>setReadId(d.id)}>🤖 {d.seg?'Reler':'Ler'} passagem</button>}
+              {d.cat==='stays'&&<button className="joinbtn" onClick={()=>toSchedule(d)}>📅 {t.addToSched}</button>}
             </div>
           </span>
           <button className="blkbtn del" onClick={()=>removeDoc(d.id)}>✕</button>
         </div>))}
+  </div>);
+}
+
+function TicketReadForm({t,trip,doc,onSave,onCancel}){
+  const destGuess=(trip.destinations&&trip.destinations[0])?cityOf(trip.destinations[0].name):'';
+  const [s,setS]=useState(doc.seg||{fromCity:'',toCity:destGuess,depDate:trip.startDate,depTime:'10:00',arrDate:trip.startDate,arrTime:'13:30'});
+  const set=(k,v)=>setS({...s,[k]:v});
+  const ok=s.fromCity&&s.toCity&&s.depDate&&s.arrDate;
+  return(<div className="card" style={{borderColor:'#b9d4ff'}}>
+    <b style={{fontFamily:'Sora',fontSize:14}}>🤖 {t.readTicket}</b>
+    <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{doc.file}</div>
+    <div className="field"><label>🛫 {t.origin}</label>
+      <input className="inp" placeholder="São Paulo (GRU)" value={s.fromCity} onChange={e=>set('fromCity',e.target.value)}/></div>
+    <div className="row">
+      <div className="field" style={{flex:1.2}}><label>{t.departDT}</label>
+        <input type="date" className="inp" value={s.depDate} onChange={e=>set('depDate',e.target.value)}/></div>
+      <div className="field" style={{flex:1}}><label>&nbsp;</label>
+        <input type="time" className="inp" value={s.depTime} onChange={e=>set('depTime',e.target.value)}/></div>
+    </div>
+    <div className="field"><label>🛬 {t.destination}</label>
+      <input className="inp" placeholder="Lisboa (LIS)" value={s.toCity} onChange={e=>set('toCity',e.target.value)}/></div>
+    <div className="row">
+      <div className="field" style={{flex:1.2}}><label>{t.arriveDT}</label>
+        <input type="date" className="inp" value={s.arrDate} onChange={e=>set('arrDate',e.target.value)}/></div>
+      <div className="field" style={{flex:1}}><label>&nbsp;</label>
+        <input type="time" className="inp" value={s.arrTime} onChange={e=>set('arrTime',e.target.value)}/></div>
+    </div>
+    <div className="row">
+      <button className="btn btn-ghost" onClick={onCancel}>{t.cancel}</button>
+      <button className="btn btn-primary" disabled={!ok} onClick={()=>onSave({...s,fromCity:s.fromCity.trim(),toCity:s.toCity.trim()})}>📅 {t.createBlocks}</button>
+    </div>
   </div>);
 }
 
