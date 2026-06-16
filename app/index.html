@@ -391,7 +391,7 @@ const I18N = {
     home:'Início', activeTrips:'Viagens ativas', newTrip:'Nova viagem', joinTrip:'Participar de uma viagem',
     pastTrips:'Viagens anteriores', newTripSub:'Crie e organize uma viagem', joinSub:'Entre com o código de uma viagem',
     pastSub:'Acesse o histórico das suas viagens', noTrips:'Nenhuma viagem ainda. Crie a primeira!',
-    tripName:'Nome do grupo', start:'Início', end:'Fim', addDest:'Adicionar destino',
+    tripName:'Nome do grupo', start:'Início', end:'Fim', addDest:'Adicionar destino', includeDest:'Incluir destino', destAdded:'Destino incluído',
     searchDest:'Buscar destino (≥3 letras)', destDate:'Data neste destino', createTrip:'Criar viagem',
     deleteEdit:'Excluir edição', tripCreated:'Viagem criada!', deleteConfirm:'Excluir esta edição?',
     deleteConfirmSub:'As informações preenchidas serão perdidas.', deleted:'Edição excluída', cancel:'Cancelar',
@@ -445,7 +445,7 @@ const I18N = {
     home:'Home', activeTrips:'Active trips', newTrip:'New trip', joinTrip:'Join a trip',
     pastTrips:'Past trips', newTripSub:'Create and organize a trip', joinSub:'Enter a trip code',
     pastSub:'Access your trip history', noTrips:'No trips yet. Create your first!',
-    tripName:'Group name', start:'Start', end:'End', addDest:'Add destination',
+    tripName:'Group name', start:'Start', end:'End', addDest:'Add destination', includeDest:'Add destination', destAdded:'Destination added',
     searchDest:'Search destination (≥3 letters)', destDate:'Date at this destination', createTrip:'Create trip',
     deleteEdit:'Discard', tripCreated:'Trip created!', deleteConfirm:'Discard this edit?',
     deleteConfirmSub:'The information entered will be lost.', deleted:'Edit discarded', cancel:'Cancel',
@@ -731,8 +731,10 @@ function NewTripScreen({lang,onCreate,onCancel,toast}){
   const [dests,setDests]=useState([]);
   const [q,setQ]=useState(''); const [dq,setDq]=useState('');
   const [askDel,setAskDel]=useState(false);
-  const matches = q.length>=3 ? CITIES.filter(c=>c.toLowerCase().includes(q.toLowerCase())).slice(0,5):[];
-  const addDest=(city)=>{ setDests([...dests,{name:city,date:dq||start}]); setQ(''); setDq(''); };
+  const matches = q.length>=3 ? CITIES.filter(c=>c.toLowerCase().includes(q.toLowerCase()) && c.toLowerCase()!==q.trim().toLowerCase()).slice(0,5):[];
+  // inclui o destino digitado (texto livre) + data na lista; permite empilhar vários
+  const includeDest=()=>{ const name=q.trim(); if(!name)return;
+    setDests([...dests,{name, date:dq||start}]); setQ(''); setDq(''); toast(t.destAdded); };
   const create=()=>{
     if(!name||!start||!end) return;
     const trip={ id:rid(12), name, startDate:start, endDate:end,
@@ -761,13 +763,14 @@ function NewTripScreen({lang,onCreate,onCancel,toast}){
       </div>))}
 
       <div className="field searchwrap"><label>{t.searchDest}</label>
-        <input className="inp" placeholder="Lis..." value={q} onChange={e=>setQ(e.target.value)}/>
+        <input className="inp" placeholder="Lisboa, Luxemburgo..." value={q} onChange={e=>setQ(e.target.value)}/>
         {matches.length>0&&<div className="results">
-          {matches.map(c=><button key={c} onClick={()=>addDest(c)}>📍 {c}</button>)}
+          {matches.map(c=><button key={c} onClick={()=>setQ(c)}>📍 {c}</button>)}
         </div>}
       </div>
-      {q.length>=3&&<div className="field"><label>{t.destDate}</label>
-        <input type="date" className="inp" value={dq} onChange={e=>setDq(e.target.value)}/></div>}
+      <div className="field"><label>{t.destDate}</label>
+        <input type="date" className="inp" value={dq} onChange={e=>setDq(e.target.value)}/></div>
+      <button className="btn btn-lagoon" disabled={!q.trim()} onClick={includeDest}>➕ {t.includeDest}</button>
     </div>
 
     <div className="footactions">
