@@ -64,6 +64,16 @@ Cada documento em `docs/` foi produzido por um dos agentes do fluxo, na ordem:
 
 ---
 
+## 🧭 Navegação e configurações
+
+- **Barra inferior**: menu (esquerda), **Início** (centro) e notificações (direita).
+- **Menu**: abre em tela cheia de baixo para cima; o **✕** no topo volta para onde você estava.
+- **Configurações**: receber notificações, tema **claro/escuro**, compartilhar localização.
+- **Apps de viagem**: atalhos para parceiros (integração futura).
+- **Home**: o administrador vê um **✕** no card para excluir a viagem (com confirmação).
+- **Galeria**: seções por local da viagem; o **＋** abre a galeria do dispositivo para adicionar fotos.
+- **Mapa**: mostra todos os lugares por onde você vai passar (origem, escalas e destino do interpretador).
+
 ## 🗺️ Roadmap (próximas versões)
 
 - **v1.1** — avaliação de atividades, aprovação de pedidos de ingresso por código, acessibilidade completa.

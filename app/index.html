@@ -300,6 +300,77 @@
   .empty .ei{font-size:40px;margin-bottom:10px}
   .sectiontitle{font-family:'Sora';font-weight:700;font-size:16px;margin:18px 0 12px}
   .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;background:#e7f7f4;color:var(--lagoon)}
+
+  /* ===== Barra inferior de navegação ===== */
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+  .bottombar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+    background:var(--deep);display:flex;align-items:center;justify-content:space-around;
+    padding:8px 30px 11px;z-index:46;box-shadow:0 -4px 20px rgba(0,0,0,.18)}
+  .bnav{display:flex;flex-direction:column;align-items:center;gap:3px;color:rgba(255,255,255,.72);
+    font-size:10px;font-weight:600;position:relative;background:none;border:none;cursor:pointer}
+  .bnav:active{color:#fff}
+  .bnav .bic{font-size:20px;line-height:1}
+  .bnav .badge{top:-5px;right:8px}
+  .bnav.center{background:var(--coral);color:#fff;width:54px;height:54px;border-radius:50%;justify-content:center;
+    margin-top:-22px;box-shadow:0 6px 16px rgba(255,107,92,.4);border:4px solid var(--sand)}
+  .bnav.center .bic{font-size:23px}
+
+  /* ===== Menu full-screen (de baixo para cima) ===== */
+  .menusheet{position:absolute;inset:0;background:var(--sand);z-index:60;display:flex;flex-direction:column;
+    animation:slideUp .28s ease}
+  .menusheet .mh{background:var(--deep);color:#fff;padding:20px 18px;display:flex;align-items:center;gap:14px}
+  .menusheet .mh .ava{width:50px;height:50px;font-size:19px}
+  .menusheet .closex{margin-left:auto;width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.12);
+    color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .menusheet .mlist{flex:1;overflow-y:auto;padding:8px 0}
+
+  /* ===== Configurações ===== */
+  .setrow{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:14px;margin-bottom:11px}
+  .setrow .si{width:40px;height:40px;border-radius:11px;background:#eef2f7;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+  .setrow .st{flex:1}
+  .setrow .st b{display:block;font-size:14px}
+  .setrow .st span{font-size:12px;color:var(--muted)}
+  .switch{width:46px;height:27px;border-radius:20px;background:#d4cfc4;position:relative;transition:background .2s;flex-shrink:0;cursor:pointer}
+  .switch.on{background:var(--lagoon)}
+  .switch:after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .switch.on:after{left:22px}
+  .segpick{display:flex;background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .segpick button{flex:1;padding:9px;font-size:13px;font-weight:600;color:var(--muted);background:none;border:none}
+  .segpick button.on{background:var(--ink);color:#fff}
+
+  /* ===== Apps de viagem ===== */
+  .appcard{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:13px;margin-bottom:11px}
+  .appcard .ai{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:23px;flex-shrink:0}
+  .appcard .at{flex:1}
+  .appcard .at b{display:block;font-size:14px}
+  .appcard .at span{font-size:12px;color:var(--muted)}
+  .appcard .soon{font-size:10px;font-weight:700;color:var(--muted);background:#eee9df;padding:3px 8px;border-radius:6px}
+
+  /* ===== Galeria com imagens reais ===== */
+  .galimg{aspect-ratio:1;border-radius:10px;background-size:cover;background-position:center;background-color:#cfe6e2}
+  .galadd{aspect-ratio:1;border-radius:10px;background:var(--card);border:1.5px dashed var(--line);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}
+
+  /* ===== "x" para excluir viagem (admin) ===== */
+  .cardx{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:9px;background:rgba(0,0,0,.28);
+    color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;z-index:2;border:none}
+  .cardx:active{background:rgba(0,0,0,.5)}
+
+  /* ===== Tema escuro ===== */
+  #root[data-theme="dark"]{--sand:#151d2c;--ink:#E6ECF5;--card:#1c2740;--line:#2c3a55;--muted:#9aabc4;--deep:#0f1726}
+  #root[data-theme="dark"]{background:#151d2c}
+  #root[data-theme="dark"] .card,#root[data-theme="dark"] .inp,#root[data-theme="dark"] .opt,
+  #root[data-theme="dark"] .tab,#root[data-theme="dark"] .subtab,#root[data-theme="dark"] .docitem,
+  #root[data-theme="dark"] .member,#root[data-theme="dark"] .dest,#root[data-theme="dark"] .wkday,
+  #root[data-theme="dark"] .stagebox,#root[data-theme="dark"] .dcell,#root[data-theme="dark"] .expense,
+  #root[data-theme="dark"] .sug,#root[data-theme="dark"] .modalbox,#root[data-theme="dark"] .navarrow,
+  #root[data-theme="dark"] .segbtns,#root[data-theme="dark"] .wkday .wkh,#root[data-theme="dark"] .langbtn,
+  #root[data-theme="dark"] .notifitem,#root[data-theme="dark"] .setrow .si,#root[data-theme="dark"] .appcard .ai{
+    background:var(--card);color:var(--ink);border-color:var(--line)}
+  #root[data-theme="dark"] select.inp option{background:#1c2740}
+  #root[data-theme="dark"] .btn-ghost{background:var(--card);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -338,6 +409,12 @@ const I18N = {
     inviteSent:'Convite enviado para o e-mail!', admin:'Admin', remove:'Remover', addPhotoGal:'Adicionar foto',
     expenses:'Despesas', addExpense:'Adicionar despesa', notifications:'Notificações', noNotif:'Sem notificações',
     logout:'Sair', profile:'Perfil', back:'Voltar', settings:'Configurações', apps:'Apps de viagem',
+    menu:'Menu', homeTab:'Início', appsSub:'Atalhos para apps parceiros (em breve integrados)',
+    settingsSub:'Preferências do aplicativo', receiveNotif:'Receber notificações',
+    receiveNotifSub:'Avisos sobre a viagem e o grupo', appearance:'Aparência', themeLight:'Claro', themeDark:'Escuro',
+    shareLoc:'Compartilhar localização', shareLocSub:'Permite mostrar onde você está no grupo',
+    comingSoon:'Em breve', deleteTripQ:'Excluir esta viagem?', deleteTripSub:'O grupo e todos os dados desta viagem serão removidos. Esta ação não pode ser desfeita.',
+    tripDeleted:'Viagem excluída', onlyAdmin:'Apenas o administrador pode excluir', galByLocation:'Registros por local da viagem',
     finalize:'Finalizar viagem', finalized:'Viagem finalizada', activityTitle:'Nome da atividade',
     time:'Horário', save:'Salvar', desc:'Descrição', amount:'Valor', paidBy:'Pago por', expAdded:'Despesa adicionada',
     appsHint:'Abrir apps parceiros',
@@ -386,6 +463,12 @@ const I18N = {
     inviteSent:'Invite sent to the email!', admin:'Admin', remove:'Remove', addPhotoGal:'Add photo',
     expenses:'Expenses', addExpense:'Add expense', notifications:'Notifications', noNotif:'No notifications',
     logout:'Log out', profile:'Profile', back:'Back', settings:'Settings', apps:'Travel apps',
+    menu:'Menu', homeTab:'Home', appsSub:'Shortcuts to partner apps (integration coming soon)',
+    settingsSub:'App preferences', receiveNotif:'Receive notifications',
+    receiveNotifSub:'Alerts about the trip and group', appearance:'Appearance', themeLight:'Light', themeDark:'Dark',
+    shareLoc:'Share location', shareLocSub:'Lets the group see where you are',
+    comingSoon:'Soon', deleteTripQ:'Delete this trip?', deleteTripSub:'The group and all data for this trip will be removed. This cannot be undone.',
+    tripDeleted:'Trip deleted', onlyAdmin:'Only the admin can delete', galByLocation:'Records by trip location',
     finalize:'Finalize trip', finalized:'Trip finalized', activityTitle:'Activity name',
     time:'Time', save:'Save', desc:'Description', amount:'Amount', paidBy:'Paid by', expAdded:'Expense added',
     appsHint:'Open partner apps',
@@ -577,10 +660,11 @@ function ProfileEditScreen({lang,user,onSave,onBack}){
   </div>);
 }
 
-function HomeScreen({lang,user,trips,onNew,onJoin,onOpen}){
+function HomeScreen({lang,user,trips,onNew,onJoin,onOpen,onDelete}){
   const t=dict(lang);
   const active=trips.filter(x=>x.status==='active');
   const past=trips.filter(x=>x.status==='past');
+  const isAdmin=tr=>tr.members&&tr.members.some(m=>m.id==='me'&&m.isAdmin);
   return(<div className="screen">
     <div className="pad">
       <div className="eyebrow">{t.home}</div>
@@ -589,7 +673,7 @@ function HomeScreen({lang,user,trips,onNew,onJoin,onOpen}){
 
       {active.length>0&&<>
         <div className="sectiontitle">{t.activeTrips}</div>
-        {active.map(tr=><TripCard key={tr.id} t={t} tr={tr} onOpen={()=>onOpen(tr.id)}/>)}
+        {active.map(tr=><TripCard key={tr.id} t={t} tr={tr} onOpen={()=>onOpen(tr.id)} canDelete={isAdmin(tr)} onDelete={onDelete}/>)}
       </>}
 
       <button className="opt" onClick={onNew}>
@@ -604,17 +688,18 @@ function HomeScreen({lang,user,trips,onNew,onJoin,onOpen}){
       <div className="sectiontitle">{t.pastTrips}</div>
       {past.length===0
         ? <div className="card sub" style={{textAlign:'center'}}>{t.pastSub}</div>
-        : past.map(tr=><TripCard key={tr.id} t={t} tr={tr} onOpen={()=>onOpen(tr.id)}/>)}
+        : past.map(tr=><TripCard key={tr.id} t={t} tr={tr} onOpen={()=>onOpen(tr.id)} canDelete={isAdmin(tr)} onDelete={onDelete}/>)}
     </div>
   </div>);
 }
 
-function TripCard({t,tr,onOpen}){
+function TripCard({t,tr,onOpen,canDelete,onDelete}){
   const [cp,setCp]=useState(false);
   const copy=e=>{e.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText(tr.id);setCp(true);setTimeout(()=>setCp(false),1500);};
   return(<div className={"tripcard"+(tr.status==='past'?' past':'')} onClick={onOpen}>
-    <div className="stamp">{tr.status==='active'?'Ativa':'Anterior'}</div>
-    <h3 style={{fontSize:20,paddingRight:70}}>{tr.name}</h3>
+    {canDelete&&<button className="cardx" onClick={e=>{e.stopPropagation();onDelete(tr);}}>✕</button>}
+    <div className="stamp" style={canDelete?{right:48}:{}}>{tr.status==='active'?'Ativa':'Anterior'}</div>
+    <h3 style={{fontSize:20,paddingRight:canDelete?100:70}}>{tr.name}</h3>
     <div className="tripcode mono">{tr.id}
       <button className="copybtn" onClick={copy}>{cp?t.copied:t.copyCode}</button></div>
     <p style={{margin:'12px 0 0',fontSize:13,opacity:.85}}>📅 {tr.startDate} → {tr.endDate}</p>
@@ -697,16 +782,16 @@ function NewTripScreen({lang,onCreate,onCancel,toast}){
 }
 
 /* ---------------- TRIP VIEW ---------------- */
-function TripScreen({lang,trip,update,onBack,toast,openDrawer,openNotif,notifCount}){
+function TripScreen({lang,trip,update,onBack,toast}){
   const t=dict(lang);
   const [tab,setTab]=useState('schedule');
   const tabs=[['schedule',t.schedule,'📅'],['map',t.map,'🗺️'],['docs',t.docs,'📄'],
     ['gallery',t.gallery,'🖼️'],['suggestions',t.suggestions,'✨'],['members',t.members,'👥']];
   return(<div className="screen">
     <div className="appbar">
-      <button className="iconbtn" onClick={openDrawer}>☰</button>
+      <button className="iconbtn" onClick={onBack}>←</button>
       <div className="ttl">{trip.name}</div>
-      <button className="iconbtn" onClick={openNotif}>🔔{notifCount>0&&<span className="badge">{notifCount}</span>}</button>
+      <div style={{width:38}}/>
     </div>
     <div className="tabbar">
       {tabs.map(([k,label,ic])=>(
@@ -773,6 +858,18 @@ function locationAnchors(trip){
 }
 // vale do dia da chegada/destino até o fim OU até o próximo destino
 function locationForDay(trip,day){ const a=locationAnchors(trip).filter(x=>x.date<=day); return a.length?a[a.length-1].city:null; }
+// todos os locais por onde o usuário passa (destinos + origem/escalas/destino das passagens), em ordem
+function tripLocations(trip){
+  const items=[];
+  (trip.destinations||[]).forEach(d=>{ const c=cityOf(d.name); if(c&&c!=='A definir') items.push({date:d.date||trip.startDate,city:c}); });
+  (trip.docs||[]).forEach(doc=>{
+    if(doc.itin&&doc.itin.legs){ doc.itin.legs.forEach(lg=>{ items.push({date:lg.depDate,city:lg.from.city}); items.push({date:lg.arrDate,city:lg.to.city}); }); }
+    else if(doc.seg){ items.push({date:doc.seg.depDate,city:doc.seg.fromCity}); items.push({date:doc.seg.arrDate,city:doc.seg.toCity}); }
+  });
+  items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const out=[]; items.forEach(i=>{ if(i.city&&!out.includes(i.city)) out.push(i.city); });
+  return out;
+}
 // 7 dias (segunda→domingo) da semana que contém o dia
 function weekDaysOf(dayStr){ const d=new Date(dayStr+'T00:00:00'); const dow=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-dow);
   const out=[]; for(let i=0;i<7;i++){const x=new Date(mon);x.setDate(mon.getDate()+i);out.push(x.toISOString().slice(0,10));} return out; }
@@ -1042,13 +1139,14 @@ function MapTab({t,trip}){
       </div>))}
     </>}
 
-    <div className="sectiontitle">📍 Rota da viagem</div>
-    {pts.map((p,i)=>(<div className="dest" key={i}>
+    <div className="sectiontitle">📍 Lugares por onde você vai passar</div>
+    {pts.map((p,i)=>{const role=i===0?'Origem':i===n-1?'Destino':'Escala / parada';return(
+      <div className="dest" key={i}>
       <span className="pin">{i===0?'🟠':i===n-1?'🔵':'⚪'}</span>
-      <span className="dd"><b>{p.city}</b><span>{p.date||'—'}</span></span>
+      <span className="dd"><b>{p.city}</b><span>{role}{p.date?' · '+brDateT(p.date):''}</span></span>
       <span className="locchip" style={{background:cityColor(p.city)}}>📍</span>
-    </div>))}
-    <div className="card sub" style={{textAlign:'center',fontSize:12}}>🟠 Início · 🔵 Destino final · Anexe passagens em Docs para enriquecer a rota · Percurso em tempo real chega na v2</div>
+    </div>);})}
+    <div className="card sub" style={{textAlign:'center',fontSize:12}}>🟠 Origem · ⚪ Escala · 🔵 Destino final · Anexe passagens em Docs para enriquecer a rota · Percurso em tempo real chega na v2</div>
   </div>);
 }
 
@@ -1230,15 +1328,31 @@ function TicketReadForm({t,trip,doc,onSave,onCancel}){
 
 /* --- Gallery --- */
 function GalleryTab({t,trip,update,toast}){
-  const cities=[...new Set(trip.destinations.map(d=>d.name.split(',')[0]))];
-  const add=city=>{update({...trip,gallery:[...trip.gallery,{city}]});toast(t.addPhotoGal+' ✓');};
+  // seções por local da viagem (inclui origem/escalas/destino do interpretador)
+  const cities=tripLocations(trip);
+  const list=cities.length?cities:['Viagem'];
+  const pickRef=useRef(null);
+  const pickCity=useRef(null);
+  const openPicker=(city)=>{ pickCity.current=city; pickRef.current&&pickRef.current.click(); };
+  const onPick=e=>{
+    const files=Array.from(e.target.files||[]); if(!files.length)return;
+    const city=pickCity.current;
+    Promise.all(files.map(f=>new Promise(res=>{ const r=new FileReader(); r.onload=()=>res({city,src:r.result}); r.readAsDataURL(f); })))
+      .then(imgs=>{ update({...trip,gallery:[...trip.gallery,...imgs]}); toast(t.addPhotoGal+' ✓'); });
+    e.target.value='';
+  };
   return(<div>
-    {cities.map(city=>{const ph=trip.gallery.filter(g=>g.city===city);
+    <p className="sub" style={{marginBottom:14}}>🖼️ {t.galByLocation}</p>
+    {/* abre a galeria/arquivos do dispositivo; aceita várias imagens */}
+    <input ref={pickRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={onPick}/>
+    {list.map(city=>{const ph=trip.gallery.filter(g=>g.city===city);
       return(<div key={city}>
         <div className="sectiontitle">📍 {city} <span className="pill">{ph.length}</span></div>
         <div className="gal">
-          {ph.map((_,i)=><div className="ph" key={i}>🏞️</div>)}
-          <button className="ph" style={{background:'#fff',border:'1.5px dashed var(--line)',color:'var(--muted)'}} onClick={()=>add(city)}>＋</button>
+          {ph.map((g,i)=> g.src
+            ? <div className="galimg" key={i} style={{backgroundImage:'url('+g.src+')'}}/>
+            : <div className="ph" key={i}>🏞️</div>)}
+          <button className="galadd" onClick={()=>openPicker(city)}>＋</button>
         </div>
       </div>);})}
   </div>);
@@ -1315,26 +1429,92 @@ function ExpenseForm({t,onSave,onCancel}){
   </div>);
 }
 
-/* ---------------- Drawer + Notifications ---------------- */
-function Drawer({t,user,onClose,onNav,onLogout}){
-  return(<div className="overlay" onClick={onClose}>
-    <div className="drawer" onClick={e=>e.stopPropagation()}>
-      <div className="dh">
-        <div className="ava" style={user.photo?{backgroundImage:'url('+user.photo+')',backgroundSize:'cover',backgroundPosition:'center'}:{}}>{user.photo?'':(user.firstName?user.firstName[0]:'U')}</div>
-        <div style={{fontFamily:'Sora',fontWeight:700,fontSize:18}}>{user.firstName} {user.lastName}</div>
-        <div style={{fontSize:12,opacity:.8}}>{t.yourCode}: <span className="mono">{user.code}</span></div>
-      </div>
-      <button className="navitem" onClick={()=>onNav('home')}><span className="ni">🏠</span>{t.home}</button>
-      <button className="navitem" onClick={()=>onNav('new')}><span className="ni">✈️</span>{t.newTrip}</button>
-      <button className="navitem" onClick={()=>onNav('join')}><span className="ni">🔑</span>{t.joinTrip}</button>
-      <button className="navitem" onClick={()=>onNav('profile')}><span className="ni">👤</span>{t.profile}</button>
-      <button className="navitem"><span className="ni">🧩</span>{t.apps}</button>
-      <button className="navitem"><span className="ni">⚙️</span>{t.settings}</button>
-      <div style={{flex:1}}/>
-      <button className="navitem" style={{color:'var(--danger)'}} onClick={onLogout}><span className="ni">↩</span>{t.logout}</button>
+/* ---------------- Menu (full-screen, de baixo para cima) ---------------- */
+function MenuSheet({t,user,onClose,onNav,onLogout}){
+  const item=(ic,label,go,danger)=>(
+    <button className="navitem" style={danger?{color:'var(--danger)'}:{}} onClick={()=>go()}>
+      <span className="ni">{ic}</span>{label}</button>);
+  return(<div className="menusheet">
+    <div className="mh">
+      <div className="ava" style={user.photo?{backgroundImage:'url('+user.photo+')',backgroundSize:'cover',backgroundPosition:'center'}:{}}>{user.photo?'':(user.firstName?user.firstName[0]:'U')}</div>
+      <div><div style={{fontFamily:'Sora',fontWeight:700,fontSize:17}}>{user.firstName} {user.lastName}</div>
+        <div style={{fontSize:12,opacity:.8}}>{t.yourCode}: <span className="mono">{user.code}</span></div></div>
+      <button className="closex" onClick={onClose}>✕</button>
+    </div>
+    <div className="mlist">
+      {item('🏠',t.home,()=>onNav('home'))}
+      {item('✈️',t.newTrip,()=>onNav('new'))}
+      {item('🔑',t.joinTrip,()=>onNav('join'))}
+      {item('👤',t.profile,()=>onNav('profile'))}
+      {item('🧩',t.apps,()=>onNav('apps'))}
+      {item('⚙️',t.settings,()=>onNav('settings'))}
+      <div style={{height:1,background:'var(--line)',margin:'10px 18px'}}/>
+      {item('↩',t.logout,onLogout,true)}
     </div>
   </div>);
 }
+
+function BottomBar({t,onMenu,onHome,onNotif,notifCount}){
+  return(<div className="bottombar">
+    <button className="bnav" onClick={onMenu}><span className="bic">☰</span>{t.menu}</button>
+    <button className="bnav center" onClick={onHome}><span className="bic">🏠</span></button>
+    <button className="bnav" onClick={onNotif}><span className="bic">🔔</span>{t.notifications}
+      {notifCount>0&&<span className="badge">{notifCount}</span>}</button>
+  </div>);
+}
+
+/* ---------------- Configurações ---------------- */
+function SettingsScreen({t,settings,setSettings,onBack}){
+  const set=(k,v)=>setSettings({...settings,[k]:v});
+  return(<div className="screen">
+    <div className="appbar"><button className="iconbtn" onClick={onBack}>←</button>
+      <div className="ttl">{t.settings}</div><div style={{width:38}}/></div>
+    <div className="pad">
+      <p className="sub" style={{marginBottom:18}}>{t.settingsSub}</p>
+      <div className="setrow">
+        <span className="si">🔔</span>
+        <span className="st"><b>{t.receiveNotif}</b><span>{t.receiveNotifSub}</span></span>
+        <div className={"switch"+(settings.notifications?' on':'')} onClick={()=>set('notifications',!settings.notifications)}/>
+      </div>
+      <div className="setrow">
+        <span className="si">📍</span>
+        <span className="st"><b>{t.shareLoc}</b><span>{t.shareLocSub}</span></span>
+        <div className={"switch"+(settings.shareLocation?' on':'')} onClick={()=>set('shareLocation',!settings.shareLocation)}/>
+      </div>
+      <div className="sectiontitle">🎨 {t.appearance}</div>
+      <div className="segpick">
+        <button className={settings.theme==='light'?'on':''} onClick={()=>set('theme','light')}>☀️ {t.themeLight}</button>
+        <button className={settings.theme==='dark'?'on':''} onClick={()=>set('theme','dark')}>🌙 {t.themeDark}</button>
+      </div>
+    </div>
+  </div>);
+}
+
+/* ---------------- Apps de viagem ---------------- */
+const TRAVEL_APPS=[
+  ['🏨','Booking','Hotéis e reservas','#003580'],
+  ['🛏️','Airbnb','Estadias e experiências','#FF5A5F'],
+  ['🗺️','Google Maps','Rotas e locais','#34A853'],
+  ['🚗','Uber','Transporte','#000000'],
+  ['🍽️','TheFork','Reservas em restaurantes','#1B8E94'],
+  ['✈️','Skyscanner','Voos','#0770E3'],
+  ['🎟️','GetYourGuide','Passeios e ingressos','#FF5533'],
+];
+function TravelAppsScreen({t,onBack}){
+  return(<div className="screen">
+    <div className="appbar"><button className="iconbtn" onClick={onBack}>←</button>
+      <div className="ttl">{t.apps}</div><div style={{width:38}}/></div>
+    <div className="pad">
+      <p className="sub" style={{marginBottom:18}}>{t.appsSub}</p>
+      {TRAVEL_APPS.map(a=>(<div className="appcard" key={a[1]}>
+        <span className="ai" style={{background:a[3]+'18'}}>{a[0]}</span>
+        <span className="at"><b>{a[1]}</b><span>{a[2]}</span></span>
+        <span className="soon">{t.comingSoon}</span>
+      </div>))}
+    </div>
+  </div>);
+}
+
 function NotifPanel({t,notifs,onClose,onAct}){
   return(<div className="overlay" onClick={onClose}>
     <div className="notifpanel" onClick={e=>e.stopPropagation()}>
@@ -1362,40 +1542,46 @@ function App(){
   const [screen,setScreen]=useState(persisted.user?'home':'lang');
   const [activeTrip,setActiveTrip]=useState(null);
   const [toastMsg,setToastMsg]=useState('');
-  const [drawer,setDrawer]=useState(false);
+  const [menuOpen,setMenuOpen]=useState(false);
   const [notifOpen,setNotifOpen]=useState(false);
+  const [delTrip,setDelTrip]=useState(null);
+  const [settings,setSettings]=useState(persisted.settings||{notifications:true,theme:'light',shareLocation:false});
   const [notifs,setNotifs]=useState(persisted.notifs||[
     {id:'n1',text:'Marina alterou a despesa "Hotel Lisboa" para € 420. Justificativa: ajuste 3 noites.',time:'há 2h',read:false,action:'Revisar'},
     {id:'n2',text:'João Pedro ingressou na viagem Eurotrip 2026.',time:'ontem',read:false,action:'Ver'},
   ]);
 
   // persist
-  useEffect(()=>{ if(lang||user||trips) save({lang,user,trips,notifs}); },[lang,user,trips,notifs]);
+  useEffect(()=>{ if(lang||user||trips) save({lang,user,trips,notifs,settings}); },[lang,user,trips,notifs,settings]);
   // seed trips on first profile creation
   useEffect(()=>{ if(user&&trips===null){ setTrips([seedTrip()]); } },[user]);
+  // aplica o tema (claro/escuro)
+  useEffect(()=>{ const r=document.getElementById('root'); if(r) r.setAttribute('data-theme', settings.theme==='dark'?'dark':'light'); },[settings.theme]);
 
   const t=dict(lang||'pt-BR');
   const toast=m=>{setToastMsg(m);setTimeout(()=>setToastMsg(''),2200);};
-  const notifCount=notifs.filter(n=>!n.read).length;
+  // a preferência de notificações controla o que é exibido
+  const effNotifs = settings.notifications? notifs : [];
+  const notifCount=effNotifs.filter(n=>!n.read).length;
 
   const updateTrip=(nt)=>setTrips(trips.map(x=>x.id===nt.id?nt:x));
   const openTrip=id=>{setActiveTrip(id);setScreen('trip');};
   const curTrip=trips&&trips.find(x=>x.id===activeTrip);
 
-  // navigation helpers
-  const goHome=()=>{setScreen('home');setDrawer(false);};
-  const logout=()=>{ localStorage.removeItem(KEY); setLang(null);setUser(null);setTrips(null);setScreen('lang');setDrawer(false); };
+  const goHome=()=>{setScreen('home');setMenuOpen(false);};
+  const logout=()=>{ localStorage.removeItem(KEY); setLang(null);setUser(null);setTrips(null);setScreen('lang');setMenuOpen(false); };
+  const doDeleteTrip=()=>{ setTrips(trips.filter(x=>x.id!==delTrip.id)); if(activeTrip===delTrip.id)setScreen('home'); setDelTrip(null); toast(t.tripDeleted); };
+  const navFromMenu=s=>{ setMenuOpen(false);
+    if(s==='home')goHome(); else setScreen(s==='profile'?'profile-edit':s); };
+
+  const showBottom = user && trips && ['home','trip','settings','apps'].includes(screen);
 
   return(<>
     {screen==='lang'&&<LanguageScreen onPick={l=>{setLang(l);setScreen('profile');}}/>}
     {screen==='profile'&&<ProfileScreen lang={lang} onDone={u=>{setUser(u);setScreen('home');toast(t.profileCreated);}}/>}
     {screen==='home'&&user&&trips&&<>
-      <div className="appbar">
-        <button className="iconbtn" onClick={()=>setDrawer(true)}>☰</button>
-        <div className="ttl">Trippin</div>
-        <button className="iconbtn" onClick={()=>setNotifOpen(true)}>🔔{notifCount>0&&<span className="badge">{notifCount}</span>}</button>
-      </div>
-      <HomeScreen lang={lang} user={user} trips={trips} onNew={()=>setScreen('new')} onJoin={()=>setScreen('join')} onOpen={openTrip}/>
+      <div className="appbar"><div style={{width:38}}/><div className="ttl">Trippin</div><div style={{width:38}}/></div>
+      <HomeScreen lang={lang} user={user} trips={trips} onNew={()=>setScreen('new')} onJoin={()=>setScreen('join')} onOpen={openTrip} onDelete={tr=>setDelTrip(tr)}/>
     </>}
     {screen==='new'&&<NewTripScreen lang={lang} toast={toast}
       onCancel={goHome}
@@ -1404,18 +1590,20 @@ function App(){
     {screen==='join'&&<JoinScreen lang={lang} onBack={goHome} toast={toast}/>}
     {screen==='profile-edit'&&user&&<ProfileEditScreen lang={lang} user={user}
       onSave={u=>{setUser(u);setScreen('home');toast(t.profileSaved);}} onBack={goHome}/>}
-    {screen==='trip'&&curTrip&&<TripScreen lang={lang} trip={curTrip} update={updateTrip}
-      onBack={goHome} toast={toast} openDrawer={()=>setDrawer(true)} openNotif={()=>setNotifOpen(true)} notifCount={notifCount}/>}
+    {screen==='settings'&&<SettingsScreen t={t} settings={settings} setSettings={setSettings} onBack={goHome}/>}
+    {screen==='apps'&&<TravelAppsScreen t={t} onBack={goHome}/>}
+    {screen==='trip'&&curTrip&&<TripScreen lang={lang} trip={curTrip} update={updateTrip} onBack={goHome} toast={toast}/>}
 
-    {drawer&&<Drawer t={t} user={user||{}} onClose={()=>setDrawer(false)}
-      onNav={s=>{ setDrawer(false);
-        if(s==='home')goHome();
-        else if(s==='new')setScreen('new');
-        else if(s==='join')setScreen('join');
-        else if(s==='profile')setScreen('profile-edit');
-      }} onLogout={logout}/>}
-    {notifOpen&&<NotifPanel t={t} notifs={notifs} onClose={()=>setNotifOpen(false)}
+    {showBottom&&<BottomBar t={t} onMenu={()=>setMenuOpen(true)} onHome={goHome}
+      onNotif={()=>setNotifOpen(true)} notifCount={notifCount}/>}
+
+    {menuOpen&&<MenuSheet t={t} user={user||{}} onClose={()=>setMenuOpen(false)} onNav={navFromMenu} onLogout={logout}/>}
+    {notifOpen&&<NotifPanel t={t} notifs={effNotifs} onClose={()=>setNotifOpen(false)}
       onAct={id=>{setNotifs(notifs.map(n=>n.id===id?{...n,read:true}:n));toast('✓');}}/>}
+
+    {delTrip&&<ConfirmModal icon="🗑️" title={t.deleteTripQ} msg={'"'+delTrip.name+'" — '+t.deleteTripSub}
+      confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger
+      onConfirm={doDeleteTrip} onCancel={()=>setDelTrip(null)}/>}
 
     <Toast msg={toastMsg}/>
   </>);
