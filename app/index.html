@@ -11,8 +11,7 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js"></script>
+<!-- pdf.js e tesseract.js são carregados sob demanda (não bloqueiam o app) -->
 <style>
   :root{
     --ink:#14213D; --deep:#1A2B4A; --coral:#FF6B5C; --coral-d:#E85746;
@@ -908,7 +907,7 @@ function weekDaysOf(dayStr){ const d=new Date(dayStr+'T00:00:00'); const dow=(d.
 const DOW=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 
 /* ===== Interpretador de roteiro de passagem aérea (parser testado) ===== */
-if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+// pdf.js é carregado sob demanda (ver ensurePdfjs); nada de pdfjsLib no load do app
 const AIRPORTS=[
   [/GUARULHOS|GRU\b/i,{iata:'GRU',city:'São Paulo'}],[/CONGONHAS/i,{iata:'CGH',city:'São Paulo'}],
   [/GALEAO|GALEÃO|RIO DE JANEIRO/i,{iata:'GIG',city:'Rio de Janeiro'}],
@@ -962,6 +961,9 @@ function parseAirTicket(text){
   return {legs,stages};
 }
 async function pdfToText(buf){
+  if(typeof pdfjsLib==='undefined'){ await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); }
+  if(typeof pdfjsLib==='undefined') throw new Error('PDF indisponível');
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   const pdf=await pdfjsLib.getDocument({data:buf}).promise; let rows=[];
   for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const content=await page.getTextContent();
     const byY={};
@@ -1050,8 +1052,13 @@ function parseLodging(text){
   return { name:name||null, city:city||null, address:address||null, host:host||null, price:price||null,
     ciDate:ci, ciTime:ciT, coDate:co, coTime:coT, nights, guests: guestsM?+guestsM[1]:null, code: code||null };
 }
-// OCR de imagem (prints de hospedagem) via Tesseract.js — best-effort, requer rede no 1º uso
+// carregamento de bibliotecas pesadas SOB DEMANDA (nunca bloqueia o app no load)
+const _scriptCache={};
+function loadScriptOnce(src){ return _scriptCache[src] || (_scriptCache[src]=new Promise((res,rej)=>{
+  const s=document.createElement('script'); s.src=src; s.onload=()=>res(); s.onerror=()=>rej(new Error('falha ao carregar '+src)); document.head.appendChild(s);
+})); }
 async function imageToText(file){
+  if(typeof Tesseract==='undefined'){ await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js'); }
   if(typeof Tesseract==='undefined') throw new Error('OCR indisponível');
   const { data } = await Tesseract.recognize(file, 'por+eng');
   return data.text||'';
