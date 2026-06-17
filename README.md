@@ -64,6 +64,10 @@ Cada documento em `docs/` foi produzido por um dos agentes do fluxo, na ordem:
 
 ---
 
+## 🏨 Interpretador de hospedagem
+
+Em **Docs → Estadias**, anexe o **PDF** ou um **print (imagem)** da reserva (Airbnb, Booking, hotel). O interpretador lê **nome do lugar, localização, endereço, anfitrião/contato, preço, check-in/out, noites, hóspedes e código**. Ao tocar **Adicionar ao cronograma** e confirmar, a hospedagem passa a aparecer **junto ao pin de localização do dia, acima dos horários** — clique para ver todos os detalhes. PDFs usam pdf.js; imagens usam OCR (Tesseract.js, requer rede no 1º uso); há sempre o preenchimento manual como alternativa.
+
 ## 🧭 Navegação e configurações
 
 - **Barra inferior**: menu (esquerda), **Início** (centro) e notificações (direita).
