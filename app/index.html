@@ -384,6 +384,12 @@
     background:var(--card);color:var(--ink);border-color:var(--line)}
   #root[data-theme="dark"] select.inp option{background:#1c2740}
   #root[data-theme="dark"] .btn-ghost{background:var(--card);color:var(--ink)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sand);border-radius:18px 18px 0 0;padding:18px;animation:slideUp .25s ease;z-index:61}
+  .sheeth{font-family:'Sora';font-weight:700;font-size:15px;margin-bottom:12px}
+  .srcopt{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;text-align:left}
+  .srcopt .si{width:42px;height:42px;border-radius:11px;background:#eef2f7;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .srcopt .st{flex:1}.srcopt .st b{display:block;font-size:14px}.srcopt .st span{font-size:12px;color:var(--muted)}
+  .srcopt .arr{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -433,7 +439,7 @@ const I18N = {
         appsHint: 'Abrir apps parceiros',
         date: 'Data', editProfile: 'Editar perfil', profileSaved: 'Perfil atualizado!', changePhoto: 'Toque para alterar a foto',
         eventType: 'Tipo do evento', descOpt: 'Descrição (opcional)', editActivity: 'Editar atividade',
-        deleteActivity: 'Excluir atividade?', activityDeleted: 'Atividade excluída', attachDoc: 'Anexar doc',
+        deleteActivity: 'Excluir atividade?', activityDeleted: 'Atividade excluída', attachDoc: 'Anexar doc', srcUpload: 'Upload', srcUploadSub: 'Escolher PDF ou imagem do dispositivo', srcCamera: 'Câmera', srcCameraSub: 'Tirar foto de um documento físico',
         docAttached: 'Documento anexado!', docRemoved: 'Documento removido', addToSched: 'Adicionar ao cronograma',
         noDocs: 'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
         typeTransport: 'Transporte', typeStay: 'Hospedagem', typeFood: 'Refeição', typeTour: 'Passeio',
@@ -491,7 +497,7 @@ const I18N = {
         appsHint: 'Open partner apps',
         date: 'Date', editProfile: 'Edit profile', profileSaved: 'Profile updated!', changePhoto: 'Tap to change photo',
         eventType: 'Event type', descOpt: 'Description (optional)', editActivity: 'Edit activity',
-        deleteActivity: 'Delete activity?', activityDeleted: 'Activity deleted', attachDoc: 'Attach doc',
+        deleteActivity: 'Delete activity?', activityDeleted: 'Activity deleted', attachDoc: 'Attach doc', srcUpload: 'Upload', srcUploadSub: 'Pick a PDF or image from device', srcCamera: 'Camera', srcCameraSub: 'Take a photo of a physical document',
         docAttached: 'Document attached!', docRemoved: 'Document removed', addToSched: 'Add to schedule',
         noDocs: 'No documents here. Tap "Attach doc" to add from your device.',
         typeTransport: 'Transport', typeStay: 'Stay', typeFood: 'Meal', typeTour: 'Tour',
@@ -1724,7 +1730,9 @@ function DocsTab({ t, trip, update, toast, goTab }) {
     const [busy, setBusy] = useState(false);
     const [confirmDoc, setConfirmDoc] = useState(null); // doc aguardando confirmação p/ cronograma
     const [lodgeEdit, setLodgeEdit] = useState(false); // edição manual da hospedagem
+    const [pickSrc, setPickSrc] = useState(false); // escolha Upload x Câmera
     const fileRef = useRef(null);
+    const camRef = useRef(null);
     const cur = cats.find(c => c[0] === cat);
     const catDocs = trip.docs.filter(d => d.cat === cat && d.sub === sub);
     const icon = cat === 'tickets' ? '🎫' : cat === 'stays' ? '🏨' : cat === 'events' ? '🎭' : '📎';
@@ -1738,18 +1746,28 @@ function DocsTab({ t, trip, update, toast, goTab }) {
         const dataUrl = file.size < 2 * 1024 * 1024 ? await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); }) : null;
         const doc = { id: uid(), cat, sub, name: file.name.replace(/\.[^.]+$/, ''), file: file.name,
             mime: file.type || 'arquivo', size: file.size, dataUrl, offline: !!dataUrl };
-        // tenta interpretar o roteiro se for passagem em PDF
-        if (cat === 'tickets' && /pdf/i.test(file.type || file.name)) {
-            setBusy('pdf');
-            try {
-                const buf = await file.arrayBuffer();
-                const txt = await pdfToText(buf);
-                const itin = parseAirTicket(txt);
-                if (itin.stages.length)
-                    doc.itin = itin;
+        // tenta interpretar o roteiro da PASSAGEM: PDF (pdf.js) ou imagem/foto (OCR)
+        if (cat === 'tickets') {
+            const isPdf = /pdf/i.test(file.type || file.name);
+            const isImg = /image\//i.test(file.type || '') || /\.(png|jpe?g|webp|heic|bmp)$/i.test(file.name);
+            if (isPdf || isImg) {
+                setBusy(isImg ? 'img' : 'pdf');
+                try {
+                    let txt = '';
+                    if (isPdf) {
+                        const buf = await file.arrayBuffer();
+                        txt = await pdfToText(buf);
+                    }
+                    else {
+                        txt = await imageToText(file);
+                    }
+                    const itin = parseAirTicket(txt);
+                    if (itin.stages.length)
+                        doc.itin = itin;
+                }
+                catch (err) { /* segue sem interpretação */ }
+                setBusy(false);
             }
-            catch (err) { /* segue sem interpretação */ }
-            setBusy(false);
         }
         // interpreta HOSPEDAGEM: PDF (pdf.js) ou imagem/print (OCR)
         if (cat === 'stays') {
@@ -1868,7 +1886,24 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                 React.createElement("b", null, "Interpretador de hospedagem"),
                 React.createElement("p", null, "Anexe o PDF ou um print (imagem) da reserva: local, endere\u00E7o, nome do lugar, anfitri\u00E3o/contato e pre\u00E7o s\u00E3o lidos. Ao confirmar, a hospedagem aparece no cronograma junto ao pin do dia."))),
         React.createElement("input", { ref: fileRef, type: "file", accept: "*/*", style: { display: 'none' }, onChange: onFile }),
-        React.createElement("button", { className: "btn btn-dark", style: { marginBottom: 14 }, disabled: !!busy, onClick: () => fileRef.current && fileRef.current.click() }, busy === 'img' ? '⏳ ' + t.interpretingImg : busy ? '⏳ ' + t.interpreting : '📎 ' + t.attachDoc),
+        React.createElement("input", { ref: camRef, type: "file", accept: "image/*", capture: "environment", style: { display: 'none' }, onChange: onFile }),
+        React.createElement("button", { className: "btn btn-dark", style: { marginBottom: 14 }, disabled: !!busy, onClick: () => setPickSrc(true) }, busy === 'img' ? '⏳ ' + t.interpretingImg : busy ? '⏳ ' + t.interpreting : '📎 ' + t.attachDoc),
+        pickSrc && React.createElement("div", { className: "overlay", onClick: () => setPickSrc(false) },
+            React.createElement("div", { className: "sheet", onClick: e => e.stopPropagation() },
+                React.createElement("div", { className: "sheeth" }, t.attachDoc),
+                React.createElement("button", { className: "srcopt", onClick: () => { setPickSrc(false); fileRef.current && fileRef.current.click(); } },
+                    React.createElement("span", { className: "si" }, "\uD83D\uDCC1"),
+                    React.createElement("span", { className: "st" },
+                        React.createElement("b", null, t.srcUpload),
+                        React.createElement("span", null, t.srcUploadSub)),
+                    React.createElement("span", { className: "arr" }, "\u2192")),
+                React.createElement("button", { className: "srcopt", onClick: () => { setPickSrc(false); camRef.current && camRef.current.click(); } },
+                    React.createElement("span", { className: "si" }, "\uD83D\uDCF7"),
+                    React.createElement("span", { className: "st" },
+                        React.createElement("b", null, t.srcCamera),
+                        React.createElement("span", null, t.srcCameraSub)),
+                    React.createElement("span", { className: "arr" }, "\u2192")),
+                React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 6 }, onClick: () => setPickSrc(false) }, t.cancel))),
         readingDoc && (readingDoc.cat === 'stays'
             ? (lodgeEdit || !readingDoc.lodging
                 ? React.createElement(LodgingForm, { t: t, doc: readingDoc, onSave: L => saveLodging(readingDoc, L), onCancel: () => { setLodgeEdit(false); setReadId(null); } })
