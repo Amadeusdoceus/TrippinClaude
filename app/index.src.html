@@ -137,6 +137,20 @@
     padding:7px 12px;border-radius:10px;margin-bottom:12px;box-shadow:0 3px 10px rgba(20,33,61,.12)}
   .locchip{display:inline-flex;align-items:center;gap:4px;color:#fff;font-weight:700;font-size:10px;
     padding:2px 8px;border-radius:20px}
+  /* hospedagem no cronograma (junto ao pin de localização, acima dos horários) */
+  .lodgemark{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--coral);
+    border-radius:12px;padding:10px 12px;margin-bottom:12px;cursor:pointer}
+  .lodgemark .lh{display:flex;align-items:center;gap:9px}
+  .lodgemark .lhi{font-size:18px}
+  .lodgemark .lht{flex:1;min-width:0}
+  .lodgemark .lht b{font-size:13.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lodgemark .lht span{font-size:11px;color:var(--muted)}
+  .lodgemark .chev{color:var(--muted);font-size:12px}
+  .lodgedetails{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .lodgedetails .lf{font-size:12px}
+  .lodgedetails .lf .k{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}
+  .lodgedetails .lf .v{font-weight:600}
+  .lodgedetails .full{grid-column:1 / -1}
   /* week view: vertical day cards with time column */
   .wkday{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden}
   .wkday .wkh{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;
@@ -433,6 +447,10 @@ const I18N = {
     layoverLabel:'Tempo de escala', interpreting:'Lendo a passagem…', interpretedRoute:'Roteiro interpretado',
     addStages:'Adicionar etapas ao cronograma', editManual:'Preencher manualmente', stagesAdded:'Etapas adicionadas ao cronograma',
     couldNotRead:'Não consegui interpretar o PDF automaticamente. Você pode preencher manualmente.',
+    lodgingRead:'Hospedagem interpretada', property:'Hospedagem', address:'Endereço', checkIn:'Check-in', checkOut:'Check-out',
+    nights:'Noites', guests:'Hóspedes', confirmation:'Confirmação', host:'Anfitrião/Contato', priceLbl:'Preço', interpretingImg:'Lendo a imagem (OCR)…', addLodging:'Adicionar ao cronograma',
+    lodgingAdded:'Hospedagem adicionada ao cronograma', lodgingConfirm:'A hospedagem aparecerá no cronograma de',
+    until:'até', stayingAt:'Hospedado em', viewLodging:'ver hospedagem',
   },
   'en-US':{
     welcome:'Everything about your trip, in one place.',
@@ -487,6 +505,10 @@ const I18N = {
     layoverLabel:'Layover time', interpreting:'Reading the ticket…', interpretedRoute:'Interpreted itinerary',
     addStages:'Add stages to schedule', editManual:'Fill in manually', stagesAdded:'Stages added to schedule',
     couldNotRead:'Could not interpret the PDF automatically. You can fill it in manually.',
+    lodgingRead:'Lodging interpreted', property:'Lodging', address:'Address', checkIn:'Check-in', checkOut:'Check-out',
+    nights:'Nights', guests:'Guests', confirmation:'Confirmation', host:'Host/Contact', priceLbl:'Price', interpretingImg:'Reading image (OCR)…', addLodging:'Add to schedule',
+    lodgingAdded:'Lodging added to schedule', lodgingConfirm:'The lodging will appear on the schedule from',
+    until:'until', stayingAt:'Staying at', viewLodging:'view lodging',
   }
 };
 const LANGS = [
@@ -856,18 +878,24 @@ function locationAnchors(trip){
   (trip.docs||[]).forEach(doc=>{
     if(doc.itin&&doc.itin.legs){ doc.itin.legs.forEach(lg=>{ if(lg.arrDate&&lg.to&&lg.to.city) a.push({date:lg.arrDate,city:lg.to.city,doc:true}); }); }
     else { const p=doc.seg; if(p&&p.arrDate&&p.toCity) a.push({date:p.arrDate,city:p.toCity,doc:true}); }
+    const L=doc.lodging; if(L&&L.scheduled&&L.ciDate&&L.city) a.push({date:L.ciDate,city:L.city,doc:true});
   });
   return a.sort((x,y)=> x.date===y.date ? ((x.doc?1:0)-(y.doc?1:0)) : x.date.localeCompare(y.date));
 }
 // vale do dia da chegada/destino até o fim OU até o próximo destino
 function locationForDay(trip,day){ const a=locationAnchors(trip).filter(x=>x.date<=day); return a.length?a[a.length-1].city:null; }
-// todos os locais por onde o usuário passa (destinos + origem/escalas/destino das passagens), em ordem
+// hospedagens ativas num dia (check-in <= dia <= check-out), já adicionadas ao cronograma
+function lodgingForDay(trip,day){
+  return (trip.docs||[]).map(d=>d.lodging).filter(L=>L&&L.scheduled&&L.ciDate&&L.coDate&&L.ciDate<=day&&day<=L.coDate);
+}
+// todos os locais por onde o usuário passa (destinos + origem/escalas/destino das passagens + hospedagens), em ordem
 function tripLocations(trip){
   const items=[];
   (trip.destinations||[]).forEach(d=>{ const c=cityOf(d.name); if(c&&c!=='A definir') items.push({date:d.date||trip.startDate,city:c}); });
   (trip.docs||[]).forEach(doc=>{
     if(doc.itin&&doc.itin.legs){ doc.itin.legs.forEach(lg=>{ items.push({date:lg.depDate,city:lg.from.city}); items.push({date:lg.arrDate,city:lg.to.city}); }); }
     else if(doc.seg){ items.push({date:doc.seg.depDate,city:doc.seg.fromCity}); items.push({date:doc.seg.arrDate,city:doc.seg.toCity}); }
+    if(doc.lodging&&doc.lodging.scheduled&&doc.lodging.city) items.push({date:doc.lodging.ciDate,city:doc.lodging.city});
   });
   items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const out=[]; items.forEach(i=>{ if(i.city&&!out.includes(i.city)) out.push(i.city); });
@@ -951,6 +979,89 @@ async function pdfToText(buf){
   return rows.join('\n');
 }
 const brDateT=iso=>{ if(!iso)return '—'; const p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+
+/* ===== Interpretador de Hospedagem (parser testado em PT/EN, múltiplos formatos de data) ===== */
+const MON_L={jan:0,feb:1,fev:1,mar:2,apr:3,abr:3,may:4,mai:4,jun:5,jul:6,aug:7,ago:7,sep:8,set:8,oct:9,out:9,nov:10,dec:11,dez:11,
+  january:0,february:1,march:2,april:3,june:5,july:6,august:7,september:8,october:9,november:10,december:11,
+  janeiro:0,fevereiro:1,'março':2,marco:2,abril:3,maio:4,junho:5,julho:6,agosto:7,setembro:8,outubro:9,novembro:10,dezembro:11};
+const isoFromL=(y,m,d)=>new Date(Date.UTC(+y,m,+d)).toISOString().slice(0,10);
+function lFindDates(s){ const out=[]; let m;
+  let re=/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/g; while((m=re.exec(s))){ let y=m[3]; if(y.length===2)y='20'+y; out.push({iso:isoFromL(y,(+m[2])-1,m[1]),idx:m.index}); }
+  re=/(\d{4})-(\d{2})-(\d{2})/g; while((m=re.exec(s))) out.push({iso:isoFromL(m[1],(+m[2])-1,m[3]),idx:m.index});
+  re=/(\d{1,2})\s*([A-Za-zçãéêó]{3,})\.?\s*(\d{4})/g; while((m=re.exec(s))){ const mo=MON_L[m[2].toLowerCase()]; if(mo!=null) out.push({iso:isoFromL(m[3],mo,m[1]),idx:m.index}); }
+  re=/([A-Za-zçãéêó]{3,})\.?\s+(\d{1,2}),?\s*(\d{4})/g; while((m=re.exec(s))){ const mo=MON_L[m[1].toLowerCase()]; if(mo!=null) out.push({iso:isoFromL(m[3],mo,m[2]),idx:m.index}); }
+  re=/(\d{1,2})\s+de\s+([A-Za-zçãéêó]+)\.?\s+de\s+(\d{4})/gi; while((m=re.exec(s))){ const mo=MON_L[m[2].toLowerCase()]; if(mo!=null) out.push({iso:isoFromL(m[3],mo,m[1]),idx:m.index}); }
+  return out.sort((a,b)=>a.idx-b.idx); }
+function lDateNear(s,kwRe){ const km=s.match(kwRe); if(!km)return null; const pos=km.index; const ds=lFindDates(s);
+  let best=null,bd=1e9; ds.forEach(d=>{const dist=d.idx-pos; if(dist>=0&&dist<bd){bd=dist;best=d;}});
+  if(!best) ds.forEach(d=>{const dist=Math.abs(d.idx-pos); if(dist<bd){bd=dist;best=d;}}); return best?best.iso:null; }
+function lTimeNear(s,kwRe){ const km=s.match(kwRe); if(!km)return null; const sub=s.slice(km.index,km.index+120);
+  const tm=sub.match(/(\d{1,2})[:h](\d{2})\s*(am|pm)?/i);
+  if(tm){ let h=+tm[1]; if(tm[3]&&/pm/i.test(tm[3])&&h<12)h+=12; if(tm[3]&&/am/i.test(tm[3])&&h===12)h=0; return String(h).padStart(2,'0')+':'+tm[2]; }
+  const ap=sub.match(/(\d{1,2})\s*(am|pm)/i); if(ap){ let h=+ap[1]; if(/pm/i.test(ap[2])&&h<12)h+=12; if(/am/i.test(ap[2])&&h===12)h=0; return String(h).padStart(2,'0')+':00'; }
+  return null; }
+function lFindCode(s){ const re=/(?:confirma[çc][aã]o|confirmation|c[oó]digo de reserva|booking (?:number|confirmation)|reserva(?:tion)?|pin)\s*(?:number|n[uú]mero|code|c[oó]digo|ref|n[º°.:]*)?\s*[:#]?\s*([A-Z0-9][A-Z0-9.\-]{4,})/ig;
+  let m,cand=[]; while((m=re.exec(s))) cand.push(m[1]); const wd=cand.filter(c=>/\d/.test(c)); return wd[0]||cand[0]||null; }
+const CITYNORM={lisbon:'Lisboa',luxembourg:'Luxemburgo',madrid:'Madri',rome:'Roma',berlin:'Berlim',london:'Londres',amsterdam:'Amsterdã',prague:'Praga',vienna:'Viena',venice:'Veneza',florence:'Florença'};
+function parseLodging(text){
+  const s=(text||'').replace(/\u00a0/g,' ')
+    .replace(/\uFB01/g,'fi').replace(/\uFB02/g,'fl').replace(/\uFB00/g,'ff').replace(/\uFB03/g,'ffi').replace(/\uFB04/g,'ffl')
+    .replace(/\(cid:\d+\)/g,''); // remove glyphs não mapeados (ligaduras viram "(cid:NNN)" em alguns PDFs)
+  // noites / hóspedes
+  const nightsM=s.match(/(\d+)[ \t]*(?:noites?|nights?|di[áa]rias?)/i)||s.match(/(?:noites?|nights?|di[áa]rias?)\D{0,4}(\d+)/i);
+  const guestsM=s.match(/(\d+)[ \t]*(?:h[oó]spedes?|guests?|ad(?:ults?|ultos?)|pessoas?)/i)||s.match(/(?:h[oó]spedes?|guests?|pessoas?)\D{0,4}(\d+)/i);
+  const nights=nightsM?+nightsM[1]:null;
+  // datas: por rótulo; senão par de datas com diferença = noites (ignorando a data de emissão); senão calcula
+  let ci=lDateNear(s,/check[\s\-]?in|entrada|chegada/i);
+  let co=lDateNear(s,/check[\s\-]?out|sa[ií]da/i);
+  if(!ci||!co){
+    const issue=lDateNear(s,/recibo|identi|emiss[ãa]o/i);
+    const cand=[...new Set(lFindDates(s).map(d=>d.iso))].sort().filter(d=>d!==issue);
+    if(nights){ for(let i=0;i<cand.length&&(!ci||!co);i++) for(let j=i+1;j<cand.length;j++){
+      if(Math.round((new Date(cand[j])-new Date(cand[i]))/86400000)===nights){ ci=ci||cand[i]; co=co||cand[j]; break; } } }
+    if(!ci&&cand[0]) ci=cand[0]; if(!co&&cand[1]) co=cand[1];
+  }
+  const ciT=lTimeNear(s,/check[\s\-]?in|entrada|a partir/i)||'15:00';
+  const coT=lTimeNear(s,/check[\s\-]?out|sa[ií]da/i)||'11:00';
+  const addD=(d,n)=>{const x=new Date(d+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);};
+  if(ci&&!co&&nights) co=addD(ci,nights);
+  if(!ci&&co&&nights) ci=addD(co,-nights);
+  // anfitrião/contato (tolerante à ligadura "fi" perdida: "An triã")
+  let host=null; const hm=s.match(/an(?:fi)?\s*tri[ãa]\(?o?\)?\s*:?\s*([^\n·|]+)/i)||s.match(/(?:host|contato)\s*:?\s*([^\n·|]+)/i);
+  if(hm) host=hm[1].trim();
+  // preço (Total)
+  let price=null; const pm=s.match(/Total\s*\(?\s*BRL\s*\)?[\s:]*R?\$?\s*([\d.]+,\d{2})/i)||s.match(/Total[\s:]*R\$?\s*([\d.]+,\d{2})/i)||s.match(/R\$\s*([\d.]+,\d{2})/);
+  if(pm) price='R$ '+pm[1];
+  // código de confirmação (tolerante "con rmação"); evita o id do recibo
+  let code=null;
+  const cTry=[/c[oó]digo de con(?:fi)?\s*rma[çc][aã]o\s*:?\s*([A-Z0-9][A-Z0-9.\-]{4,})/i,
+    /c[oó]digo de reserva\s*:?\s*([A-Z0-9][A-Z0-9.\-]{4,})/i,
+    /(?:n[uú]mero de con(?:fi)?\s*rma[çc][aã]o|con(?:fi)?\s*rma[çc][aã]o|confirmation(?:\s*code)?|booking (?:code|number))\s*:?\s*([A-Z0-9][A-Z0-9.\-]{4,})/i];
+  for(const re of cTry){ const m=s.match(re); if(m){ code=m[1]; break; } }
+  // nome do lugar
+  const lines=s.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  let name=null;
+  const typeLine=lines.find(l=>/^(quarto|acomoda[çc][aã]o|casa|apartamento|lugar inteiro|private room|entire|chal[ée]|loft|su[ií]te)/i.test(l));
+  if(typeLine) name=typeLine.split('·')[0].trim();
+  if(!name){ const hk=lines.findIndex(l=>/nome da propriedade|property name/i.test(l)); if(hk>=0&&lines[hk+1]) name=lines[hk+1]; }
+  if(!name) name=(lines.find(l=>/\b(hotel|hostel|pousada|resort|apart(amento|ment)?|inn|lodge|guesthouse|flat)\b/i.test(l))||'').replace(/\s{2,}/g,' ').trim()||null;
+  // cidade (normalizada para PT)
+  const KNOWN=['Lisboa','Lisbon','Porto','Barcelona','Madrid','Madri','Paris','Roma','Rome','Berlim','Berlin','Luxemburgo','Luxembourg','Londres','London','Amsterdã','Amsterdam','Praga','Viena','Veneza','Florença'];
+  let city=null; for(const c of KNOWN){ if(new RegExp('\\b'+c+'\\b','i').test(s)){ city=CITYNORM[c.toLowerCase()]||c; break; } }
+  // endereço só com rótulo explícito (evita o endereço corporativo do Airbnb)
+  let address=null; const ai=lines.findIndex(l=>/^endere[çc]o|^address/i.test(l));
+  if(ai>=0) address=(lines[ai].replace(/^.*?(endere[çc]o|address)\s*:?/i,'').trim()||lines[ai+1]||'').trim();
+  return { name:name||null, city:city||null, address:address||null, host:host||null, price:price||null,
+    ciDate:ci, ciTime:ciT, coDate:co, coTime:coT, nights, guests: guestsM?+guestsM[1]:null, code: code||null };
+}
+// OCR de imagem (prints de hospedagem) via Tesseract.js — carregado SOB DEMANDA (não bloqueia o app)
+async function imageToText(file){
+  if(typeof Tesseract==='undefined'){ await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js'); }
+  if(typeof Tesseract==='undefined') throw new Error('OCR indisponível');
+  const { data } = await Tesseract.recognize(file, 'por+eng');
+  return data.text||'';
+}
+
 const STAGE_COL={origin:'#2DB5A3',layover:'#F4A259',destination:'#5B8DEF'};
 function ItinStageCard({st,lbl}){
   const col=STAGE_COL[st.kind];
@@ -973,9 +1084,32 @@ function ItinStageCard({st,lbl}){
   </div>);
 }
 
+function LodgingMark({t,L,day}){
+  const [open,setOpen]=useState(false);
+  const phase = day===L.ciDate? ('🔑 '+t.checkIn) : day===L.coDate? ('🧳 '+t.checkOut) : ('🏨 '+t.stayingAt);
+  return(<div className="lodgemark" onClick={()=>setOpen(!open)}>
+    <div className="lh">
+      <span className="lhi">🏨</span>
+      <span className="lht"><b>{L.name||t.property}</b>
+        <span>{phase}{L.city?' · '+L.city:''} · {open?'—':t.viewLodging}</span></span>
+      <span className="chev">{open?'▲':'▼'}</span>
+    </div>
+    {open&&<div className="lodgedetails">
+      {L.address&&<div className="lf full"><div className="k">📍 {t.address}</div><div className="v">{L.address}</div></div>}
+      <div className="lf"><div className="k">{t.checkIn}</div><div className="v">{brDateT(L.ciDate)} · {L.ciTime}</div></div>
+      <div className="lf"><div className="k">{t.checkOut}</div><div className="v">{brDateT(L.coDate)} · {L.coTime}</div></div>
+      {L.nights!=null&&<div className="lf"><div className="k">{t.nights}</div><div className="v">{L.nights}</div></div>}
+      {L.guests!=null&&<div className="lf"><div className="k">{t.guests}</div><div className="v">{L.guests}</div></div>}
+      {L.host&&<div className="lf"><div className="k">{t.host}</div><div className="v">{L.host}</div></div>}
+      {L.price&&<div className="lf"><div className="k">{t.priceLbl}</div><div className="v">{L.price}</div></div>}
+      {L.code&&<div className="lf full"><div className="k">{t.confirmation}</div><div className="v mono">{L.code}</div></div>}
+    </div>}
+  </div>);
+}
+
 function ScheduleTab({t,trip,update,toast}){
   const [view,setView]=useState('day');
-  const days = [...new Set(trip.activities.map(a=>a.date))].sort();
+  const days = [...new Set([...trip.activities.map(a=>a.date), ...(trip.docs||[]).filter(d=>d.lodging&&d.lodging.scheduled&&d.lodging.ciDate).map(d=>d.lodging.ciDate)])].filter(Boolean).sort();
   const [curDay,setCurDay]=useState(days[0]||trip.startDate);
   const [adding,setAdding]=useState(false);
   const [editId,setEditId]=useState(null);
@@ -985,6 +1119,7 @@ function ScheduleTab({t,trip,update,toast}){
   const conflictExists = dayActs.some(a=>hasConflict(a));
   const allDays=(()=>{
     const dates=trip.activities.map(a=>a.date).filter(Boolean);
+    (trip.docs||[]).forEach(d=>{ if(d.lodging&&d.lodging.scheduled){ if(d.lodging.ciDate)dates.push(d.lodging.ciDate); if(d.lodging.coDate)dates.push(d.lodging.coDate); } });
     const lo=[trip.startDate,...dates].sort()[0];
     const hi=[trip.endDate,...dates].sort().slice(-1)[0];
     const out=[];let d=new Date(lo+'T00:00:00');const e=new Date(hi+'T00:00:00');
@@ -1015,6 +1150,7 @@ function ScheduleTab({t,trip,update,toast}){
       <div style={{fontWeight:700,fontFamily:'Sora',margin:'4px 0 12px'}}>📅 {curDay}</div>
       {(()=>{const loc=locationForDay(trip,curDay);return loc?
         <div className="locmark" style={{background:cityColor(loc)}}>📍 {t.youAreIn} {loc}</div>:null;})()}
+      {lodgingForDay(trip,curDay).map((L,i)=><LodgingMark key={i} t={t} L={L} day={curDay}/>)}
       {conflictExists&&<div className="alert"><span className="ai">⚠️</span>
         <div><b>{t.conflict}</b><p>Há atividades sobrepostas. Escolha em qual ingressar.</p></div></div>}
       {dayActs.length===0&&!adding&&<div className="empty"><div className="ei">🗓️</div>Nada planejado neste dia.</div>}
@@ -1169,6 +1305,7 @@ function DocsTab({t,trip,update,toast,goTab}){
   const [readId,setReadId]=useState(null);   // doc sendo "lido" (passagem)
   const [busy,setBusy]=useState(false);
   const [confirmDoc,setConfirmDoc]=useState(null); // doc aguardando confirmação p/ cronograma
+  const [lodgeEdit,setLodgeEdit]=useState(false);   // edição manual da hospedagem
   const fileRef=useRef(null);
   const cur=cats.find(c=>c[0]===cat);
   const catDocs=trip.docs.filter(d=>d.cat===cat && d.sub===sub);
@@ -1184,15 +1321,30 @@ function DocsTab({t,trip,update,toast,goTab}){
       mime:file.type||'arquivo',size:file.size,dataUrl,offline:!!dataUrl};
     // tenta interpretar o roteiro se for passagem em PDF
     if(cat==='tickets' && /pdf/i.test(file.type||file.name)){
-      setBusy(true);
+      setBusy('pdf');
       try{ const buf=await file.arrayBuffer(); const txt=await pdfToText(buf); const itin=parseAirTicket(txt);
         if(itin.stages.length) doc.itin=itin;
       }catch(err){ /* segue sem interpretação */ }
       setBusy(false);
     }
+    // interpreta HOSPEDAGEM: PDF (pdf.js) ou imagem/print (OCR)
+    if(cat==='stays'){
+      const isPdf=/pdf/i.test(file.type||file.name);
+      const isImg=/image\//i.test(file.type||'')||/\.(png|jpe?g|webp|heic|bmp)$/i.test(file.name);
+      if(isPdf||isImg){
+        setBusy(isImg?'img':'pdf');
+        try{ let txt='';
+          if(isPdf){ const buf=await file.arrayBuffer(); txt=await pdfToText(buf); }
+          else { txt=await imageToText(file); }
+          const L=parseLodging(txt);
+          if(L.ciDate||L.name||L.city||L.host||L.price) doc.lodging={...L, scheduled:false};
+        }catch(err){ /* segue para preenchimento manual */ }
+        setBusy(false);
+      }
+    }
     update({...trip,docs:[...trip.docs,doc]});
     toast(t.docAttached);
-    if(cat==='tickets') setReadId(doc.id);
+    if(cat==='tickets'||cat==='stays'){ setLodgeEdit(false); setReadId(doc.id); }
   };
   const removeDoc=(id)=>{ update({...trip,docs:trip.docs.filter(d=>d.id!==id),
     activities:trip.activities.filter(a=>a.docId!==id)}); toast(t.docRemoved); };
@@ -1228,6 +1380,13 @@ function DocsTab({t,trip,update,toast,goTab}){
     setConfirmDoc(null); setReadId(null); toast(t.stagesAdded);
     if(goTab) goTab('schedule'); // encaminha o usuário ao cronograma
   };
+  // HOSPEDAGEM: marca como adicionada ao cronograma (aparece no pin do dia)
+  const applyLodging=(d)=>{
+    update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,lodging:{...x.lodging,scheduled:true}}:x)});
+    setConfirmDoc(null); setReadId(null); setLodgeEdit(false); toast(t.lodgingAdded);
+    if(goTab) goTab('schedule');
+  };
+  const saveLodging=(d,L)=>{ update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,lodging:{...L,scheduled:(x.lodging&&x.lodging.scheduled)||false}}:x)}); setLodgeEdit(false); toast('✓'); };
   // LEITURA MANUAL: bloco de PARTIDA e de CHEGADA + trecho (seg)
   const saveTicket=(d,seg)=>{
     const dep={id:uid(),docId:d.id,date:seg.depDate,start:seg.depTime,end:addMin(seg.depTime,40),
@@ -1256,22 +1415,36 @@ function DocsTab({t,trip,update,toast,goTab}){
     {cat==='tickets'&&<div className="alert" style={{background:'#eef5ff',borderColor:'#b9d4ff'}}>
       <span className="ai">🤖</span><div><b>Interpretador de passagem</b>
         <p>Anexe o PDF da passagem: o roteiro é lido automaticamente (origem, escalas e destino com horários) e vira etapas no cronograma. PDF não reconhecido? Você preenche manualmente.</p></div></div>}
+    {cat==='stays'&&<div className="alert" style={{background:'#fff4ec',borderColor:'#ffd9bd'}}>
+      <span className="ai">🏨</span><div><b>Interpretador de hospedagem</b>
+        <p>Anexe o PDF ou um print (imagem) da reserva: local, endereço, nome do lugar, anfitrião/contato e preço são lidos. Ao confirmar, a hospedagem aparece no cronograma junto ao pin do dia.</p></div></div>}
 
     {/* input real de arquivos do dispositivo: aceita qualquer tipo (PDF, PNG, JPEG, ...) */}
     <input ref={fileRef} type="file" accept="*/*" style={{display:'none'}} onChange={onFile}/>
-    <button className="btn btn-dark" style={{marginBottom:14}} disabled={busy} onClick={()=>fileRef.current&&fileRef.current.click()}>
-      {busy?'⏳ '+t.interpreting:'📎 '+t.attachDoc}</button>
+    <button className="btn btn-dark" style={{marginBottom:14}} disabled={!!busy} onClick={()=>fileRef.current&&fileRef.current.click()}>
+      {busy==='img'?'⏳ '+t.interpretingImg : busy?'⏳ '+t.interpreting : '📎 '+t.attachDoc}</button>
 
-    {readingDoc&&(readingDoc.itin
-      ? <div className="card" style={{borderColor:'#b9d4ff'}}>
-          <b style={{fontFamily:'Sora',fontSize:14}}>🤖 {t.interpretedRoute}</b>
-          <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{readingDoc.file}</div>
-          {readingDoc.itin.stages.map((st,i)=><ItinStageCard key={i} st={st} lbl={lbl}/>)}
-          <button className="btn btn-primary" style={{marginTop:6}} onClick={()=>setConfirmDoc(readingDoc)}>📅 {t.addStages}</button>
-          <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>update({...trip,docs:trip.docs.map(x=>x.id===readingDoc.id?{...x,itin:undefined}:x)})}>✏️ {t.editManual}</button>
-        </div>
-      : <TicketReadForm t={t} trip={trip} doc={readingDoc}
-          onSave={seg=>saveTicket(readingDoc,seg)} onCancel={()=>setReadId(null)}/>)}
+    {readingDoc&&(
+      readingDoc.cat==='stays'
+        ? (lodgeEdit||!readingDoc.lodging
+            ? <LodgingForm t={t} doc={readingDoc} onSave={L=>saveLodging(readingDoc,L)} onCancel={()=>{setLodgeEdit(false);setReadId(null);}}/>
+            : <div className="card" style={{borderColor:'#ffd9bd'}}>
+                <b style={{fontFamily:'Sora',fontSize:14}}>🏨 {t.lodgingRead}</b>
+                <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{readingDoc.file}</div>
+                <LodgingCard t={t} L={readingDoc.lodging}/>
+                <button className="btn btn-primary" style={{marginTop:10}} onClick={()=>setConfirmDoc(readingDoc)}>📅 {t.addLodging}</button>
+                <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>setLodgeEdit(true)}>✏️ {t.editManual}</button>
+              </div>)
+      : readingDoc.itin
+        ? <div className="card" style={{borderColor:'#b9d4ff'}}>
+            <b style={{fontFamily:'Sora',fontSize:14}}>🤖 {t.interpretedRoute}</b>
+            <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{readingDoc.file}</div>
+            {readingDoc.itin.stages.map((st,i)=><ItinStageCard key={i} st={st} lbl={lbl}/>)}
+            <button className="btn btn-primary" style={{marginTop:6}} onClick={()=>setConfirmDoc(readingDoc)}>📅 {t.addStages}</button>
+            <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>update({...trip,docs:trip.docs.map(x=>x.id===readingDoc.id?{...x,itin:undefined}:x)})}>✏️ {t.editManual}</button>
+          </div>
+        : <TicketReadForm t={t} trip={trip} doc={readingDoc}
+            onSave={seg=>saveTicket(readingDoc,seg)} onCancel={()=>setReadId(null)}/>)}
 
     {catDocs.length===0
       ? <div className="empty"><div className="ei">📄</div>{t.noDocs}</div>
@@ -1282,12 +1455,13 @@ function DocsTab({t,trip,update,toast,goTab}){
             <span>{d.file}{d.size?' · '+human(d.size):''}</span>
             {d.itin
               ? <div className="sub" style={{fontSize:12,marginTop:3}}>🧭 {d.itin.stages[0].city} → {d.itin.stages[d.itin.stages.length-1].city} · {d.itin.legs.length} voo(s) · {d.itin.stages.filter(x=>x.kind==='layover').length} escala(s)</div>
-              : d.seg&&<div className="sub" style={{fontSize:12,marginTop:3}}>✈️ {d.seg.fromCity} → {d.seg.toCity} · {brDateT(d.seg.depDate)} {d.seg.depTime} → {brDateT(d.seg.arrDate)} {d.seg.arrTime}</div>}
+              : d.seg?<div className="sub" style={{fontSize:12,marginTop:3}}>✈️ {d.seg.fromCity} → {d.seg.toCity} · {brDateT(d.seg.depDate)} {d.seg.depTime} → {brDateT(d.seg.arrDate)} {d.seg.arrTime}</div>
+              : d.lodging&&<div className="sub" style={{fontSize:12,marginTop:3}}>🏨 {d.lodging.name||t.property}{d.lodging.city?' · '+d.lodging.city:''} · {brDateT(d.lodging.ciDate)} → {brDateT(d.lodging.coDate)}{d.lodging.scheduled?' · ✓':''}</div>}
             <div style={{marginTop:6,display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
               {d.offline&&<span className="offline">⬇ {t.offlineAvail}</span>}
               {d.dataUrl&&<a className="joinbtn" href={d.dataUrl} download={d.file} style={{textDecoration:'none'}}>⬇ Download</a>}
               {d.cat==='tickets'&&<button className="joinbtn" onClick={()=>setReadId(d.id)}>🤖 {(d.itin||d.seg)?'Ver roteiro':'Ler passagem'}</button>}
-              {d.cat==='stays'&&<button className="joinbtn" onClick={()=>toSchedule(d)}>📅 {t.addToSched}</button>}
+              {d.cat==='stays'&&<button className="joinbtn" onClick={()=>{setLodgeEdit(false);setReadId(d.id);}}>🏨 {d.lodging?(d.lodging.scheduled?'Ver hospedagem':'Ver dados'):t.addToSched}</button>}
             </div>
           </span>
           <button className="blkbtn del" onClick={()=>removeDoc(d.id)}>✕</button>
@@ -1300,6 +1474,62 @@ function DocsTab({t,trip,update,toast,goTab}){
         confirmLabel={'📅 '+t.addStages} cancelLabel={t.cancel}
         onConfirm={()=>applyStages(confirmDoc)} onCancel={()=>setConfirmDoc(null)}/>;
     })()}
+    {confirmDoc&&confirmDoc.lodging&&!confirmDoc.itin&&(()=>{ const L=confirmDoc.lodging;
+      const fmt=ds=>{const p=(ds||'').split('-');return p.length===3?p[2]+'/'+p[1]:'—';};
+      return <ConfirmModal icon="🏨" title={t.addLodging+'?'}
+        msg={(L.name||t.property)+(L.city?' · '+L.city:'')+' — '+t.lodgingConfirm+' '+fmt(L.ciDate)+' '+t.until+' '+fmt(L.coDate)+'.'}
+        confirmLabel={'📅 '+t.addLodging} cancelLabel={t.cancel}
+        onConfirm={()=>applyLodging(confirmDoc)} onCancel={()=>setConfirmDoc(null)}/>;
+    })()}
+  </div>);
+}
+
+function LodgingCard({t,L}){
+  const row=(k,v,mono)=> v? <div className="lf"><div className="k">{k}</div><div className={"v"+(mono?' mono':'')}>{v}</div></div> : null;
+  return(<div className="lodgedetails" style={{borderTop:'none',marginTop:0}}>
+    {L.name&&<div className="lf full"><div className="k">🏨 {t.property}</div><div className="v">{L.name}</div></div>}
+    {row('📍 Localização', L.city)}
+    {L.address&&<div className="lf full"><div className="k">{t.address}</div><div className="v">{L.address}</div></div>}
+    {row(t.checkIn, brDateT(L.ciDate)+' · '+L.ciTime)}
+    {row(t.checkOut, brDateT(L.coDate)+' · '+L.coTime)}
+    {row(t.nights, L.nights)}
+    {row(t.guests, L.guests)}
+    {row(t.host, L.host)}
+    {row(t.priceLbl, L.price)}
+    {row(t.confirmation, L.code, true)}
+  </div>);
+}
+function LodgingForm({t,doc,onSave,onCancel}){
+  const L0=doc.lodging||{};
+  const [L,setL]=useState({name:L0.name||'',city:L0.city||'',address:L0.address||'',host:L0.host||'',price:L0.price||'',
+    ciDate:L0.ciDate||'',ciTime:L0.ciTime||'15:00',coDate:L0.coDate||'',coTime:L0.coTime||'11:00',
+    nights:L0.nights||'',guests:L0.guests||'',code:L0.code||''});
+  const set=(k,v)=>setL({...L,[k]:v});
+  const ok=L.name&&L.city&&L.ciDate&&L.coDate;
+  return(<div className="card" style={{borderColor:'#ffd9bd'}}>
+    <b style={{fontFamily:'Sora',fontSize:14}}>🏨 {t.lodgingRead}</b>
+    <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{doc.file}</div>
+    <div className="field"><label>🏨 {t.property}</label><input className="inp" value={L.name} onChange={e=>set('name',e.target.value)}/></div>
+    <div className="field"><label>📍 Localização (cidade)</label><input className="inp" value={L.city} onChange={e=>set('city',e.target.value)}/></div>
+    <div className="field"><label>{t.address}</label><input className="inp" value={L.address} onChange={e=>set('address',e.target.value)}/></div>
+    <div className="row2">
+      <div className="field"><label>{t.checkIn}</label><input type="date" className="inp" value={L.ciDate} onChange={e=>set('ciDate',e.target.value)}/></div>
+      <div className="field"><label>&nbsp;</label><input type="time" className="inp" value={L.ciTime} onChange={e=>set('ciTime',e.target.value)}/></div>
+    </div>
+    <div className="row2">
+      <div className="field"><label>{t.checkOut}</label><input type="date" className="inp" value={L.coDate} onChange={e=>set('coDate',e.target.value)}/></div>
+      <div className="field"><label>&nbsp;</label><input type="time" className="inp" value={L.coTime} onChange={e=>set('coTime',e.target.value)}/></div>
+    </div>
+    <div className="row2">
+      <div className="field"><label>{t.host}</label><input className="inp" value={L.host} onChange={e=>set('host',e.target.value)}/></div>
+      <div className="field"><label>{t.priceLbl}</label><input className="inp" value={L.price} onChange={e=>set('price',e.target.value)}/></div>
+    </div>
+    <div className="row2">
+      <div className="field"><label>{t.guests}</label><input className="inp" value={L.guests} onChange={e=>set('guests',e.target.value)}/></div>
+      <div className="field"><label>{t.confirmation}</label><input className="inp" value={L.code} onChange={e=>set('code',e.target.value)}/></div>
+    </div>
+    <button className="btn btn-primary" disabled={!ok} onClick={()=>onSave({...L,nights:L.nights?+L.nights:null,guests:L.guests?+L.guests:null})}>💾 {t.save}</button>
+    <button className="btn btn-ghost" style={{marginTop:8}} onClick={onCancel}>{t.cancel}</button>
   </div>);
 }
 
