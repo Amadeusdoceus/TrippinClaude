@@ -10,8 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- pdf.js carregado sob demanda -->
 <style>
   :root{
     --ink:#14213D; --deep:#1A2B4A; --coral:#FF6B5C; --coral-d:#E85746;
@@ -375,1244 +374,1614 @@
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-presets="react">
-const {useState,useEffect,useRef} = React;
-
+<script>
+"use strict";
+const { useState, useEffect, useRef } = React;
 /* ---------------- i18n ---------------- */
 const I18N = {
-  'pt-BR':{
-    welcome:'Tudo da sua viagem, num lugar só.',
-    chooseLang:'Escolha o idioma', langSub:'Define o idioma de todo o app.',
-    continue:'Continuar', createProfile:'Criar perfil', profileSub:'Preencha seus dados para começar.',
-    firstName:'Nome', lastName:'Sobrenome', birth:'Data de nascimento', cpf:'CPF (opcional)',
-    email:'E-mail', phone:'Telefone', country:'País', confirm:'Confirmar e entrar', addPhoto:'Foto',
-    invalidEmail:'Informe um e-mail válido', required:'Campo obrigatório',
-    profileCreated:'Perfil criado!', yourCode:'Seu código',
-    home:'Início', activeTrips:'Viagens ativas', newTrip:'Nova viagem', joinTrip:'Participar de uma viagem',
-    pastTrips:'Viagens anteriores', newTripSub:'Crie e organize uma viagem', joinSub:'Entre com o código de uma viagem',
-    pastSub:'Acesse o histórico das suas viagens', noTrips:'Nenhuma viagem ainda. Crie a primeira!',
-    tripName:'Nome do grupo', start:'Início', end:'Fim', addDest:'Adicionar destino', includeDest:'Incluir destino', destAdded:'Destino incluído',
-    searchDest:'Buscar destino (≥3 letras)', destDate:'Data neste destino', createTrip:'Criar viagem',
-    deleteEdit:'Excluir edição', tripCreated:'Viagem criada!', deleteConfirm:'Excluir esta edição?',
-    deleteConfirmSub:'As informações preenchidas serão perdidas.', deleted:'Edição excluída', cancel:'Cancelar',
-    yesDelete:'Sim, excluir', copyCode:'copiar', copied:'Código copiado!',
-    enterCode:'Código da viagem', askJoin:'Pedir para participar', joinSent:'Pedido enviado! Aguarde aprovação do administrador.',
-    schedule:'Cronograma', map:'Mapa', docs:'Docs', gallery:'Galeria', suggestions:'Sugestões', members:'Integrantes',
-    month:'Mês', week:'Semana', day:'Dia', addActivity:'Adicionar atividade', join:'Ingressar', joined:'Participando',
-    conflict:'Conflito', tickets:'Passagens', stays:'Estadias', events:'Eventos', extras:'Extras',
-    attachExample:'Anexar passagem (exemplo)', attachStay:'Anexar reserva (exemplo)', offlineAvail:'Offline',
-    docIntel:'Documento lido. Cronograma atualizado automaticamente.',
-    conflictTitle:'Conflito no cronograma', conflictMsg:'Há conflito com a passagem anexada para este dia e horário. Deseja ajustar?',
-    adjust:'Ajustar', generalRec:'Recomendações Gerais', trippinRec:'Recomendações Trippin',
-    addToSchedule:'Adicionar ao cronograma', recAdded:'Adicionado ao cronograma!',
-    addMember:'Adicionar integrante', inviteEmail:'E-mail do convidado', sendInvite:'Enviar convite',
-    inviteSent:'Convite enviado para o e-mail!', admin:'Admin', remove:'Remover', addPhotoGal:'Adicionar foto',
-    expenses:'Despesas', addExpense:'Adicionar despesa', notifications:'Notificações', noNotif:'Sem notificações',
-    logout:'Sair', profile:'Perfil', back:'Voltar', settings:'Configurações', apps:'Apps de viagem',
-    menu:'Menu', homeTab:'Início', appsSub:'Atalhos para apps parceiros (em breve integrados)',
-    settingsSub:'Preferências do aplicativo', receiveNotif:'Receber notificações',
-    receiveNotifSub:'Avisos sobre a viagem e o grupo', appearance:'Aparência', themeLight:'Claro', themeDark:'Escuro',
-    shareLoc:'Compartilhar localização', shareLocSub:'Permite mostrar onde você está no grupo',
-    comingSoon:'Em breve', deleteTripQ:'Excluir esta viagem?', deleteTripSub:'O grupo e todos os dados desta viagem serão removidos. Esta ação não pode ser desfeita.',
-    tripDeleted:'Viagem excluída', onlyAdmin:'Apenas o administrador pode excluir', galByLocation:'Registros por local da viagem',
-    finalize:'Finalizar viagem', finalized:'Viagem finalizada', activityTitle:'Nome da atividade',
-    time:'Horário', save:'Salvar', desc:'Descrição', amount:'Valor', paidBy:'Pago por', expAdded:'Despesa adicionada',
-    appsHint:'Abrir apps parceiros',
-    date:'Data', editProfile:'Editar perfil', profileSaved:'Perfil atualizado!', changePhoto:'Toque para alterar a foto',
-    eventType:'Tipo do evento', descOpt:'Descrição (opcional)', editActivity:'Editar atividade',
-    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc',
-    docAttached:'Documento anexado!', docRemoved:'Documento removido', addToSched:'Adicionar ao cronograma',
-    noDocs:'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
-    typeTransport:'Transporte', typeStay:'Hospedagem', typeFood:'Refeição', typeTour:'Passeio',
-    typeEvent:'Evento', typeOther:'Outro',
-    youAreIn:'Você está em', readTicket:'Confirme os dados lidos da passagem',
-    origin:'Local de partida', destination:'Local de chegada', departDT:'Partida (data e hora)',
-    arriveDT:'Chegada (data e hora)', createBlocks:'Adicionar ao cronograma', ticketRead:'Passagem lida: partida e chegada adicionadas',
-    departure:'Partida', arrival:'Chegada', nothingDay:'Sem atividades neste dia',
-    flight:'voo', cardsWillAdd:'serão adicionados ao cronograma nas datas:', lblOrigin:'Origem', lblLayover:'Escala', lblDestination:'Destino', nextDep:'Próxima partida',
-    layoverLabel:'Tempo de escala', interpreting:'Lendo a passagem…', interpretedRoute:'Roteiro interpretado',
-    addStages:'Adicionar etapas ao cronograma', editManual:'Preencher manualmente', stagesAdded:'Etapas adicionadas ao cronograma',
-    couldNotRead:'Não consegui interpretar o PDF automaticamente. Você pode preencher manualmente.',
-  },
-  'en-US':{
-    welcome:'Everything about your trip, in one place.',
-    chooseLang:'Choose your language', langSub:'Sets the language across the app.',
-    continue:'Continue', createProfile:'Create profile', profileSub:'Fill in your details to start.',
-    firstName:'First name', lastName:'Last name', birth:'Date of birth', cpf:'Tax ID (optional)',
-    email:'Email', phone:'Phone', country:'Country', confirm:'Confirm and enter', addPhoto:'Photo',
-    invalidEmail:'Enter a valid email', required:'Required field',
-    profileCreated:'Profile created!', yourCode:'Your code',
-    home:'Home', activeTrips:'Active trips', newTrip:'New trip', joinTrip:'Join a trip',
-    pastTrips:'Past trips', newTripSub:'Create and organize a trip', joinSub:'Enter a trip code',
-    pastSub:'Access your trip history', noTrips:'No trips yet. Create your first!',
-    tripName:'Group name', start:'Start', end:'End', addDest:'Add destination', includeDest:'Add destination', destAdded:'Destination added',
-    searchDest:'Search destination (≥3 letters)', destDate:'Date at this destination', createTrip:'Create trip',
-    deleteEdit:'Discard', tripCreated:'Trip created!', deleteConfirm:'Discard this edit?',
-    deleteConfirmSub:'The information entered will be lost.', deleted:'Edit discarded', cancel:'Cancel',
-    yesDelete:'Yes, discard', copyCode:'copy', copied:'Code copied!',
-    enterCode:'Trip code', askJoin:'Ask to join', joinSent:'Request sent! Wait for admin approval.',
-    schedule:'Schedule', map:'Map', docs:'Docs', gallery:'Gallery', suggestions:'Suggestions', members:'Members',
-    month:'Month', week:'Week', day:'Day', addActivity:'Add activity', join:'Join', joined:'Joined',
-    conflict:'Conflict', tickets:'Tickets', stays:'Stays', events:'Events', extras:'Extras',
-    attachExample:'Attach flight (sample)', attachStay:'Attach booking (sample)', offlineAvail:'Offline',
-    docIntel:'Document read. Schedule updated automatically.',
-    conflictTitle:'Schedule conflict', conflictMsg:'There is a conflict with the attached flight for this day and time. Adjust?',
-    adjust:'Adjust', generalRec:'General Recommendations', trippinRec:'Trippin Recommendations',
-    addToSchedule:'Add to schedule', recAdded:'Added to schedule!',
-    addMember:'Add member', inviteEmail:'Guest email', sendInvite:'Send invite',
-    inviteSent:'Invite sent to the email!', admin:'Admin', remove:'Remove', addPhotoGal:'Add photo',
-    expenses:'Expenses', addExpense:'Add expense', notifications:'Notifications', noNotif:'No notifications',
-    logout:'Log out', profile:'Profile', back:'Back', settings:'Settings', apps:'Travel apps',
-    menu:'Menu', homeTab:'Home', appsSub:'Shortcuts to partner apps (integration coming soon)',
-    settingsSub:'App preferences', receiveNotif:'Receive notifications',
-    receiveNotifSub:'Alerts about the trip and group', appearance:'Appearance', themeLight:'Light', themeDark:'Dark',
-    shareLoc:'Share location', shareLocSub:'Lets the group see where you are',
-    comingSoon:'Soon', deleteTripQ:'Delete this trip?', deleteTripSub:'The group and all data for this trip will be removed. This cannot be undone.',
-    tripDeleted:'Trip deleted', onlyAdmin:'Only the admin can delete', galByLocation:'Records by trip location',
-    finalize:'Finalize trip', finalized:'Trip finalized', activityTitle:'Activity name',
-    time:'Time', save:'Save', desc:'Description', amount:'Amount', paidBy:'Paid by', expAdded:'Expense added',
-    appsHint:'Open partner apps',
-    date:'Date', editProfile:'Edit profile', profileSaved:'Profile updated!', changePhoto:'Tap to change photo',
-    eventType:'Event type', descOpt:'Description (optional)', editActivity:'Edit activity',
-    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc',
-    docAttached:'Document attached!', docRemoved:'Document removed', addToSched:'Add to schedule',
-    noDocs:'No documents here. Tap "Attach doc" to add from your device.',
-    typeTransport:'Transport', typeStay:'Stay', typeFood:'Meal', typeTour:'Tour',
-    typeEvent:'Event', typeOther:'Other',
-    youAreIn:'You are in', readTicket:'Confirm the data read from the ticket',
-    origin:'Departure location', destination:'Arrival location', departDT:'Departure (date & time)',
-    arriveDT:'Arrival (date & time)', createBlocks:'Add to schedule', ticketRead:'Ticket read: departure and arrival added',
-    departure:'Departure', arrival:'Arrival', nothingDay:'No activities this day',
-    flight:'flight', cardsWillAdd:'will be added to the schedule on:', lblOrigin:'Origin', lblLayover:'Layover', lblDestination:'Destination', nextDep:'Next departure',
-    layoverLabel:'Layover time', interpreting:'Reading the ticket…', interpretedRoute:'Interpreted itinerary',
-    addStages:'Add stages to schedule', editManual:'Fill in manually', stagesAdded:'Stages added to schedule',
-    couldNotRead:'Could not interpret the PDF automatically. You can fill it in manually.',
-  }
+    'pt-BR': {
+        welcome: 'Tudo da sua viagem, num lugar só.',
+        chooseLang: 'Escolha o idioma', langSub: 'Define o idioma de todo o app.',
+        continue: 'Continuar', createProfile: 'Criar perfil', profileSub: 'Preencha seus dados para começar.',
+        firstName: 'Nome', lastName: 'Sobrenome', birth: 'Data de nascimento', cpf: 'CPF (opcional)',
+        email: 'E-mail', phone: 'Telefone', country: 'País', confirm: 'Confirmar e entrar', addPhoto: 'Foto',
+        invalidEmail: 'Informe um e-mail válido', required: 'Campo obrigatório',
+        profileCreated: 'Perfil criado!', yourCode: 'Seu código',
+        home: 'Início', activeTrips: 'Viagens ativas', newTrip: 'Nova viagem', joinTrip: 'Participar de uma viagem',
+        pastTrips: 'Viagens anteriores', newTripSub: 'Crie e organize uma viagem', joinSub: 'Entre com o código de uma viagem',
+        pastSub: 'Acesse o histórico das suas viagens', noTrips: 'Nenhuma viagem ainda. Crie a primeira!',
+        tripName: 'Nome do grupo', start: 'Início', end: 'Fim', addDest: 'Adicionar destino', includeDest: 'Incluir destino', destAdded: 'Destino incluído',
+        searchDest: 'Buscar destino (≥3 letras)', destDate: 'Data neste destino', createTrip: 'Criar viagem',
+        deleteEdit: 'Excluir edição', tripCreated: 'Viagem criada!', deleteConfirm: 'Excluir esta edição?',
+        deleteConfirmSub: 'As informações preenchidas serão perdidas.', deleted: 'Edição excluída', cancel: 'Cancelar',
+        yesDelete: 'Sim, excluir', copyCode: 'copiar', copied: 'Código copiado!',
+        enterCode: 'Código da viagem', askJoin: 'Pedir para participar', joinSent: 'Pedido enviado! Aguarde aprovação do administrador.',
+        schedule: 'Cronograma', map: 'Mapa', docs: 'Docs', gallery: 'Galeria', suggestions: 'Sugestões', members: 'Integrantes',
+        month: 'Mês', week: 'Semana', day: 'Dia', addActivity: 'Adicionar atividade', join: 'Ingressar', joined: 'Participando',
+        conflict: 'Conflito', tickets: 'Passagens', stays: 'Estadias', events: 'Eventos', extras: 'Extras',
+        attachExample: 'Anexar passagem (exemplo)', attachStay: 'Anexar reserva (exemplo)', offlineAvail: 'Offline',
+        docIntel: 'Documento lido. Cronograma atualizado automaticamente.',
+        conflictTitle: 'Conflito no cronograma', conflictMsg: 'Há conflito com a passagem anexada para este dia e horário. Deseja ajustar?',
+        adjust: 'Ajustar', generalRec: 'Recomendações Gerais', trippinRec: 'Recomendações Trippin',
+        addToSchedule: 'Adicionar ao cronograma', recAdded: 'Adicionado ao cronograma!',
+        addMember: 'Adicionar integrante', inviteEmail: 'E-mail do convidado', sendInvite: 'Enviar convite',
+        inviteSent: 'Convite enviado para o e-mail!', admin: 'Admin', remove: 'Remover', addPhotoGal: 'Adicionar foto',
+        expenses: 'Despesas', addExpense: 'Adicionar despesa', notifications: 'Notificações', noNotif: 'Sem notificações',
+        logout: 'Sair', profile: 'Perfil', back: 'Voltar', settings: 'Configurações', apps: 'Apps de viagem',
+        menu: 'Menu', homeTab: 'Início', appsSub: 'Atalhos para apps parceiros (em breve integrados)',
+        settingsSub: 'Preferências do aplicativo', receiveNotif: 'Receber notificações',
+        receiveNotifSub: 'Avisos sobre a viagem e o grupo', appearance: 'Aparência', themeLight: 'Claro', themeDark: 'Escuro',
+        shareLoc: 'Compartilhar localização', shareLocSub: 'Permite mostrar onde você está no grupo',
+        comingSoon: 'Em breve', deleteTripQ: 'Excluir esta viagem?', deleteTripSub: 'O grupo e todos os dados desta viagem serão removidos. Esta ação não pode ser desfeita.',
+        tripDeleted: 'Viagem excluída', onlyAdmin: 'Apenas o administrador pode excluir', galByLocation: 'Registros por local da viagem',
+        finalize: 'Finalizar viagem', finalized: 'Viagem finalizada', activityTitle: 'Nome da atividade',
+        time: 'Horário', save: 'Salvar', desc: 'Descrição', amount: 'Valor', paidBy: 'Pago por', expAdded: 'Despesa adicionada',
+        appsHint: 'Abrir apps parceiros',
+        date: 'Data', editProfile: 'Editar perfil', profileSaved: 'Perfil atualizado!', changePhoto: 'Toque para alterar a foto',
+        eventType: 'Tipo do evento', descOpt: 'Descrição (opcional)', editActivity: 'Editar atividade',
+        deleteActivity: 'Excluir atividade?', activityDeleted: 'Atividade excluída', attachDoc: 'Anexar doc',
+        docAttached: 'Documento anexado!', docRemoved: 'Documento removido', addToSched: 'Adicionar ao cronograma',
+        noDocs: 'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
+        typeTransport: 'Transporte', typeStay: 'Hospedagem', typeFood: 'Refeição', typeTour: 'Passeio',
+        typeEvent: 'Evento', typeOther: 'Outro',
+        youAreIn: 'Você está em', readTicket: 'Confirme os dados lidos da passagem',
+        origin: 'Local de partida', destination: 'Local de chegada', departDT: 'Partida (data e hora)',
+        arriveDT: 'Chegada (data e hora)', createBlocks: 'Adicionar ao cronograma', ticketRead: 'Passagem lida: partida e chegada adicionadas',
+        departure: 'Partida', arrival: 'Chegada', nothingDay: 'Sem atividades neste dia',
+        flight: 'voo', cardsWillAdd: 'serão adicionados ao cronograma nas datas:', lblOrigin: 'Origem', lblLayover: 'Escala', lblDestination: 'Destino', nextDep: 'Próxima partida',
+        layoverLabel: 'Tempo de escala', interpreting: 'Lendo a passagem…', interpretedRoute: 'Roteiro interpretado',
+        addStages: 'Adicionar etapas ao cronograma', editManual: 'Preencher manualmente', stagesAdded: 'Etapas adicionadas ao cronograma',
+        couldNotRead: 'Não consegui interpretar o PDF automaticamente. Você pode preencher manualmente.',
+    },
+    'en-US': {
+        welcome: 'Everything about your trip, in one place.',
+        chooseLang: 'Choose your language', langSub: 'Sets the language across the app.',
+        continue: 'Continue', createProfile: 'Create profile', profileSub: 'Fill in your details to start.',
+        firstName: 'First name', lastName: 'Last name', birth: 'Date of birth', cpf: 'Tax ID (optional)',
+        email: 'Email', phone: 'Phone', country: 'Country', confirm: 'Confirm and enter', addPhoto: 'Photo',
+        invalidEmail: 'Enter a valid email', required: 'Required field',
+        profileCreated: 'Profile created!', yourCode: 'Your code',
+        home: 'Home', activeTrips: 'Active trips', newTrip: 'New trip', joinTrip: 'Join a trip',
+        pastTrips: 'Past trips', newTripSub: 'Create and organize a trip', joinSub: 'Enter a trip code',
+        pastSub: 'Access your trip history', noTrips: 'No trips yet. Create your first!',
+        tripName: 'Group name', start: 'Start', end: 'End', addDest: 'Add destination', includeDest: 'Add destination', destAdded: 'Destination added',
+        searchDest: 'Search destination (≥3 letters)', destDate: 'Date at this destination', createTrip: 'Create trip',
+        deleteEdit: 'Discard', tripCreated: 'Trip created!', deleteConfirm: 'Discard this edit?',
+        deleteConfirmSub: 'The information entered will be lost.', deleted: 'Edit discarded', cancel: 'Cancel',
+        yesDelete: 'Yes, discard', copyCode: 'copy', copied: 'Code copied!',
+        enterCode: 'Trip code', askJoin: 'Ask to join', joinSent: 'Request sent! Wait for admin approval.',
+        schedule: 'Schedule', map: 'Map', docs: 'Docs', gallery: 'Gallery', suggestions: 'Suggestions', members: 'Members',
+        month: 'Month', week: 'Week', day: 'Day', addActivity: 'Add activity', join: 'Join', joined: 'Joined',
+        conflict: 'Conflict', tickets: 'Tickets', stays: 'Stays', events: 'Events', extras: 'Extras',
+        attachExample: 'Attach flight (sample)', attachStay: 'Attach booking (sample)', offlineAvail: 'Offline',
+        docIntel: 'Document read. Schedule updated automatically.',
+        conflictTitle: 'Schedule conflict', conflictMsg: 'There is a conflict with the attached flight for this day and time. Adjust?',
+        adjust: 'Adjust', generalRec: 'General Recommendations', trippinRec: 'Trippin Recommendations',
+        addToSchedule: 'Add to schedule', recAdded: 'Added to schedule!',
+        addMember: 'Add member', inviteEmail: 'Guest email', sendInvite: 'Send invite',
+        inviteSent: 'Invite sent to the email!', admin: 'Admin', remove: 'Remove', addPhotoGal: 'Add photo',
+        expenses: 'Expenses', addExpense: 'Add expense', notifications: 'Notifications', noNotif: 'No notifications',
+        logout: 'Log out', profile: 'Profile', back: 'Back', settings: 'Settings', apps: 'Travel apps',
+        menu: 'Menu', homeTab: 'Home', appsSub: 'Shortcuts to partner apps (integration coming soon)',
+        settingsSub: 'App preferences', receiveNotif: 'Receive notifications',
+        receiveNotifSub: 'Alerts about the trip and group', appearance: 'Appearance', themeLight: 'Light', themeDark: 'Dark',
+        shareLoc: 'Share location', shareLocSub: 'Lets the group see where you are',
+        comingSoon: 'Soon', deleteTripQ: 'Delete this trip?', deleteTripSub: 'The group and all data for this trip will be removed. This cannot be undone.',
+        tripDeleted: 'Trip deleted', onlyAdmin: 'Only the admin can delete', galByLocation: 'Records by trip location',
+        finalize: 'Finalize trip', finalized: 'Trip finalized', activityTitle: 'Activity name',
+        time: 'Time', save: 'Save', desc: 'Description', amount: 'Amount', paidBy: 'Paid by', expAdded: 'Expense added',
+        appsHint: 'Open partner apps',
+        date: 'Date', editProfile: 'Edit profile', profileSaved: 'Profile updated!', changePhoto: 'Tap to change photo',
+        eventType: 'Event type', descOpt: 'Description (optional)', editActivity: 'Edit activity',
+        deleteActivity: 'Delete activity?', activityDeleted: 'Activity deleted', attachDoc: 'Attach doc',
+        docAttached: 'Document attached!', docRemoved: 'Document removed', addToSched: 'Add to schedule',
+        noDocs: 'No documents here. Tap "Attach doc" to add from your device.',
+        typeTransport: 'Transport', typeStay: 'Stay', typeFood: 'Meal', typeTour: 'Tour',
+        typeEvent: 'Event', typeOther: 'Other',
+        youAreIn: 'You are in', readTicket: 'Confirm the data read from the ticket',
+        origin: 'Departure location', destination: 'Arrival location', departDT: 'Departure (date & time)',
+        arriveDT: 'Arrival (date & time)', createBlocks: 'Add to schedule', ticketRead: 'Ticket read: departure and arrival added',
+        departure: 'Departure', arrival: 'Arrival', nothingDay: 'No activities this day',
+        flight: 'flight', cardsWillAdd: 'will be added to the schedule on:', lblOrigin: 'Origin', lblLayover: 'Layover', lblDestination: 'Destination', nextDep: 'Next departure',
+        layoverLabel: 'Layover time', interpreting: 'Reading the ticket…', interpretedRoute: 'Interpreted itinerary',
+        addStages: 'Add stages to schedule', editManual: 'Fill in manually', stagesAdded: 'Stages added to schedule',
+        couldNotRead: 'Could not interpret the PDF automatically. You can fill it in manually.',
+    }
 };
 const LANGS = [
-  {code:'pt-BR',fl:'🇧🇷',name:'Português',sub:'Brasil'},
-  {code:'pt-PT',fl:'🇵🇹',name:'Português',sub:'Portugal'},
-  {code:'en-US',fl:'🇺🇸',name:'English',sub:'American'},
-  {code:'en-GB',fl:'🇬🇧',name:'English',sub:'British'},
-  {code:'de-DE',fl:'🇩🇪',name:'Deutsch',sub:'Deutschland'},
-  {code:'fr-FR',fl:'🇫🇷',name:'Français',sub:'France'},
-  {code:'es-ES',fl:'🇪🇸',name:'Español',sub:'España'},
-  {code:'es-AR',fl:'🇦🇷',name:'Español',sub:'Argentina'},
-  {code:'it-IT',fl:'🇮🇹',name:'Italiano',sub:'Italia'},
-  {code:'hr-HR',fl:'🇭🇷',name:'Hrvatski',sub:'Hrvatska'},
+    { code: 'pt-BR', fl: '🇧🇷', name: 'Português', sub: 'Brasil' },
+    { code: 'pt-PT', fl: '🇵🇹', name: 'Português', sub: 'Portugal' },
+    { code: 'en-US', fl: '🇺🇸', name: 'English', sub: 'American' },
+    { code: 'en-GB', fl: '🇬🇧', name: 'English', sub: 'British' },
+    { code: 'de-DE', fl: '🇩🇪', name: 'Deutsch', sub: 'Deutschland' },
+    { code: 'fr-FR', fl: '🇫🇷', name: 'Français', sub: 'France' },
+    { code: 'es-ES', fl: '🇪🇸', name: 'Español', sub: 'España' },
+    { code: 'es-AR', fl: '🇦🇷', name: 'Español', sub: 'Argentina' },
+    { code: 'it-IT', fl: '🇮🇹', name: 'Italiano', sub: 'Italia' },
+    { code: 'hr-HR', fl: '🇭🇷', name: 'Hrvatski', sub: 'Hrvatska' },
 ];
 // fallback: idiomas não traduzidos usam EN-US (infra i18n pronta, tradução é trabalho contínuo)
 const dict = code => I18N[code] || I18N['en-US'];
-
-const CITIES = ['Lisboa, Portugal','Porto, Portugal','Barcelona, Espanha','Madrid, Espanha',
-  'Paris, França','Roma, Itália','Florença, Itália','Berlim, Alemanha','Munique, Alemanha',
-  'Zagreb, Croácia','Dubrovnik, Croácia','Buenos Aires, Argentina','Londres, Reino Unido',
-  'Amsterdã, Holanda','Praga, Tchéquia','Viena, Áustria','Atenas, Grécia','Veneza, Itália'];
-const COUNTRIES=['🇧🇷 +55','🇵🇹 +351','🇺🇸 +1','🇬🇧 +44','🇩🇪 +49','🇫🇷 +33','🇪🇸 +34','🇮🇹 +39','🇦🇷 +54','🇭🇷 +385'];
-
+const CITIES = ['Lisboa, Portugal', 'Porto, Portugal', 'Barcelona, Espanha', 'Madrid, Espanha',
+    'Paris, França', 'Roma, Itália', 'Florença, Itália', 'Berlim, Alemanha', 'Munique, Alemanha',
+    'Zagreb, Croácia', 'Dubrovnik, Croácia', 'Buenos Aires, Argentina', 'Londres, Reino Unido',
+    'Amsterdã, Holanda', 'Praga, Tchéquia', 'Viena, Áustria', 'Atenas, Grécia', 'Veneza, Itália'];
+const COUNTRIES = ['🇧🇷 +55', '🇵🇹 +351', '🇺🇸 +1', '🇬🇧 +44', '🇩🇪 +49', '🇫🇷 +33', '🇪🇸 +34', '🇮🇹 +39', '🇦🇷 +54', '🇭🇷 +385'];
 /* ---------------- storage ---------------- */
-const KEY='trippin_v1';
-const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}};
-const save=s=>{try{localStorage.setItem(KEY,JSON.stringify(s))}catch(e){}};
-const rid=n=>{const c='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';let r='';for(let i=0;i<n;i++)r+=c[Math.floor(Math.random()*c.length)];return r};
-const rnum=n=>{let r='';for(let i=0;i<n;i++)r+=Math.floor(Math.random()*10);return r};
-const uid=()=>Math.random().toString(36).slice(2,9);
-
+const KEY = 'trippin_v1';
+const load = () => { try {
+    return JSON.parse(localStorage.getItem(KEY)) || {};
+}
+catch (e) {
+    return {};
+} };
+const save = s => { try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+}
+catch (e) { } };
+const rid = n => { const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let r = ''; for (let i = 0; i < n; i++)
+    r += c[Math.floor(Math.random() * c.length)]; return r; };
+const rnum = n => { let r = ''; for (let i = 0; i < n; i++)
+    r += Math.floor(Math.random() * 10); return r; };
+const uid = () => Math.random().toString(36).slice(2, 9);
 /* seed demo trip so the app isn't empty */
-function seedTrip(){
-  return {
-    id:rid(12), name:'Eurotrip 2026', startDate:'2026-07-10', endDate:'2026-07-20',
-    destinations:[{name:'Lisboa, Portugal',date:'2026-07-10'},{name:'Barcelona, Espanha',date:'2026-07-14'},{name:'Roma, Itália',date:'2026-07-17'}],
-    status:'active',
-    members:[{id:'me',name:'Você',email:'voce@trippin.app',isAdmin:true},
-             {id:uid(),name:'Marina Alves',email:'marina@email.com',isAdmin:false},
-             {id:uid(),name:'João Pedro',email:'joao@email.com',isAdmin:false}],
-    activities:[
-      {id:uid(),date:'2026-07-10',start:'14:00',end:'16:00',title:'Check-in Hotel Lisboa',loc:'Lisboa',source:'manual',joined:['me']},
-      {id:uid(),date:'2026-07-11',start:'10:00',end:'12:00',title:'Torre de Belém',loc:'Lisboa',source:'manual',joined:['me']},
-    ],
-    docs:[], gallery:[{city:'Lisboa'},{city:'Lisboa'},{city:'Barcelona'}],
-    expenses:[{id:uid(),desc:'Hotel Lisboa (3 noites)',amount:420,paidBy:'Você',note:'Reserva Booking'}],
-  };
+function seedTrip() {
+    return {
+        id: rid(12), name: 'Eurotrip 2026', startDate: '2026-07-10', endDate: '2026-07-20',
+        destinations: [{ name: 'Lisboa, Portugal', date: '2026-07-10' }, { name: 'Barcelona, Espanha', date: '2026-07-14' }, { name: 'Roma, Itália', date: '2026-07-17' }],
+        status: 'active',
+        members: [{ id: 'me', name: 'Você', email: 'voce@trippin.app', isAdmin: true },
+            { id: uid(), name: 'Marina Alves', email: 'marina@email.com', isAdmin: false },
+            { id: uid(), name: 'João Pedro', email: 'joao@email.com', isAdmin: false }],
+        activities: [
+            { id: uid(), date: '2026-07-10', start: '14:00', end: '16:00', title: 'Check-in Hotel Lisboa', loc: 'Lisboa', source: 'manual', joined: ['me'] },
+            { id: uid(), date: '2026-07-11', start: '10:00', end: '12:00', title: 'Torre de Belém', loc: 'Lisboa', source: 'manual', joined: ['me'] },
+        ],
+        docs: [], gallery: [{ city: 'Lisboa' }, { city: 'Lisboa' }, { city: 'Barcelona' }],
+        expenses: [{ id: uid(), desc: 'Hotel Lisboa (3 noites)', amount: 420, paidBy: 'Você', note: 'Reserva Booking' }],
+    };
 }
-
 /* ---------------- small UI helpers ---------------- */
-function Toast({msg}){return msg?<div className="toast">✓ {msg}</div>:null;}
-
-function ConfirmModal({icon,title,msg,confirmLabel,cancelLabel,onConfirm,onCancel,danger}){
-  return(<div className="modal" onClick={onCancel}>
-    <div className="modalbox" onClick={e=>e.stopPropagation()}>
-      <div className="mi">{icon}</div><h3>{title}</h3><p>{msg}</p>
-      <button className={"btn "+(danger?"btn-primary":"btn-primary")} style={danger?{background:'var(--danger)',boxShadow:'none'}:{}} onClick={onConfirm}>{confirmLabel}</button>
-      {cancelLabel&&<button className="btn btn-ghost" style={{marginTop:10}} onClick={onCancel}>{cancelLabel}</button>}
-    </div>
-  </div>);
+function Toast({ msg }) { return msg ? React.createElement("div", { className: "toast" },
+    "\u2713 ",
+    msg) : null; }
+function ConfirmModal({ icon, title, msg, confirmLabel, cancelLabel, onConfirm, onCancel, danger }) {
+    return (React.createElement("div", { className: "modal", onClick: onCancel },
+        React.createElement("div", { className: "modalbox", onClick: e => e.stopPropagation() },
+            React.createElement("div", { className: "mi" }, icon),
+            React.createElement("h3", null, title),
+            React.createElement("p", null, msg),
+            React.createElement("button", { className: "btn " + (danger ? "btn-primary" : "btn-primary"), style: danger ? { background: 'var(--danger)', boxShadow: 'none' } : {}, onClick: onConfirm }, confirmLabel),
+            cancelLabel && React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 10 }, onClick: onCancel }, cancelLabel))));
 }
-
 /* ---------------- SCREENS ---------------- */
-
-function LanguageScreen({onPick}){
-  const [sel,setSel]=useState('pt-BR');
-  const t=dict(sel);
-  return(<div className="screen">
-    <div className="hero"><div className="logo">Trippin<span className="dot">.</span></div>
-      <p>{dict('pt-BR').welcome}</p></div>
-    <div className="pad">
-      <div className="eyebrow">Idioma · Language</div>
-      <h2 style={{fontSize:22,marginBottom:6}}>{t.chooseLang}</h2>
-      <p className="sub" style={{marginBottom:18}}>{t.langSub}</p>
-      <div className="langgrid">
-        {LANGS.map(l=>(
-          <button key={l.code} className={"langbtn"+(sel===l.code?' on':'')} onClick={()=>setSel(l.code)}>
-            <span className="fl">{l.fl}</span>
-            <span><span className="ln">{l.name}</span><br/><span className="lc">{l.sub}</span></span>
-          </button>))}
-      </div>
-      <button className="btn btn-primary" style={{marginTop:20}} onClick={()=>onPick(sel)}>{t.continue} →</button>
-    </div>
-  </div>);
+function LanguageScreen({ onPick }) {
+    const [sel, setSel] = useState('pt-BR');
+    const t = dict(sel);
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "hero" },
+            React.createElement("div", { className: "logo" },
+                "Trippin",
+                React.createElement("span", { className: "dot" }, ".")),
+            React.createElement("p", null, dict('pt-BR').welcome)),
+        React.createElement("div", { className: "pad" },
+            React.createElement("div", { className: "eyebrow" }, "Idioma \u00B7 Language"),
+            React.createElement("h2", { style: { fontSize: 22, marginBottom: 6 } }, t.chooseLang),
+            React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.langSub),
+            React.createElement("div", { className: "langgrid" }, LANGS.map(l => (React.createElement("button", { key: l.code, className: "langbtn" + (sel === l.code ? ' on' : ''), onClick: () => setSel(l.code) },
+                React.createElement("span", { className: "fl" }, l.fl),
+                React.createElement("span", null,
+                    React.createElement("span", { className: "ln" }, l.name),
+                    React.createElement("br", null),
+                    React.createElement("span", { className: "lc" }, l.sub)))))),
+            React.createElement("button", { className: "btn btn-primary", style: { marginTop: 20 }, onClick: () => onPick(sel) },
+                t.continue,
+                " \u2192"))));
 }
-
-function PhotoPicker({photo,onPick,hint}){
-  const ref=useRef(null);
-  const handle=e=>{const file=e.target.files&&e.target.files[0]; if(!file)return;
-    const r=new FileReader(); r.onload=()=>onPick(r.result); r.readAsDataURL(file);};
-  return(<div style={{textAlign:'center',marginBottom:18}}>
-    <button type="button" className="photoadd" style={photo?{backgroundImage:'url('+photo+')',backgroundSize:'cover',backgroundPosition:'center',border:'2px solid var(--lagoon)'}:{}}
-      onClick={()=>ref.current&&ref.current.click()}>{photo?'':'📷'}</button>
-    <div className="sub" style={{fontSize:12,marginTop:-10}}>{hint}</div>
-    {/* accept image/* deixa o dispositivo oferecer Câmera, Galeria ou Arquivos (PNG, JPEG...) */}
-    <input ref={ref} type="file" accept="image/*" style={{display:'none'}} onChange={handle}/>
-  </div>);
+function PhotoPicker({ photo, onPick, hint }) {
+    const ref = useRef(null);
+    const handle = e => {
+        const file = e.target.files && e.target.files[0];
+        if (!file)
+            return;
+        const r = new FileReader();
+        r.onload = () => onPick(r.result);
+        r.readAsDataURL(file);
+    };
+    return (React.createElement("div", { style: { textAlign: 'center', marginBottom: 18 } },
+        React.createElement("button", { type: "button", className: "photoadd", style: photo ? { backgroundImage: 'url(' + photo + ')', backgroundSize: 'cover', backgroundPosition: 'center', border: '2px solid var(--lagoon)' } : {}, onClick: () => ref.current && ref.current.click() }, photo ? '' : '📷'),
+        React.createElement("div", { className: "sub", style: { fontSize: 12, marginTop: -10 } }, hint),
+        React.createElement("input", { ref: ref, type: "file", accept: "image/*", style: { display: 'none' }, onChange: handle })));
 }
-
-function ProfileScreen({lang,onDone}){
-  const t=dict(lang);
-  const [f,setF]=useState({firstName:'',lastName:'',birth:'',cpf:'',email:'',country:'🇧🇷 +55',phone:'',photo:''});
-  const [touched,setTouched]=useState(false);
-  const set=(k,v)=>setF({...f,[k]:v});
-  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
-  const valid=f.firstName&&f.lastName&&f.birth&&emailOk&&f.phone;
-  const submit=()=>{ setTouched(true); if(!valid)return;
-    onDone({...f, code:rnum(6), createdAt:new Date().toISOString()}); };
-  return(<div className="screen">
-    <div className="appbar"><div className="ttl">{t.createProfile}</div></div>
-    <div className="pad">
-      <p className="sub" style={{marginBottom:18}}>{t.profileSub}</p>
-      <PhotoPicker photo={f.photo} onPick={v=>set('photo',v)} hint={t.changePhoto}/>
-      <div className="field"><label>{t.firstName} <span className="req">*</span></label>
-        <input className={"inp"+(touched&&!f.firstName?' err':'')} value={f.firstName} onChange={e=>set('firstName',e.target.value)}/></div>
-      <div className="field"><label>{t.lastName} <span className="req">*</span></label>
-        <input className={"inp"+(touched&&!f.lastName?' err':'')} value={f.lastName} onChange={e=>set('lastName',e.target.value)}/></div>
-      <div className="field"><label>{t.birth} <span className="req">*</span></label>
-        <input type="date" className={"inp"+(touched&&!f.birth?' err':'')} value={f.birth} onChange={e=>set('birth',e.target.value)}/></div>
-      <div className="field"><label>{t.cpf}</label>
-        <input className="inp" placeholder="000.000.000-00" value={f.cpf} onChange={e=>set('cpf',e.target.value)}/></div>
-      <div className="field"><label>{t.email} <span className="req">*</span></label>
-        <input className={"inp"+(touched&&!emailOk?' err':'')} placeholder="voce@email.com" value={f.email} onChange={e=>set('email',e.target.value)}/>
-        {touched&&!emailOk&&<div className="errmsg">{t.invalidEmail}</div>}</div>
-      <div className="field"><label>{t.phone} <span className="req">*</span></label>
-        <div className="row">
-          <select className="inp" style={{maxWidth:120}} value={f.country} onChange={e=>set('country',e.target.value)}>
-            {COUNTRIES.map(c=><option key={c}>{c}</option>)}</select>
-          <input className={"inp"+(touched&&!f.phone?' err':'')} placeholder="11 99999-9999" value={f.phone} onChange={e=>set('phone',e.target.value)}/>
-        </div></div>
-      <button className="btn btn-primary" style={{marginTop:8}} onClick={submit}>{t.confirm}</button>
-    </div>
-  </div>);
+function ProfileScreen({ lang, onDone }) {
+    const t = dict(lang);
+    const [f, setF] = useState({ firstName: '', lastName: '', birth: '', cpf: '', email: '', country: '🇧🇷 +55', phone: '', photo: '' });
+    const [touched, setTouched] = useState(false);
+    const set = (k, v) => setF({ ...f, [k]: v });
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+    const valid = f.firstName && f.lastName && f.birth && emailOk && f.phone;
+    const submit = () => {
+        setTouched(true);
+        if (!valid)
+            return;
+        onDone({ ...f, code: rnum(6), createdAt: new Date().toISOString() });
+    };
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("div", { className: "ttl" }, t.createProfile)),
+        React.createElement("div", { className: "pad" },
+            React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.profileSub),
+            React.createElement(PhotoPicker, { photo: f.photo, onPick: v => set('photo', v), hint: t.changePhoto }),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.firstName,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { className: "inp" + (touched && !f.firstName ? ' err' : ''), value: f.firstName, onChange: e => set('firstName', e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.lastName,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { className: "inp" + (touched && !f.lastName ? ' err' : ''), value: f.lastName, onChange: e => set('lastName', e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.birth,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { type: "date", className: "inp" + (touched && !f.birth ? ' err' : ''), value: f.birth, onChange: e => set('birth', e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.cpf),
+                React.createElement("input", { className: "inp", placeholder: "000.000.000-00", value: f.cpf, onChange: e => set('cpf', e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.email,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { className: "inp" + (touched && !emailOk ? ' err' : ''), placeholder: "voce@email.com", value: f.email, onChange: e => set('email', e.target.value) }),
+                touched && !emailOk && React.createElement("div", { className: "errmsg" }, t.invalidEmail)),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.phone,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("div", { className: "row" },
+                    React.createElement("select", { className: "inp", style: { maxWidth: 120 }, value: f.country, onChange: e => set('country', e.target.value) }, COUNTRIES.map(c => React.createElement("option", { key: c }, c))),
+                    React.createElement("input", { className: "inp" + (touched && !f.phone ? ' err' : ''), placeholder: "11 99999-9999", value: f.phone, onChange: e => set('phone', e.target.value) }))),
+            React.createElement("button", { className: "btn btn-primary", style: { marginTop: 8 }, onClick: submit }, t.confirm))));
 }
-
-function ProfileEditScreen({lang,user,onSave,onBack}){
-  const t=dict(lang);
-  const [f,setF]=useState({...user});
-  const [touched,setTouched]=useState(false);
-  const set=(k,v)=>setF({...f,[k]:v});
-  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
-  const valid=f.firstName&&f.lastName&&f.birth&&emailOk&&f.phone;
-  const submit=()=>{ setTouched(true); if(!valid)return; onSave(f); };
-  return(<div className="screen">
-    <div className="appbar"><button className="iconbtn" onClick={onBack}>←</button>
-      <div className="ttl">{t.editProfile}</div><div style={{width:38}}/></div>
-    <div className="pad">
-      <PhotoPicker photo={f.photo} onPick={v=>set('photo',v)} hint={t.changePhoto}/>
-      <div className="field"><label>{t.firstName} <span className="req">*</span></label>
-        <input className={"inp"+(touched&&!f.firstName?' err':'')} value={f.firstName} onChange={e=>set('firstName',e.target.value)}/></div>
-      <div className="field"><label>{t.lastName} <span className="req">*</span></label>
-        <input className={"inp"+(touched&&!f.lastName?' err':'')} value={f.lastName} onChange={e=>set('lastName',e.target.value)}/></div>
-      <div className="field"><label>{t.birth} <span className="req">*</span></label>
-        <input type="date" className={"inp"+(touched&&!f.birth?' err':'')} value={f.birth} onChange={e=>set('birth',e.target.value)}/></div>
-      <div className="field"><label>{t.cpf}</label>
-        <input className="inp" placeholder="000.000.000-00" value={f.cpf||''} onChange={e=>set('cpf',e.target.value)}/></div>
-      <div className="field"><label>{t.email} <span className="req">*</span></label>
-        <input className={"inp"+(touched&&!emailOk?' err':'')} value={f.email} onChange={e=>set('email',e.target.value)}/>
-        {touched&&!emailOk&&<div className="errmsg">{t.invalidEmail}</div>}</div>
-      <div className="field"><label>{t.phone} <span className="req">*</span></label>
-        <div className="row">
-          <select className="inp" style={{maxWidth:120}} value={f.country} onChange={e=>set('country',e.target.value)}>
-            {COUNTRIES.map(c=><option key={c}>{c}</option>)}</select>
-          <input className={"inp"+(touched&&!f.phone?' err':'')} value={f.phone} onChange={e=>set('phone',e.target.value)}/>
-        </div></div>
-      <div className="card" style={{textAlign:'center'}}>
-        <div className="sub" style={{fontSize:12}}>{t.yourCode}</div>
-        <div className="mono" style={{fontSize:20,fontWeight:600}}>{f.code}</div></div>
-      <button className="btn btn-primary" style={{marginTop:4}} onClick={submit}>{t.save}</button>
-    </div>
-  </div>);
+function ProfileEditScreen({ lang, user, onSave, onBack }) {
+    const t = dict(lang);
+    const [f, setF] = useState({ ...user });
+    const [touched, setTouched] = useState(false);
+    const set = (k, v) => setF({ ...f, [k]: v });
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+    const valid = f.firstName && f.lastName && f.birth && emailOk && f.phone;
+    const submit = () => { setTouched(true); if (!valid)
+        return; onSave(f); };
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "\u2190"),
+            React.createElement("div", { className: "ttl" }, t.editProfile),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            React.createElement(PhotoPicker, { photo: f.photo, onPick: v => set('photo', v), hint: t.changePhoto }),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.firstName,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { className: "inp" + (touched && !f.firstName ? ' err' : ''), value: f.firstName, onChange: e => set('firstName', e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.lastName,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { className: "inp" + (touched && !f.lastName ? ' err' : ''), value: f.lastName, onChange: e => set('lastName', e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.birth,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { type: "date", className: "inp" + (touched && !f.birth ? ' err' : ''), value: f.birth, onChange: e => set('birth', e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.cpf),
+                React.createElement("input", { className: "inp", placeholder: "000.000.000-00", value: f.cpf || '', onChange: e => set('cpf', e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.email,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { className: "inp" + (touched && !emailOk ? ' err' : ''), value: f.email, onChange: e => set('email', e.target.value) }),
+                touched && !emailOk && React.createElement("div", { className: "errmsg" }, t.invalidEmail)),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.phone,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("div", { className: "row" },
+                    React.createElement("select", { className: "inp", style: { maxWidth: 120 }, value: f.country, onChange: e => set('country', e.target.value) }, COUNTRIES.map(c => React.createElement("option", { key: c }, c))),
+                    React.createElement("input", { className: "inp" + (touched && !f.phone ? ' err' : ''), value: f.phone, onChange: e => set('phone', e.target.value) }))),
+            React.createElement("div", { className: "card", style: { textAlign: 'center' } },
+                React.createElement("div", { className: "sub", style: { fontSize: 12 } }, t.yourCode),
+                React.createElement("div", { className: "mono", style: { fontSize: 20, fontWeight: 600 } }, f.code)),
+            React.createElement("button", { className: "btn btn-primary", style: { marginTop: 4 }, onClick: submit }, t.save))));
 }
-
-function HomeScreen({lang,user,trips,onNew,onJoin,onOpen,onDelete}){
-  const t=dict(lang);
-  const active=trips.filter(x=>x.status==='active');
-  const past=trips.filter(x=>x.status==='past');
-  const isAdmin=tr=>tr.members&&tr.members.some(m=>m.id==='me'&&m.isAdmin);
-  return(<div className="screen">
-    <div className="pad">
-      <div className="eyebrow">{t.home}</div>
-      <h2 style={{fontSize:24}}>Olá, {user.firstName} 👋</h2>
-      <p className="sub" style={{marginTop:4,marginBottom:20}}>{dict(lang).welcome}</p>
-
-      {active.length>0&&<>
-        <div className="sectiontitle">{t.activeTrips}</div>
-        {active.map(tr=><TripCard key={tr.id} t={t} tr={tr} onOpen={()=>onOpen(tr.id)} canDelete={isAdmin(tr)} onDelete={onDelete}/>)}
-      </>}
-
-      <button className="opt" onClick={onNew}>
-        <span className="ic" style={{background:'#ffece9'}}>✈️</span>
-        <span className="tx"><b>{t.newTrip}</b><span>{t.newTripSub}</span></span><span className="arr">→</span>
-      </button>
-      <button className="opt" onClick={onJoin}>
-        <span className="ic" style={{background:'#e7f7f4'}}>🔑</span>
-        <span className="tx"><b>{t.joinTrip}</b><span>{t.joinSub}</span></span><span className="arr">→</span>
-      </button>
-
-      <div className="sectiontitle">{t.pastTrips}</div>
-      {past.length===0
-        ? <div className="card sub" style={{textAlign:'center'}}>{t.pastSub}</div>
-        : past.map(tr=><TripCard key={tr.id} t={t} tr={tr} onOpen={()=>onOpen(tr.id)} canDelete={isAdmin(tr)} onDelete={onDelete}/>)}
-    </div>
-  </div>);
+function HomeScreen({ lang, user, trips, onNew, onJoin, onOpen, onDelete }) {
+    const t = dict(lang);
+    const active = trips.filter(x => x.status === 'active');
+    const past = trips.filter(x => x.status === 'past');
+    const isAdmin = tr => tr.members && tr.members.some(m => m.id === 'me' && m.isAdmin);
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "pad" },
+            React.createElement("div", { className: "eyebrow" }, t.home),
+            React.createElement("h2", { style: { fontSize: 24 } },
+                "Ol\u00E1, ",
+                user.firstName,
+                " \uD83D\uDC4B"),
+            React.createElement("p", { className: "sub", style: { marginTop: 4, marginBottom: 20 } }, dict(lang).welcome),
+            active.length > 0 && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "sectiontitle" }, t.activeTrips),
+                active.map(tr => React.createElement(TripCard, { key: tr.id, t: t, tr: tr, onOpen: () => onOpen(tr.id), canDelete: isAdmin(tr), onDelete: onDelete }))),
+            React.createElement("button", { className: "opt", onClick: onNew },
+                React.createElement("span", { className: "ic", style: { background: '#ffece9' } }, "\u2708\uFE0F"),
+                React.createElement("span", { className: "tx" },
+                    React.createElement("b", null, t.newTrip),
+                    React.createElement("span", null, t.newTripSub)),
+                React.createElement("span", { className: "arr" }, "\u2192")),
+            React.createElement("button", { className: "opt", onClick: onJoin },
+                React.createElement("span", { className: "ic", style: { background: '#e7f7f4' } }, "\uD83D\uDD11"),
+                React.createElement("span", { className: "tx" },
+                    React.createElement("b", null, t.joinTrip),
+                    React.createElement("span", null, t.joinSub)),
+                React.createElement("span", { className: "arr" }, "\u2192")),
+            React.createElement("div", { className: "sectiontitle" }, t.pastTrips),
+            past.length === 0
+                ? React.createElement("div", { className: "card sub", style: { textAlign: 'center' } }, t.pastSub)
+                : past.map(tr => React.createElement(TripCard, { key: tr.id, t: t, tr: tr, onOpen: () => onOpen(tr.id), canDelete: isAdmin(tr), onDelete: onDelete })))));
 }
-
-function TripCard({t,tr,onOpen,canDelete,onDelete}){
-  const [cp,setCp]=useState(false);
-  const copy=e=>{e.stopPropagation();navigator.clipboard&&navigator.clipboard.writeText(tr.id);setCp(true);setTimeout(()=>setCp(false),1500);};
-  return(<div className={"tripcard"+(tr.status==='past'?' past':'')} onClick={onOpen}>
-    {canDelete&&<button className="cardx" onClick={e=>{e.stopPropagation();onDelete(tr);}}>✕</button>}
-    <div className="stamp" style={canDelete?{right:48}:{}}>{tr.status==='active'?'Ativa':'Anterior'}</div>
-    <h3 style={{fontSize:20,paddingRight:canDelete?100:70}}>{tr.name}</h3>
-    <div className="tripcode mono">{tr.id}
-      <button className="copybtn" onClick={copy}>{cp?t.copied:t.copyCode}</button></div>
-    <p style={{margin:'12px 0 0',fontSize:13,opacity:.85}}>📅 {tr.startDate} → {tr.endDate}</p>
-    <p style={{margin:'4px 0 0',fontSize:13,opacity:.85}}>📍 {tr.destinations.map(d=>d.name.split(',')[0]).join(' · ')}</p>
-    <p style={{margin:'4px 0 0',fontSize:13,opacity:.85}}>👥 {tr.members.length}</p>
-  </div>);
+function TripCard({ t, tr, onOpen, canDelete, onDelete }) {
+    const [cp, setCp] = useState(false);
+    const copy = e => { e.stopPropagation(); navigator.clipboard && navigator.clipboard.writeText(tr.id); setCp(true); setTimeout(() => setCp(false), 1500); };
+    return (React.createElement("div", { className: "tripcard" + (tr.status === 'past' ? ' past' : ''), onClick: onOpen },
+        canDelete && React.createElement("button", { className: "cardx", onClick: e => { e.stopPropagation(); onDelete(tr); } }, "\u2715"),
+        React.createElement("div", { className: "stamp", style: canDelete ? { right: 48 } : {} }, tr.status === 'active' ? 'Ativa' : 'Anterior'),
+        React.createElement("h3", { style: { fontSize: 20, paddingRight: canDelete ? 100 : 70 } }, tr.name),
+        React.createElement("div", { className: "tripcode mono" },
+            tr.id,
+            React.createElement("button", { className: "copybtn", onClick: copy }, cp ? t.copied : t.copyCode)),
+        React.createElement("p", { style: { margin: '12px 0 0', fontSize: 13, opacity: .85 } },
+            "\uD83D\uDCC5 ",
+            tr.startDate,
+            " \u2192 ",
+            tr.endDate),
+        React.createElement("p", { style: { margin: '4px 0 0', fontSize: 13, opacity: .85 } },
+            "\uD83D\uDCCD ",
+            tr.destinations.map(d => d.name.split(',')[0]).join(' · ')),
+        React.createElement("p", { style: { margin: '4px 0 0', fontSize: 13, opacity: .85 } },
+            "\uD83D\uDC65 ",
+            tr.members.length)));
 }
-
-function JoinScreen({lang,onBack,toast}){
-  const t=dict(lang); const [code,setCode]=useState('');
-  return(<div className="screen">
-    <div className="appbar"><button className="iconbtn" onClick={onBack}>←</button><div className="ttl">{t.joinTrip}</div><div style={{width:38}}/></div>
-    <div className="pad">
-      <div className="eyebrow">{t.joinTrip}</div>
-      <p className="sub" style={{marginBottom:18}}>{t.joinSub}</p>
-      <div className="field"><label>{t.enterCode}</label>
-        <input className="inp mono" placeholder="XXXXXXXXXXXX" maxLength={12} value={code} onChange={e=>setCode(e.target.value.toUpperCase())}/></div>
-      <button className="btn btn-primary" disabled={code.length<6} onClick={()=>{toast(t.joinSent);onBack();}}>{t.askJoin}</button>
-    </div>
-  </div>);
+function JoinScreen({ lang, onBack, toast }) {
+    const t = dict(lang);
+    const [code, setCode] = useState('');
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "\u2190"),
+            React.createElement("div", { className: "ttl" }, t.joinTrip),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            React.createElement("div", { className: "eyebrow" }, t.joinTrip),
+            React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.joinSub),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.enterCode),
+                React.createElement("input", { className: "inp mono", placeholder: "XXXXXXXXXXXX", maxLength: 12, value: code, onChange: e => setCode(e.target.value.toUpperCase()) })),
+            React.createElement("button", { className: "btn btn-primary", disabled: code.length < 6, onClick: () => { toast(t.joinSent); onBack(); } }, t.askJoin))));
 }
-
 /* ---------------- NEW TRIP ---------------- */
-function NewTripScreen({lang,onCreate,onCancel,toast}){
-  const t=dict(lang);
-  const [name,setName]=useState('');
-  const [start,setStart]=useState('');
-  const [end,setEnd]=useState('');
-  const [dests,setDests]=useState([]);
-  const [q,setQ]=useState(''); const [dq,setDq]=useState('');
-  const [askDel,setAskDel]=useState(false);
-  const matches = q.length>=3 ? CITIES.filter(c=>c.toLowerCase().includes(q.toLowerCase()) && c.toLowerCase()!==q.trim().toLowerCase()).slice(0,5):[];
-  // inclui o destino digitado (texto livre) + data na lista; permite empilhar vários
-  const includeDest=()=>{ const name=q.trim(); if(!name)return;
-    setDests([...dests,{name, date:dq||start}]); setQ(''); setDq(''); toast(t.destAdded); };
-  const create=()=>{
-    if(!name||!start||!end) return;
-    const trip={ id:rid(12), name, startDate:start, endDate:end,
-      destinations:dests.length?dests:[{name:'A definir',date:start}], status:'active',
-      members:[{id:'me',name:'Você',email:'voce@trippin.app',isAdmin:true}],
-      activities:[], docs:[], gallery:[], expenses:[] };
-    onCreate(trip);
-  };
-  return(<div className="screen">
-    <div className="appbar"><button className="iconbtn" onClick={onCancel}>←</button><div className="ttl">{t.newTrip}</div><div style={{width:38}}/></div>
-    <div className="pad">
-      <div className="field"><label>{t.tripName} <span className="req">*</span></label>
-        <input className="inp" placeholder="Eurotrip 2026" value={name} onChange={e=>setName(e.target.value)}/></div>
-      <div className="row">
-        <div className="field" style={{flex:1}}><label>{t.start} <span className="req">*</span></label>
-          <input type="date" className="inp" value={start} onChange={e=>setStart(e.target.value)}/></div>
-        <div className="field" style={{flex:1}}><label>{t.end} <span className="req">*</span></label>
-          <input type="date" className="inp" value={end} onChange={e=>setEnd(e.target.value)}/></div>
-      </div>
-
-      <div className="sectiontitle">📍 {t.addDest}</div>
-      {dests.map((d,i)=>(<div className="dest" key={i}>
-        <span className="pin">📍</span>
-        <span className="dd"><b>{d.name}</b><span>{d.date||'—'}</span></span>
-        <button className="copybtn" style={{background:'#ffece9',color:'var(--danger)'}} onClick={()=>setDests(dests.filter((_,j)=>j!==i))}>✕</button>
-      </div>))}
-
-      <div className="field searchwrap"><label>{t.searchDest}</label>
-        <input className="inp" placeholder="Lisboa, Luxemburgo..." value={q} onChange={e=>setQ(e.target.value)}/>
-        {matches.length>0&&<div className="results">
-          {matches.map(c=><button key={c} onClick={()=>setQ(c)}>📍 {c}</button>)}
-        </div>}
-      </div>
-      <div className="field"><label>{t.destDate}</label>
-        <input type="date" className="inp" value={dq} onChange={e=>setDq(e.target.value)}/></div>
-      <button className="btn btn-lagoon" disabled={!q.trim()} onClick={includeDest}>➕ {t.includeDest}</button>
-    </div>
-
-    <div className="footactions">
-      <button className="btn btn-danger" onClick={()=>setAskDel(true)}>{t.deleteEdit}</button>
-      <button className="btn btn-primary" disabled={!name||!start||!end} onClick={create}>{t.createTrip}</button>
-    </div>
-
-    {askDel&&<ConfirmModal icon="🗑️" title={t.deleteConfirm} msg={t.deleteConfirmSub}
-      confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger
-      onConfirm={()=>{setAskDel(false);toast(t.deleted);onCancel();}} onCancel={()=>setAskDel(false)}/>}
-  </div>);
+function NewTripScreen({ lang, onCreate, onCancel, toast }) {
+    const t = dict(lang);
+    const [name, setName] = useState('');
+    const [start, setStart] = useState('');
+    const [end, setEnd] = useState('');
+    const [dests, setDests] = useState([]);
+    const [q, setQ] = useState('');
+    const [dq, setDq] = useState('');
+    const [askDel, setAskDel] = useState(false);
+    const matches = q.length >= 3 ? CITIES.filter(c => c.toLowerCase().includes(q.toLowerCase()) && c.toLowerCase() !== q.trim().toLowerCase()).slice(0, 5) : [];
+    // inclui o destino digitado (texto livre) + data na lista; permite empilhar vários
+    const includeDest = () => {
+        const name = q.trim();
+        if (!name)
+            return;
+        setDests([...dests, { name, date: dq || start }]);
+        setQ('');
+        setDq('');
+        toast(t.destAdded);
+    };
+    const create = () => {
+        if (!name || !start || !end)
+            return;
+        const trip = { id: rid(12), name, startDate: start, endDate: end,
+            destinations: dests.length ? dests : [{ name: 'A definir', date: start }], status: 'active',
+            members: [{ id: 'me', name: 'Você', email: 'voce@trippin.app', isAdmin: true }],
+            activities: [], docs: [], gallery: [], expenses: [] };
+        onCreate(trip);
+    };
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onCancel }, "\u2190"),
+            React.createElement("div", { className: "ttl" }, t.newTrip),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null,
+                    t.tripName,
+                    " ",
+                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { className: "inp", placeholder: "Eurotrip 2026", value: name, onChange: e => setName(e.target.value) })),
+            React.createElement("div", { className: "row" },
+                React.createElement("div", { className: "field", style: { flex: 1 } },
+                    React.createElement("label", null,
+                        t.start,
+                        " ",
+                        React.createElement("span", { className: "req" }, "*")),
+                    React.createElement("input", { type: "date", className: "inp", value: start, onChange: e => setStart(e.target.value) })),
+                React.createElement("div", { className: "field", style: { flex: 1 } },
+                    React.createElement("label", null,
+                        t.end,
+                        " ",
+                        React.createElement("span", { className: "req" }, "*")),
+                    React.createElement("input", { type: "date", className: "inp", value: end, onChange: e => setEnd(e.target.value) }))),
+            React.createElement("div", { className: "sectiontitle" },
+                "\uD83D\uDCCD ",
+                t.addDest),
+            dests.map((d, i) => (React.createElement("div", { className: "dest", key: i },
+                React.createElement("span", { className: "pin" }, "\uD83D\uDCCD"),
+                React.createElement("span", { className: "dd" },
+                    React.createElement("b", null, d.name),
+                    React.createElement("span", null, d.date || '—')),
+                React.createElement("button", { className: "copybtn", style: { background: '#ffece9', color: 'var(--danger)' }, onClick: () => setDests(dests.filter((_, j) => j !== i)) }, "\u2715")))),
+            React.createElement("div", { className: "field searchwrap" },
+                React.createElement("label", null, t.searchDest),
+                React.createElement("input", { className: "inp", placeholder: "Lisboa, Luxemburgo...", value: q, onChange: e => setQ(e.target.value) }),
+                matches.length > 0 && React.createElement("div", { className: "results" }, matches.map(c => React.createElement("button", { key: c, onClick: () => setQ(c) },
+                    "\uD83D\uDCCD ",
+                    c)))),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.destDate),
+                React.createElement("input", { type: "date", className: "inp", value: dq, onChange: e => setDq(e.target.value) })),
+            React.createElement("button", { className: "btn btn-lagoon", disabled: !q.trim(), onClick: includeDest },
+                "\u2795 ",
+                t.includeDest)),
+        React.createElement("div", { className: "footactions" },
+            React.createElement("button", { className: "btn btn-danger", onClick: () => setAskDel(true) }, t.deleteEdit),
+            React.createElement("button", { className: "btn btn-primary", disabled: !name || !start || !end, onClick: create }, t.createTrip)),
+        askDel && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1\uFE0F", title: t.deleteConfirm, msg: t.deleteConfirmSub, confirmLabel: t.yesDelete, cancelLabel: t.cancel, danger: true, onConfirm: () => { setAskDel(false); toast(t.deleted); onCancel(); }, onCancel: () => setAskDel(false) })));
 }
-
 /* ---------------- TRIP VIEW ---------------- */
-function TripScreen({lang,trip,update,onBack,toast}){
-  const t=dict(lang);
-  const [tab,setTab]=useState('schedule');
-  const tabs=[['schedule',t.schedule,'📅'],['map',t.map,'🗺️'],['docs',t.docs,'📄'],
-    ['gallery',t.gallery,'🖼️'],['suggestions',t.suggestions,'✨'],['members',t.members,'👥']];
-  return(<div className="screen">
-    <div className="appbar">
-      <button className="iconbtn" onClick={onBack}>←</button>
-      <div className="ttl">{trip.name}</div>
-      <div style={{width:38}}/>
-    </div>
-    <div className="tabbar">
-      {tabs.map(([k,label,ic])=>(
-        <button key={k} className={"tab"+(tab===k?' on':'')} onClick={()=>setTab(k)}>{ic} {label}</button>))}
-    </div>
-    <div className="pad">
-      {tab==='schedule'&&<ScheduleTab t={t} trip={trip} update={update} toast={toast}/>}
-      {tab==='map'&&<MapTab t={t} trip={trip}/>}
-      {tab==='docs'&&<DocsTab t={t} trip={trip} update={update} toast={toast} goTab={setTab}/>}
-      {tab==='gallery'&&<GalleryTab t={t} trip={trip} update={update} toast={toast}/>}
-      {tab==='suggestions'&&<SuggestTab t={t} trip={trip} update={update} toast={toast}/>}
-      {tab==='members'&&<MembersTab t={t} trip={trip} update={update} toast={toast}/>}
-    </div>
-  </div>);
+function TripScreen({ lang, trip, update, onBack, toast }) {
+    const t = dict(lang);
+    const [tab, setTab] = useState('schedule');
+    const tabs = [['schedule', t.schedule, '📅'], ['map', t.map, '🗺️'], ['docs', t.docs, '📄'],
+        ['gallery', t.gallery, '🖼️'], ['suggestions', t.suggestions, '✨'], ['members', t.members, '👥']];
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "\u2190"),
+            React.createElement("div", { className: "ttl" }, trip.name),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "tabbar" }, tabs.map(([k, label, ic]) => (React.createElement("button", { key: k, className: "tab" + (tab === k ? ' on' : ''), onClick: () => setTab(k) },
+            ic,
+            " ",
+            label)))),
+        React.createElement("div", { className: "pad" },
+            tab === 'schedule' && React.createElement(ScheduleTab, { t: t, trip: trip, update: update, toast: toast }),
+            tab === 'map' && React.createElement(MapTab, { t: t, trip: trip }),
+            tab === 'docs' && React.createElement(DocsTab, { t: t, trip: trip, update: update, toast: toast, goTab: setTab }),
+            tab === 'gallery' && React.createElement(GalleryTab, { t: t, trip: trip, update: update, toast: toast }),
+            tab === 'suggestions' && React.createElement(SuggestTab, { t: t, trip: trip, update: update, toast: toast }),
+            tab === 'members' && React.createElement(MembersTab, { t: t, trip: trip, update: update, toast: toast }))));
 }
-
 /* --- Schedule --- */
-const EVENT_TYPES=['typeTransport','typeStay','typeFood','typeTour','typeEvent','typeOther'];
-const TYPE_COLOR={typeTransport:'#2DB5A3',typeStay:'#FF6B5C',typeFood:'#F4A259',typeTour:'#5B8DEF',typeEvent:'#9B7BE0',typeOther:'#6B7A90'};
-
-function ActivityForm({t,init,onSave,onCancel}){
-  const [a,setA]=useState({...init,type:init.type||'typeTour',desc:init.desc||''});
-  const set=(k,v)=>setA({...a,[k]:v});
-  return(<div className="card">
-    <div className="field"><label>{t.activityTitle}</label>
-      <input className="inp" value={a.title} onChange={e=>set('title',e.target.value)}/></div>
-    <div className="field"><label>{t.eventType}</label>
-      <select className="inp" value={a.type} onChange={e=>set('type',e.target.value)}>
-        {EVENT_TYPES.map(k=><option key={k} value={k}>{t[k]}</option>)}</select></div>
-    <div className="field"><label>📅 {t.date||'Data'}</label>
-      <input type="date" className="inp" value={a.date} onChange={e=>set('date',e.target.value)}/></div>
-    <div className="row">
-      <div className="field" style={{flex:1}}><label>{t.start}</label>
-        <input type="time" className="inp" value={a.start} onChange={e=>set('start',e.target.value)}/></div>
-      <div className="field" style={{flex:1}}><label>{t.end}</label>
-        <input type="time" className="inp" value={a.end} onChange={e=>set('end',e.target.value)}/></div>
-    </div>
-    <div className="field"><label>📍</label>
-      <input className="inp" value={a.loc} onChange={e=>set('loc',e.target.value)}/></div>
-    <div className="field"><label>{t.descOpt}</label>
-      <textarea className="inp" rows="3" style={{resize:'vertical'}} value={a.desc||''} onChange={e=>set('desc',e.target.value)}/></div>
-    <div className="row">
-      <button className="btn btn-ghost" onClick={onCancel}>{t.cancel}</button>
-      <button className="btn btn-primary" disabled={!a.title} onClick={()=>onSave(a)}>{t.save}</button>
-    </div>
-  </div>);
+const EVENT_TYPES = ['typeTransport', 'typeStay', 'typeFood', 'typeTour', 'typeEvent', 'typeOther'];
+const TYPE_COLOR = { typeTransport: '#2DB5A3', typeStay: '#FF6B5C', typeFood: '#F4A259', typeTour: '#5B8DEF', typeEvent: '#9B7BE0', typeOther: '#6B7A90' };
+function ActivityForm({ t, init, onSave, onCancel }) {
+    const [a, setA] = useState({ ...init, type: init.type || 'typeTour', desc: init.desc || '' });
+    const set = (k, v) => setA({ ...a, [k]: v });
+    return (React.createElement("div", { className: "card" },
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null, t.activityTitle),
+            React.createElement("input", { className: "inp", value: a.title, onChange: e => set('title', e.target.value) })),
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null, t.eventType),
+            React.createElement("select", { className: "inp", value: a.type, onChange: e => set('type', e.target.value) }, EVENT_TYPES.map(k => React.createElement("option", { key: k, value: k }, t[k])))),
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null,
+                "\uD83D\uDCC5 ",
+                t.date || 'Data'),
+            React.createElement("input", { type: "date", className: "inp", value: a.date, onChange: e => set('date', e.target.value) })),
+        React.createElement("div", { className: "row" },
+            React.createElement("div", { className: "field", style: { flex: 1 } },
+                React.createElement("label", null, t.start),
+                React.createElement("input", { type: "time", className: "inp", value: a.start, onChange: e => set('start', e.target.value) })),
+            React.createElement("div", { className: "field", style: { flex: 1 } },
+                React.createElement("label", null, t.end),
+                React.createElement("input", { type: "time", className: "inp", value: a.end, onChange: e => set('end', e.target.value) }))),
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null, "\uD83D\uDCCD"),
+            React.createElement("input", { className: "inp", value: a.loc, onChange: e => set('loc', e.target.value) })),
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null, t.descOpt),
+            React.createElement("textarea", { className: "inp", rows: "3", style: { resize: 'vertical' }, value: a.desc || '', onChange: e => set('desc', e.target.value) })),
+        React.createElement("div", { className: "row" },
+            React.createElement("button", { className: "btn btn-ghost", onClick: onCancel }, t.cancel),
+            React.createElement("button", { className: "btn btn-primary", disabled: !a.title, onClick: () => onSave(a) }, t.save))));
 }
-
 /* ---- localização por dia (destinos da viagem + chegadas das passagens anexadas) ---- */
-const CITY_PALETTE=['#2DB5A3','#FF6B5C','#5B8DEF','#9B7BE0','#F4A259','#3FA796','#E0729B'];
-function cityColor(city){ if(!city)return '#6B7A90'; let h=0; for(let i=0;i<city.length;i++)h=(h*31+city.charCodeAt(i))%CITY_PALETTE.length; return CITY_PALETTE[h]; }
-const cityOf=name=> (name||'').split(',')[0].trim();
-const addMin=(hhmm,min)=>{const p=(hhmm||'00:00').split(':').map(Number);let m=p[0]*60+p[1]+min;m=Math.max(0,Math.min(m,1439));
-  return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
+const CITY_PALETTE = ['#2DB5A3', '#FF6B5C', '#5B8DEF', '#9B7BE0', '#F4A259', '#3FA796', '#E0729B'];
+function cityColor(city) { if (!city)
+    return '#6B7A90'; let h = 0; for (let i = 0; i < city.length; i++)
+    h = (h * 31 + city.charCodeAt(i)) % CITY_PALETTE.length; return CITY_PALETTE[h]; }
+const cityOf = name => (name || '').split(',')[0].trim();
+const addMin = (hhmm, min) => {
+    const p = (hhmm || '00:00').split(':').map(Number);
+    let m = p[0] * 60 + p[1] + min;
+    m = Math.max(0, Math.min(m, 1439));
+    return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+};
 // âncoras ordenadas por data: destinos definidos na criação + chegadas lidas das passagens
-function locationAnchors(trip){
-  const a=[];
-  (trip.destinations||[]).forEach(d=>{ if(d.date&&d.name&&d.name!=='A definir') a.push({date:d.date,city:cityOf(d.name)}); });
-  (trip.docs||[]).forEach(doc=>{
-    if(doc.itin&&doc.itin.legs){ doc.itin.legs.forEach(lg=>{ if(lg.arrDate&&lg.to&&lg.to.city) a.push({date:lg.arrDate,city:lg.to.city,doc:true}); }); }
-    else { const p=doc.seg; if(p&&p.arrDate&&p.toCity) a.push({date:p.arrDate,city:p.toCity,doc:true}); }
-  });
-  return a.sort((x,y)=> x.date===y.date ? ((x.doc?1:0)-(y.doc?1:0)) : x.date.localeCompare(y.date));
+function locationAnchors(trip) {
+    const a = [];
+    (trip.destinations || []).forEach(d => { if (d.date && d.name && d.name !== 'A definir')
+        a.push({ date: d.date, city: cityOf(d.name) }); });
+    (trip.docs || []).forEach(doc => {
+        if (doc.itin && doc.itin.legs) {
+            doc.itin.legs.forEach(lg => { if (lg.arrDate && lg.to && lg.to.city)
+                a.push({ date: lg.arrDate, city: lg.to.city, doc: true }); });
+        }
+        else {
+            const p = doc.seg;
+            if (p && p.arrDate && p.toCity)
+                a.push({ date: p.arrDate, city: p.toCity, doc: true });
+        }
+    });
+    return a.sort((x, y) => x.date === y.date ? ((x.doc ? 1 : 0) - (y.doc ? 1 : 0)) : x.date.localeCompare(y.date));
 }
 // vale do dia da chegada/destino até o fim OU até o próximo destino
-function locationForDay(trip,day){ const a=locationAnchors(trip).filter(x=>x.date<=day); return a.length?a[a.length-1].city:null; }
+function locationForDay(trip, day) { const a = locationAnchors(trip).filter(x => x.date <= day); return a.length ? a[a.length - 1].city : null; }
 // todos os locais por onde o usuário passa (destinos + origem/escalas/destino das passagens), em ordem
-function tripLocations(trip){
-  const items=[];
-  (trip.destinations||[]).forEach(d=>{ const c=cityOf(d.name); if(c&&c!=='A definir') items.push({date:d.date||trip.startDate,city:c}); });
-  (trip.docs||[]).forEach(doc=>{
-    if(doc.itin&&doc.itin.legs){ doc.itin.legs.forEach(lg=>{ items.push({date:lg.depDate,city:lg.from.city}); items.push({date:lg.arrDate,city:lg.to.city}); }); }
-    else if(doc.seg){ items.push({date:doc.seg.depDate,city:doc.seg.fromCity}); items.push({date:doc.seg.arrDate,city:doc.seg.toCity}); }
-  });
-  items.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const out=[]; items.forEach(i=>{ if(i.city&&!out.includes(i.city)) out.push(i.city); });
-  return out;
+function tripLocations(trip) {
+    const items = [];
+    (trip.destinations || []).forEach(d => { const c = cityOf(d.name); if (c && c !== 'A definir')
+        items.push({ date: d.date || trip.startDate, city: c }); });
+    (trip.docs || []).forEach(doc => {
+        if (doc.itin && doc.itin.legs) {
+            doc.itin.legs.forEach(lg => { items.push({ date: lg.depDate, city: lg.from.city }); items.push({ date: lg.arrDate, city: lg.to.city }); });
+        }
+        else if (doc.seg) {
+            items.push({ date: doc.seg.depDate, city: doc.seg.fromCity });
+            items.push({ date: doc.seg.arrDate, city: doc.seg.toCity });
+        }
+    });
+    items.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const out = [];
+    items.forEach(i => { if (i.city && !out.includes(i.city))
+        out.push(i.city); });
+    return out;
 }
 // 7 dias (segunda→domingo) da semana que contém o dia
-function weekDaysOf(dayStr){ const d=new Date(dayStr+'T00:00:00'); const dow=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-dow);
-  const out=[]; for(let i=0;i<7;i++){const x=new Date(mon);x.setDate(mon.getDate()+i);out.push(x.toISOString().slice(0,10));} return out; }
-const DOW=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
-
-/* ===== Interpretador de roteiro de passagem aérea (parser testado) ===== */
-if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const AIRPORTS=[
-  [/GUARULHOS|GRU\b/i,{iata:'GRU',city:'São Paulo'}],[/CONGONHAS/i,{iata:'CGH',city:'São Paulo'}],
-  [/GALEAO|GALEÃO|RIO DE JANEIRO/i,{iata:'GIG',city:'Rio de Janeiro'}],
-  [/LISBON|LISBOA/i,{iata:'LIS',city:'Lisboa'}],[/PORTO/i,{iata:'OPO',city:'Porto'}],
-  [/LUXEMBOURG/i,{iata:'LUX',city:'Luxemburgo'}],[/MADRID/i,{iata:'MAD',city:'Madri'}],
-  [/BARCELONA/i,{iata:'BCN',city:'Barcelona'}],[/PARIS|CHARLES DE GAULLE/i,{iata:'CDG',city:'Paris'}],
-  [/LONDON|HEATHROW/i,{iata:'LHR',city:'Londres'}],[/FRANKFURT/i,{iata:'FRA',city:'Frankfurt'}],
-  [/ROME|ROMA|FIUMICINO/i,{iata:'FCO',city:'Roma'}],[/AMSTERDAM|SCHIPHOL/i,{iata:'AMS',city:'Amsterdã'}],
-];
-const MONTHS_T={jan:0,feb:1,fev:1,mar:2,apr:3,abr:3,may:4,mai:4,jun:5,jul:6,aug:7,ago:7,sep:8,set:8,oct:9,out:9,nov:10,dec:11,dez:11};
-const titleCase=s=>s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).replace(/\s+/g,' ').trim();
-function resolveAirport(rawName){let name=(rawName||'').replace(/(INTL|AIRPORT|INTERNATIONAL|TERMINAL)/gi,' $1').replace(/\s+/g,' ').trim();
-  for(const [re,info] of AIRPORTS){ if(re.test(name)) return {...info,airport:titleCase(name)}; }
-  const m=name.match(/\b([A-Z]{3})\b/);
-  return {iata:m?m[1]:'—',city:titleCase((name.split(/\s{2,}|,/)[0]||name)),airport:titleCase(name)};}
-function parseDateT(s){const m=s.match(/(\d{1,2})([A-Za-z]{3})(\d{4})/);if(!m)return null;
-  const mo=MONTHS_T[m[2].toLowerCase()];if(mo==null)return null;return new Date(Date.UTC(+m[3],mo,+m[1]));}
-const fmtDateT=d=>d?d.toISOString().slice(0,10):null;
-function diffHM(d1,t1,d2,t2){const a=new Date(d1+'T'+t1+':00Z'),b=new Date(d2+'T'+t2+':00Z');
-  let min=Math.round((b-a)/60000);if(min<0)min=0;return {min,label:Math.floor(min/60)+'h'+String(min%60).padStart(2,'0')};}
-function parseAirTicket(text){
-  const linesAll=text.split(/\r?\n/); let s=0,e=linesAll.length;
-  linesAll.forEach((l,i)=>{ if(/\bFlight\b/.test(l)&&/\bDeparture\b/.test(l))s=i+1;
-    if(/^\s*\(1\)\s*OK|OBSERVA(Ç|C)/i.test(l)&&e===linesAll.length&&i>s)e=i;});
-  const lines=linesAll.slice(s,e);
-  const legRe=/\b([A-Z]{2}\d{2,4})\b[^\d]*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/; const legs=[];
-  for(let i=0;i<lines.length;i++){ const m=lines[i].match(legRe); if(!m)continue;
-    const flight=m[1],depT=m[2],arrT=m[3];
-    const pre=lines[i].slice(0,lines[i].indexOf(flight)).trim();
-    const cols=pre.split(/\s{2,}/).filter(Boolean); let from=cols[0]||'',to=cols[1]||'';
-    if(!to){for(let k=i-1;k>=0&&k>i-4;k--){if(lines[k].trim()){to=from;from=lines[k].trim();break;}}}
-    let depDate=null,arrDate=null;
-    for(let k=i;k<Math.min(i+3,lines.length);k++){ const dts=lines[k].match(/\d{1,2}[A-Za-z]{3}\d{4}/g);
-      if(dts&&dts.length>=2){depDate=parseDateT(dts[0]);arrDate=parseDateT(dts[1]);break;}
-      if(dts&&dts.length===1){if(!depDate)depDate=parseDateT(dts[0]);else{arrDate=parseDateT(dts[0]);break;}}}
-    let dur=null;
-    for(let k=i;k<lines.length;k++){ if(k>i&&legRe.test(lines[k]))break;
-      const d=lines[k].match(/Dura(?:ç|c)(?:ão|ao)?\s*\/?\s*Duration:\s*(\d{1,2}:\d{2})|Duration:\s*(\d{1,2}:\d{2})/i);
-      if(d){dur=d[1]||d[2];break;}}
-    legs.push({flight,from:resolveAirport(from),to:resolveAirport(to),depTime:depT,arrTime:arrT,
-      depDate:fmtDateT(depDate),arrDate:fmtDateT(arrDate),duration:dur});}
-  const stages=[];
-  if(legs.length){ const f=legs[0];
-    stages.push({kind:'origin',city:f.from.city,airport:f.from.airport,iata:f.from.iata,depTime:f.depTime,depDate:f.depDate,flight:f.flight,duration:f.duration});
-    for(let i=0;i<legs.length-1;i++){const cur=legs[i],nxt=legs[i+1];
-      const lay=(cur.arrDate&&nxt.depDate)?diffHM(cur.arrDate,cur.arrTime,nxt.depDate,nxt.depTime):null;
-      stages.push({kind:'layover',city:cur.to.city,airport:cur.to.airport,iata:cur.to.iata,arrTime:cur.arrTime,arrDate:cur.arrDate,
-        depTime:nxt.depTime,depDate:nxt.depDate,layover:lay?lay.label:null,inFlight:cur.flight,outFlight:nxt.flight,nextDuration:nxt.duration});}
-    const l=legs[legs.length-1];
-    stages.push({kind:'destination',city:l.to.city,airport:l.to.airport,iata:l.to.iata,arrTime:l.arrTime,arrDate:l.arrDate,flight:l.flight});}
-  return {legs,stages};
-}
-async function pdfToText(buf){
-  const pdf=await pdfjsLib.getDocument({data:buf}).promise; let rows=[];
-  for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const content=await page.getTextContent();
-    const byY={};
-    content.items.forEach(it=>{ if(!it.str.trim())return; const y=Math.round(it.transform[5]);
-      let key=Object.keys(byY).find(k=>Math.abs(k-y)<=2); if(key==null)key=y;
-      (byY[key]=byY[key]||[]).push({x:it.transform[4],w:it.width||it.str.length*4,s:it.str});});
-    Object.keys(byY).map(Number).sort((a,b)=>b-a).forEach(y=>{ const items=byY[y].sort((a,b)=>a.x-b.x);
-      let line='',lastEnd=null; items.forEach(it=>{ if(lastEnd!=null){const gap=it.x-lastEnd;
-        if(gap>14)line+='   '; else if(gap>1.5)line+=' ';} line+=it.s; lastEnd=it.x+it.w;});
-      rows.push(line);});}
-  return rows.join('\n');
-}
-const brDateT=iso=>{ if(!iso)return '—'; const p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
-const STAGE_COL={origin:'#2DB5A3',layover:'#F4A259',destination:'#5B8DEF'};
-function ItinStageCard({st,lbl}){
-  const col=STAGE_COL[st.kind];
-  return(<div className="stageWrap">
-    <span className="dotmark" style={{background:col}}/>
-    <div className="stagebox">
-      <span className="sbadge" style={{background:col}}>{lbl[st.kind]}</span>
-      <div><span className="scity">{st.city}</span><span className="siata">{st.iata}</span></div>
-      <div className="sair">{st.airport}</div>
-      {st.kind==='origin'&&<><div className="stimes"><div><div className="slab">{lbl.dep}</div><div className="sval">{st.depTime}</div><div className="sdt">{brDateT(st.depDate)}</div></div></div>
-        <div><span className="sfly">✈️ {st.flight}</span>{st.duration&&<span className="sfly" style={{background:'#f1ede4',color:'#444'}}>⏱ {st.duration.replace(':','h')}</span>}</div></>}
-      {st.kind==='layover'&&<><div className="stimes">
-          <div><div className="slab">{lbl.arr}</div><div className="sval">{st.arrTime}</div><div className="sdt">{brDateT(st.arrDate)}</div></div>
-          <div><div className="slab">{lbl.nextDep}</div><div className="sval">{st.depTime}</div><div className="sdt">{brDateT(st.depDate)}</div></div></div>
-        {st.layover&&<div className="slay">⏳ {lbl.layoverTime}: {st.layover}</div>}
-        <div><span className="sfly">🛬 {st.inFlight}</span><span className="sfly">✈️ {st.outFlight}</span></div></>}
-      {st.kind==='destination'&&<><div className="stimes"><div><div className="slab">{lbl.arr}</div><div className="sval">{st.arrTime}</div><div className="sdt">{brDateT(st.arrDate)}</div></div></div>
-        <div><span className="sfly">🛬 {st.flight}</span></div></>}
-    </div>
-  </div>);
-}
-
-function ScheduleTab({t,trip,update,toast}){
-  const [view,setView]=useState('day');
-  const days = [...new Set(trip.activities.map(a=>a.date))].sort();
-  const [curDay,setCurDay]=useState(days[0]||trip.startDate);
-  const [adding,setAdding]=useState(false);
-  const [editId,setEditId]=useState(null);
-  const [delId,setDelId]=useState(null);
-  const dayActs = trip.activities.filter(a=>a.date===curDay).sort((a,b)=>a.start.localeCompare(b.start));
-  const hasConflict=(a)=>dayActs.some(b=>b.id!==a.id && b.start<a.end && a.start<b.end);
-  const conflictExists = dayActs.some(a=>hasConflict(a));
-  const allDays=(()=>{
-    const dates=trip.activities.map(a=>a.date).filter(Boolean);
-    const lo=[trip.startDate,...dates].sort()[0];
-    const hi=[trip.endDate,...dates].sort().slice(-1)[0];
-    const out=[];let d=new Date(lo+'T00:00:00');const e=new Date(hi+'T00:00:00');
-    while(d<=e){out.push(d.toISOString().slice(0,10));d.setDate(d.getDate()+1);}return out;})();
-  const idx=allDays.indexOf(curDay);
-  const move=dir=>{const ni=Math.min(Math.max(idx+dir,0),allDays.length-1);setCurDay(allDays[ni]);};
-  const saveNew=(a)=>{ update({...trip,activities:[...trip.activities,{...a,id:uid(),source:'manual',joined:['me']}]});
-    setAdding(false); toast(t.addActivity+' ✓'); };
-  const saveEdit=(a)=>{ update({...trip,activities:trip.activities.map(x=>x.id===a.id?a:x)}); setEditId(null); toast(t.profileSaved); };
-  const doDelete=(id)=>{ update({...trip,activities:trip.activities.filter(x=>x.id!==id)}); setDelId(null); toast(t.activityDeleted); };
-  const toggleJoin=(id)=>{ update({...trip,activities:trip.activities.map(a=>a.id===id?
-    {...a,joined:a.joined.includes('me')?a.joined.filter(x=>x!=='me'):[...a.joined,'me']}:a)}); };
-  const editing = editId?trip.activities.find(a=>a.id===editId):null;
-  return(<div>
-    <div className="calhead">
-      <div className="segbtns">
-        {['month','week','day'].map(v=><button key={v} className={view===v?'on':''} onClick={()=>setView(v)}>{t[v]}</button>)}
-      </div>
-      <div style={{display:'flex',gap:6}}>
-        <button className="navarrow" onClick={()=>move(-1)}>‹</button>
-        <button className="navarrow" onClick={()=>move(1)}>›</button>
-      </div>
-    </div>
-
-    {view==='month'&&<MonthGrid trip={trip} curDay={curDay} setCurDay={d=>{setCurDay(d);setView('day');}}/>}
-    {view==='week'&&<WeekView t={t} trip={trip} curDay={curDay} openDay={d=>{setCurDay(d);setView('day');}}/>}
-    {view==='day'&&<>
-      <div style={{fontWeight:700,fontFamily:'Sora',margin:'4px 0 12px'}}>📅 {curDay}</div>
-      {(()=>{const loc=locationForDay(trip,curDay);return loc?
-        <div className="locmark" style={{background:cityColor(loc)}}>📍 {t.youAreIn} {loc}</div>:null;})()}
-      {conflictExists&&<div className="alert"><span className="ai">⚠️</span>
-        <div><b>{t.conflict}</b><p>Há atividades sobrepostas. Escolha em qual ingressar.</p></div></div>}
-      {dayActs.length===0&&!adding&&<div className="empty"><div className="ei">🗓️</div>Nada planejado neste dia.</div>}
-      {dayActs.map(a=>{const cf=hasConflict(a);const tc=TYPE_COLOR[a.type]||'#2DB5A3';return(
-        editId===a.id
-        ? <ActivityForm key={a.id} t={t} init={a} onSave={saveEdit} onCancel={()=>setEditId(null)}/>
-        : <div className="tslot" key={a.id}>
-          <div className="tm">{a.start}</div>
-          <div style={{flex:1}}>
-            <div className={"actblk"+(cf?' conflict':'')} style={{borderLeftColor:cf?'var(--amber)':tc}}>
-              <div className="blkbtns">
-                <button className="blkbtn" title={t.editActivity} onClick={()=>{setAdding(false);setEditId(a.id);}}>✎</button>
-                <button className="blkbtn del" title={t.deleteActivity} onClick={()=>setDelId(a.id)}>✕</button>
-              </div>
-              {a.type&&<span className="typetag" style={{color:tc,background:tc+'1A'}}>{t[a.type]}</span>}
-              <b style={{display:'block',paddingRight:60}}>{a.title}</b>
-              <div className="meta">🕐 {a.start}–{a.end} {a.loc&&'· 📍 '+a.loc} {a.source==='doc'&&'· 🤖 auto'}</div>
-              {a.desc&&<div className="adesc">{a.desc}</div>}
-              {cf&&<button className={"joinbtn"+(a.joined.includes('me')?' joined':'')} onClick={()=>toggleJoin(a.id)}>
-                {a.joined.includes('me')?'✓ '+t.joined:t.join}</button>}
-            </div>
-          </div>
-        </div>);})}
-      {adding
-        ? <ActivityForm t={t} init={{title:'',type:'typeTour',date:curDay,start:'09:00',end:'10:00',loc:'',desc:''}}
-            onSave={saveNew} onCancel={()=>setAdding(false)}/>
-        : <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>{setEditId(null);setAdding(true);}}>+ {t.addActivity}</button>}
-    </>}
-
-    {delId&&<ConfirmModal icon="🗑️" title={t.deleteActivity} msg=""
-      confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger
-      onConfirm={()=>doDelete(delId)} onCancel={()=>setDelId(null)}/>}
-  </div>);
-}
-
-function MonthGrid({trip,curDay,setCurDay}){
-  const base=new Date((curDay||trip.startDate)+'T00:00:00');
-  const y=base.getFullYear(),m=base.getMonth();
-  const first=new Date(y,m,1); const start=new Date(first); start.setDate(1-((first.getDay()+6)%7));
-  const cells=[]; for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);cells.push(d);}
-  const has=ds=>trip.activities.some(a=>a.date===ds);
-  return(<>
-    <div style={{textAlign:'center',fontWeight:700,fontFamily:'Sora',marginBottom:8}}>
-      {base.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</div>
-    <div className="daygrid" style={{marginBottom:6}}>{DOW.map((d,i)=><div key={i} style={{textAlign:'center',fontSize:10,color:'var(--muted)',fontWeight:700}}>{d[0]}</div>)}</div>
-    <div className="daygrid">
-      {cells.map((d,i)=>{const ds=d.toISOString().slice(0,10);const loc=locationForDay(trip,ds);const col=loc?cityColor(loc):null;
-        return(<button key={i} className={"dcell"+(d.getMonth()!==m?' dim':'')}
-          style={loc&&d.getMonth()===m?{background:col+'14',borderColor:col+'55'}:{}} onClick={()=>setCurDay(ds)}>
-          <div className="dn">{d.getDate()}</div>
-          {has(ds)&&<span className="dot"/>}
-          {loc&&<span style={{position:'absolute',bottom:3,right:3,left:3,fontSize:8,fontWeight:700,
-            color:col,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{loc}</span>}
-        </button>);})}
-    </div>
-    <div className="card sub" style={{textAlign:'center',fontSize:11,marginTop:10}}>📍 Dias coloridos = dias de viagem, com o local de cada dia · • = há atividades</div>
-  </>);
-}
-
-function WeekView({t,trip,curDay,openDay}){
-  const week=weekDaysOf(curDay);
-  const today=new Date().toISOString().slice(0,10);
-  const inTrip=ds=>ds>=trip.startDate&&ds<=trip.endDate;
-  return(<div>
-    <div style={{textAlign:'center',fontWeight:700,fontFamily:'Sora',marginBottom:10,fontSize:13}}>
-      {week[0].slice(8)}/{week[0].slice(5,7)} – {week[6].slice(8)}/{week[6].slice(5,7)}</div>
-    {week.map((ds,wi)=>{
-      const acts=trip.activities.filter(a=>a.date===ds).sort((a,b)=>a.start.localeCompare(b.start));
-      const loc=locationForDay(trip,ds);
-      const dd=new Date(ds+'T00:00:00');
-      return(<div key={ds} className={"wkday"+(ds===today?' today':'')} style={inTrip(ds)?{}:{opacity:.5}}>
-        <div className="wkh" onClick={()=>openDay(ds)}>
-          <div><div className="wd">{DOW[wi]} {dd.getDate()}/{String(dd.getMonth()+1).padStart(2,'0')}</div>
-            <div className="wdsub">{acts.length?acts.length+' '+(acts.length===1?'atividade':'atividades'):t.nothingDay}</div></div>
-          {loc&&<span className="locchip" style={{background:cityColor(loc)}}>📍 {loc}</span>}
-        </div>
-        {acts.length===0
-          ? <div className="wkempty">—</div>
-          : acts.map(a=>{const tc=TYPE_COLOR[a.type]||'#2DB5A3';return(
-              <div className="wkrow" key={a.id} onClick={()=>openDay(ds)}>
-                <div className="wt">{a.start}</div>
-                <div className="wblk" style={{borderLeftColor:tc}}>
-                  {a.title}
-                  <div className="wbt">{a.start}–{a.end}{a.loc?' · '+a.loc:''}{a.source==='doc'?' · 🤖':''}</div>
-                </div>
-              </div>);})}
-      </div>);
-    })}
-  </div>);
-}
-
-/* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
-function MapTab({t,trip}){
-  // trechos: usa o roteiro interpretado (com escalas) quando houver; senão o seg manual
-  const segs=[];
-  (trip.docs||[]).forEach(d=>{
-    if(d.itin&&d.itin.legs) d.itin.legs.forEach(lg=>segs.push({fromCity:lg.from.city,toCity:lg.to.city,depDate:lg.depDate,depTime:lg.depTime,arrDate:lg.arrDate,arrTime:lg.arrTime,iata:lg.from.iata+'→'+lg.to.iata}));
-    else if(d.seg) segs.push(d.seg);
-  });
-  segs.sort((a,b)=>((a.depDate||'')+ (a.depTime||'')).localeCompare((b.depDate||'')+(b.depTime||'')));
-  // constrói lista ordenada de paradas (cidade + data) sem repetir cidade consecutiva
-  const stops=[];
-  const push=(city,date)=>{ if(!city)return; const last=stops[stops.length-1];
-    if(!last||last.city!==city) stops.push({city,date}); };
-  (trip.destinations||[]).filter(d=>d.name&&d.name!=='A definir').forEach(d=>push(cityOf(d.name),d.date));
-  segs.forEach(s=>{ push(s.fromCity,s.depDate); push(s.toCity,s.arrDate); });
-  const pts=stops.length?stops:[{city:'A definir',date:trip.startDate}];
-  const n=pts.length;
-  const xs=i=> n===1?150 : 30+(240*i/(n-1));
-  const ys=i=> 55+(i%2===0?-15:15);
-
-  return(<div>
-    <div className="card" style={{background:'linear-gradient(135deg,#dceee9,#bfe0d8)',border:'none',minHeight:200,
-      display:'flex',flexDirection:'column',justifyContent:'center',position:'relative',overflow:'hidden'}}>
-      <svg viewBox="0 0 300 120" style={{width:'100%',height:150}}>
-        <polyline points={pts.map((_,i)=>xs(i)+','+ys(i)).join(' ')} fill="none" stroke="#FF6B5C" strokeWidth="2.5" strokeDasharray="2 6" strokeLinecap="round"/>
-        {pts.map((p,i)=>(<g key={i}>
-          <circle cx={xs(i)} cy={ys(i)} r="6" fill={i===0?'#F4A259':i===n-1?'#5B8DEF':'#1A2B4A'}/>
-          <text x={xs(i)} y={ys(i)+(i%2===0?-12:20)} fontSize="9" fontWeight="700" fill="#234" textAnchor="middle">{p.city}</text>
-        </g>))}
-      </svg>
-    </div>
-
-    {segs.length>0&&<>
-      <div className="sectiontitle">✈️ Trechos (das passagens)</div>
-      {segs.map((s,i)=>(<div className="dest" key={i}>
-        <span className="pin">✈️</span>
-        <span className="dd"><b>{s.fromCity} → {s.toCity}</b>
-          <span>{s.depDate} {s.depTime} → {s.arrDate} {s.arrTime}</span></span>
-      </div>))}
-    </>}
-
-    <div className="sectiontitle">📍 Lugares por onde você vai passar</div>
-    {pts.map((p,i)=>{const role=i===0?'Origem':i===n-1?'Destino':'Escala / parada';return(
-      <div className="dest" key={i}>
-      <span className="pin">{i===0?'🟠':i===n-1?'🔵':'⚪'}</span>
-      <span className="dd"><b>{p.city}</b><span>{role}{p.date?' · '+brDateT(p.date):''}</span></span>
-      <span className="locchip" style={{background:cityColor(p.city)}}>📍</span>
-    </div>);})}
-    <div className="card sub" style={{textAlign:'center',fontSize:12}}>🟠 Origem · ⚪ Escala · 🔵 Destino final · Anexe passagens em Docs para enriquecer a rota · Percurso em tempo real chega na v2</div>
-  </div>);
-}
-
-/* --- Docs (anexo real do dispositivo + remoção; inteligência sob controle do usuário) --- */
-function DocsTab({t,trip,update,toast,goTab}){
-  const cats=[['tickets',t.tickets,'🎫',['Avião','Trem','Ônibus']],
-    ['stays',t.stays,'🏨',['Airbnb','Hotel','Booking']],
-    ['events',t.events,'🎭',['Esporte','Festa','Teatro','Culinária']],
-    ['extras',t.extras,'📎',['Diversos']]];
-  const [cat,setCat]=useState('tickets');
-  const [sub,setSub]=useState('Avião');
-  const [readId,setReadId]=useState(null);   // doc sendo "lido" (passagem)
-  const [busy,setBusy]=useState(false);
-  const [confirmDoc,setConfirmDoc]=useState(null); // doc aguardando confirmação p/ cronograma
-  const fileRef=useRef(null);
-  const cur=cats.find(c=>c[0]===cat);
-  const catDocs=trip.docs.filter(d=>d.cat===cat && d.sub===sub);
-  const icon=cat==='tickets'?'🎫':cat==='stays'?'🏨':cat==='events'?'🎭':'📎';
-  const typeForCat={tickets:'typeTransport',stays:'typeStay',events:'typeEvent',extras:'typeOther'};
-
-  // Anexo real do dispositivo + interpretação automática quando é passagem em PDF
-  const onFile=async e=>{
-    const file=e.target.files&&e.target.files[0]; if(!file)return;
-    e.target.value='';
-    const dataUrl = file.size<2*1024*1024 ? await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file);}) : null;
-    const doc={id:uid(),cat,sub,name:file.name.replace(/\.[^.]+$/,''),file:file.name,
-      mime:file.type||'arquivo',size:file.size,dataUrl,offline:!!dataUrl};
-    // tenta interpretar o roteiro se for passagem em PDF
-    if(cat==='tickets' && /pdf/i.test(file.type||file.name)){
-      setBusy(true);
-      try{ const buf=await file.arrayBuffer(); const txt=await pdfToText(buf); const itin=parseAirTicket(txt);
-        if(itin.stages.length) doc.itin=itin;
-      }catch(err){ /* segue sem interpretação */ }
-      setBusy(false);
+function weekDaysOf(dayStr) {
+    const d = new Date(dayStr + 'T00:00:00');
+    const dow = (d.getDay() + 6) % 7;
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - dow);
+    const out = [];
+    for (let i = 0; i < 7; i++) {
+        const x = new Date(mon);
+        x.setDate(mon.getDate() + i);
+        out.push(x.toISOString().slice(0, 10));
     }
-    update({...trip,docs:[...trip.docs,doc]});
-    toast(t.docAttached);
-    if(cat==='tickets') setReadId(doc.id);
-  };
-  const removeDoc=(id)=>{ update({...trip,docs:trip.docs.filter(d=>d.id!==id),
-    activities:trip.activities.filter(a=>a.docId!==id)}); toast(t.docRemoved); };
-  const toSchedule=(d)=>{
-    const act={id:uid(),docId:d.id,date:trip.startDate,start:'15:00',end:'16:00',title:d.name,
-      type:typeForCat[d.cat]||'typeOther',loc:'',desc:'Criado a partir do documento: '+d.file,source:'doc',joined:['me']};
-    update({...trip,activities:[...trip.activities,act]});
-    toast(t.recAdded);
-  };
-  // ROTEIRO INTERPRETADO -> cria um card de PARTIDA e um de CHEGADA por trecho, em CADA data correta
-  const buildStageBlocks=(d)=>{
-    const legs=d.itin.legs; const blocks=[];
-    legs.forEach((lg,i)=>{
-      const isLay = i>0; // chegada deste trecho num aeroporto de escala
-      blocks.push({id:uid(),docId:d.id,date:lg.depDate,start:lg.depTime,end:addMin(lg.depTime,40),
-        title:'✈️ '+t.departure+' — '+lg.from.city+' ('+lg.from.iata+')', type:'typeTransport', loc:lg.from.airport,
-        desc:t.departure+' '+lg.from.airport+' · '+t.flight+' '+lg.flight+' → '+lg.to.city+(lg.duration?(' · '+lg.duration.replace(':','h')):''),
-        source:'doc', joined:['me']});
-      const isFinal = i===legs.length-1;
-      blocks.push({id:uid(),docId:d.id,date:lg.arrDate,start:lg.arrTime,end:addMin(lg.arrTime,30),
-        title:(isFinal?'🛬 ':'🛬 ')+t.arrival+' — '+lg.to.city+' ('+lg.to.iata+')', type:'typeTransport', loc:lg.to.airport,
-        desc:t.arrival+' '+lg.to.airport+' · '+t.flight+' '+lg.flight+(isFinal?'':' · '+t.lblLayover), source:'doc', joined:['me']});
-    });
-    const first=legs[0], last=legs[legs.length-1];
-    const seg={fromCity:first.from.city,toCity:last.to.city,depDate:first.depDate,depTime:first.depTime,arrDate:last.arrDate,arrTime:last.arrTime};
-    const dates=[...new Set(blocks.map(b=>b.date))].sort();
-    return {blocks,seg,dates};
-  };
-  const applyStages=(d)=>{
-    const {blocks,seg}=buildStageBlocks(d);
-    update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,seg}:x),
-      activities:[...trip.activities.filter(a=>a.docId!==d.id), ...blocks]});
-    setConfirmDoc(null); setReadId(null); toast(t.stagesAdded);
-    if(goTab) goTab('schedule'); // encaminha o usuário ao cronograma
-  };
-  // LEITURA MANUAL: bloco de PARTIDA e de CHEGADA + trecho (seg)
-  const saveTicket=(d,seg)=>{
-    const dep={id:uid(),docId:d.id,date:seg.depDate,start:seg.depTime,end:addMin(seg.depTime,40),
-      title:'✈️ '+t.departure+' — '+seg.fromCity, type:'typeTransport', loc:seg.fromCity,
-      desc:seg.fromCity+' → '+seg.toCity+' · '+d.file, source:'doc', joined:['me']};
-    const arr={id:uid(),docId:d.id,date:seg.arrDate,start:seg.arrTime,end:addMin(seg.arrTime,30),
-      title:'🛬 '+t.arrival+' — '+seg.toCity, type:'typeTransport', loc:seg.toCity,
-      desc:t.youAreIn+' '+seg.toCity+' · '+d.file, source:'doc', joined:['me']};
-    update({...trip, docs:trip.docs.map(x=>x.id===d.id?{...x,seg,itin:undefined}:x),
-      activities:[...trip.activities.filter(a=>a.docId!==d.id), dep, arr]});
-    setReadId(null); toast(t.ticketRead);
-  };
-  const human=b=> b? (b<1024?b+' B':b<1048576?(b/1024).toFixed(0)+' KB':(b/1048576).toFixed(1)+' MB') : '';
-  const readingDoc = readId?trip.docs.find(d=>d.id===readId):null;
-  const lbl={origin:t.lblOrigin,layover:t.lblLayover,destination:t.lblDestination,dep:t.departure,arr:t.arrival,nextDep:t.nextDep,layoverTime:t.layoverLabel};
-
-  return(<div>
-    <div className="subtabs">
-      {cats.map(c=><button key={c[0]} className={"subtab"+(cat===c[0]?' on':'')} onClick={()=>{setCat(c[0]);setSub(c[3][0]);}}>{c[2]} {c[1]}</button>)}
-    </div>
-    <div className="subtabs">
-      {cur[3].map(s=><button key={s} className={"subtab"+(sub===s?' on':'')} style={sub===s?{}:{opacity:.7}} onClick={()=>setSub(s)}>{s}</button>)}
-      <button className="subtab">+</button>
-    </div>
-
-    {cat==='tickets'&&<div className="alert" style={{background:'#eef5ff',borderColor:'#b9d4ff'}}>
-      <span className="ai">🤖</span><div><b>Interpretador de passagem</b>
-        <p>Anexe o PDF da passagem: o roteiro é lido automaticamente (origem, escalas e destino com horários) e vira etapas no cronograma. PDF não reconhecido? Você preenche manualmente.</p></div></div>}
-
-    {/* input real de arquivos do dispositivo: aceita qualquer tipo (PDF, PNG, JPEG, ...) */}
-    <input ref={fileRef} type="file" accept="*/*" style={{display:'none'}} onChange={onFile}/>
-    <button className="btn btn-dark" style={{marginBottom:14}} disabled={busy} onClick={()=>fileRef.current&&fileRef.current.click()}>
-      {busy?'⏳ '+t.interpreting:'📎 '+t.attachDoc}</button>
-
-    {readingDoc&&(readingDoc.itin
-      ? <div className="card" style={{borderColor:'#b9d4ff'}}>
-          <b style={{fontFamily:'Sora',fontSize:14}}>🤖 {t.interpretedRoute}</b>
-          <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{readingDoc.file}</div>
-          {readingDoc.itin.stages.map((st,i)=><ItinStageCard key={i} st={st} lbl={lbl}/>)}
-          <button className="btn btn-primary" style={{marginTop:6}} onClick={()=>setConfirmDoc(readingDoc)}>📅 {t.addStages}</button>
-          <button className="btn btn-ghost" style={{marginTop:8}} onClick={()=>update({...trip,docs:trip.docs.map(x=>x.id===readingDoc.id?{...x,itin:undefined}:x)})}>✏️ {t.editManual}</button>
-        </div>
-      : <TicketReadForm t={t} trip={trip} doc={readingDoc}
-          onSave={seg=>saveTicket(readingDoc,seg)} onCancel={()=>setReadId(null)}/>)}
-
-    {catDocs.length===0
-      ? <div className="empty"><div className="ei">📄</div>{t.noDocs}</div>
-      : catDocs.map(d=>(<div className="docitem" key={d.id}>
-          <span className="di">{icon}</span>
-          <span className="dt">
-            <b>{d.name}</b>
-            <span>{d.file}{d.size?' · '+human(d.size):''}</span>
-            {d.itin
-              ? <div className="sub" style={{fontSize:12,marginTop:3}}>🧭 {d.itin.stages[0].city} → {d.itin.stages[d.itin.stages.length-1].city} · {d.itin.legs.length} voo(s) · {d.itin.stages.filter(x=>x.kind==='layover').length} escala(s)</div>
-              : d.seg&&<div className="sub" style={{fontSize:12,marginTop:3}}>✈️ {d.seg.fromCity} → {d.seg.toCity} · {brDateT(d.seg.depDate)} {d.seg.depTime} → {brDateT(d.seg.arrDate)} {d.seg.arrTime}</div>}
-            <div style={{marginTop:6,display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
-              {d.offline&&<span className="offline">⬇ {t.offlineAvail}</span>}
-              {d.dataUrl&&<a className="joinbtn" href={d.dataUrl} download={d.file} style={{textDecoration:'none'}}>⬇ Download</a>}
-              {d.cat==='tickets'&&<button className="joinbtn" onClick={()=>setReadId(d.id)}>🤖 {(d.itin||d.seg)?'Ver roteiro':'Ler passagem'}</button>}
-              {d.cat==='stays'&&<button className="joinbtn" onClick={()=>toSchedule(d)}>📅 {t.addToSched}</button>}
-            </div>
-          </span>
-          <button className="blkbtn del" onClick={()=>removeDoc(d.id)}>✕</button>
-        </div>))}
-
-    {confirmDoc&&confirmDoc.itin&&(()=>{ const {dates,blocks}=buildStageBlocks(confirmDoc);
-      const fmt=ds=>{const p=ds.split('-');return p[2]+'/'+p[1];};
-      return <ConfirmModal icon="📅" title={t.addStages+'?'}
-        msg={blocks.length+' '+(blocks.length===1?'card':'cards')+' · '+t.cardsWillAdd+' '+dates.map(fmt).join(', ')+'.'}
-        confirmLabel={'📅 '+t.addStages} cancelLabel={t.cancel}
-        onConfirm={()=>applyStages(confirmDoc)} onCancel={()=>setConfirmDoc(null)}/>;
-    })()}
-  </div>);
+    return out;
 }
-
-function TicketReadForm({t,trip,doc,onSave,onCancel}){
-  const destGuess=(trip.destinations&&trip.destinations[0])?cityOf(trip.destinations[0].name):'';
-  const [s,setS]=useState(doc.seg||{fromCity:'',toCity:destGuess,depDate:trip.startDate,depTime:'10:00',arrDate:trip.startDate,arrTime:'13:30'});
-  const set=(k,v)=>setS({...s,[k]:v});
-  const ok=s.fromCity&&s.toCity&&s.depDate&&s.arrDate;
-  return(<div className="card" style={{borderColor:'#b9d4ff'}}>
-    <b style={{fontFamily:'Sora',fontSize:14}}>🤖 {t.readTicket}</b>
-    <div className="sub" style={{fontSize:11,margin:'2px 0 12px'}}>{doc.file}</div>
-    <div className="field"><label>🛫 {t.origin}</label>
-      <input className="inp" placeholder="São Paulo (GRU)" value={s.fromCity} onChange={e=>set('fromCity',e.target.value)}/></div>
-    <div className="row">
-      <div className="field" style={{flex:1.2}}><label>{t.departDT}</label>
-        <input type="date" className="inp" value={s.depDate} onChange={e=>set('depDate',e.target.value)}/></div>
-      <div className="field" style={{flex:1}}><label>&nbsp;</label>
-        <input type="time" className="inp" value={s.depTime} onChange={e=>set('depTime',e.target.value)}/></div>
-    </div>
-    <div className="field"><label>🛬 {t.destination}</label>
-      <input className="inp" placeholder="Lisboa (LIS)" value={s.toCity} onChange={e=>set('toCity',e.target.value)}/></div>
-    <div className="row">
-      <div className="field" style={{flex:1.2}}><label>{t.arriveDT}</label>
-        <input type="date" className="inp" value={s.arrDate} onChange={e=>set('arrDate',e.target.value)}/></div>
-      <div className="field" style={{flex:1}}><label>&nbsp;</label>
-        <input type="time" className="inp" value={s.arrTime} onChange={e=>set('arrTime',e.target.value)}/></div>
-    </div>
-    <div className="row">
-      <button className="btn btn-ghost" onClick={onCancel}>{t.cancel}</button>
-      <button className="btn btn-primary" disabled={!ok} onClick={()=>onSave({...s,fromCity:s.fromCity.trim(),toCity:s.toCity.trim()})}>📅 {t.createBlocks}</button>
-    </div>
-  </div>);
-}
-
-/* --- Gallery --- */
-function GalleryTab({t,trip,update,toast}){
-  // seções por local da viagem (inclui origem/escalas/destino do interpretador)
-  const cities=tripLocations(trip);
-  const list=cities.length?cities:['Viagem'];
-  const pickRef=useRef(null);
-  const pickCity=useRef(null);
-  const openPicker=(city)=>{ pickCity.current=city; pickRef.current&&pickRef.current.click(); };
-  const onPick=e=>{
-    const files=Array.from(e.target.files||[]); if(!files.length)return;
-    const city=pickCity.current;
-    Promise.all(files.map(f=>new Promise(res=>{ const r=new FileReader(); r.onload=()=>res({city,src:r.result}); r.readAsDataURL(f); })))
-      .then(imgs=>{ update({...trip,gallery:[...trip.gallery,...imgs]}); toast(t.addPhotoGal+' ✓'); });
-    e.target.value='';
-  };
-  return(<div>
-    <p className="sub" style={{marginBottom:14}}>🖼️ {t.galByLocation}</p>
-    {/* abre a galeria/arquivos do dispositivo; aceita várias imagens */}
-    <input ref={pickRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={onPick}/>
-    {list.map(city=>{const ph=trip.gallery.filter(g=>g.city===city);
-      return(<div key={city}>
-        <div className="sectiontitle">📍 {city} <span className="pill">{ph.length}</span></div>
-        <div className="gal">
-          {ph.map((g,i)=> g.src
-            ? <div className="galimg" key={i} style={{backgroundImage:'url('+g.src+')'}}/>
-            : <div className="ph" key={i}>🏞️</div>)}
-          <button className="galadd" onClick={()=>openPicker(city)}>＋</button>
-        </div>
-      </div>);})}
-  </div>);
-}
-
-/* --- Suggestions (Recomendações Gerais via mock Maps) --- */
-const RECS={
-  'Geral':[['Bairro Alto','Bar · ⭐ 4.7','Lisboa'],['Sagrada Família','Turismo · ⭐ 4.8','Barcelona'],['Coliseu','Turismo · ⭐ 4.9','Roma']],
-  'Culinária':[['Time Out Market','Gastronomia · ⭐ 4.6','Lisboa'],['La Boqueria','Mercado · ⭐ 4.7','Barcelona'],['Trastevere','Gastronomia · ⭐ 4.8','Roma']],
-  'Eventos':[['Fado ao Vivo','Música · ⭐ 4.7','Lisboa'],['Camp Nou Tour','Esporte · ⭐ 4.8','Barcelona']],
-};
-function SuggestTab({t,trip,update,toast}){
-  const [sub,setSub]=useState('general');
-  const [filter,setFilter]=useState('Geral');
-  const list=RECS[filter]||RECS['Geral'];
-  return(<div>
-    <div className="subtabs">
-      <button className={"subtab"+(sub==='general'?' on':'')} onClick={()=>setSub('general')}>🌍 {t.generalRec}</button>
-      <button className={"subtab"+(sub==='trippin'?' on':'')} onClick={()=>setSub('trippin')}>⭐ {t.trippinRec}</button>
-    </div>
-    <div className="subtabs">
-      {Object.keys(RECS).map(k=><button key={k} className={"subtab"+(filter===k?' on':'')} style={filter===k?{}:{opacity:.7}} onClick={()=>setFilter(k)}>{k}</button>)}
-    </div>
-    {sub==='trippin'&&<div className="alert" style={{background:'#fff5f3',borderColor:'#ffc9c1'}}>
-      <span className="ai">⭐</span><div><b>{t.trippinRec}</b><p>Ranking pela base de usuários Trippin chega na v2.</p></div></div>}
-    {list.map((r,i)=>(<div className="sug" key={i}>
-      <span className="si">📍</span>
-      <span className="st"><b>{r[0]}</b><span className="rt">{r[1]}</span><br/><span>{r[2]}</span></span>
-      <button className="joinbtn" onClick={()=>toast(t.recAdded)}>+ {t.addToSchedule}</button>
-    </div>))}
-  </div>);
-}
-
-/* --- Members --- */
-function MembersTab({t,trip,update,toast}){
-  const [email,setEmail]=useState('');
-  const [exp,setExp]=useState(false);
-  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const invite=()=>{ if(!emailOk)return; setEmail(''); toast(t.inviteSent); };
-  const remove=id=>update({...trip,members:trip.members.filter(m=>m.id!==id)});
-  const addExpense=(d,a)=>{update({...trip,expenses:[...trip.expenses,{id:uid(),desc:d,amount:a,paidBy:'Você'}]});toast(t.expAdded);};
-  return(<div>
-    {trip.members.map(m=>(<div className="member" key={m.id}>
-      <div className={"ava"+(m.isAdmin?' adm':'')}>{m.name[0]}</div>
-      <div style={{flex:1}}><b style={{fontSize:14}}>{m.name}</b>
-        <div style={{fontSize:12,color:'var(--muted)'}}>{m.email}</div></div>
-      {m.isAdmin&&<span className="admtag">{t.admin}</span>}
-      {!m.isAdmin&&<button className="copybtn" style={{background:'#ffece9',color:'var(--danger)'}} onClick={()=>remove(m.id)}>{t.remove}</button>}
-    </div>))}
-
-    <div className="card">
-      <b style={{fontFamily:'Sora',fontSize:14}}>➕ {t.addMember}</b>
-      <div className="field" style={{marginTop:10}}><label>{t.inviteEmail}</label>
-        <input className={"inp"+(email&&!emailOk?' err':'')} placeholder="amigo@email.com" value={email} onChange={e=>setEmail(e.target.value)}/>
-        {email&&!emailOk&&<div className="errmsg">{t.invalidEmail}</div>}</div>
-      <button className="btn btn-lagoon" disabled={!emailOk} onClick={invite}>📧 {t.sendInvite}</button>
-    </div>
-
-    <div className="sectiontitle">💰 {t.expenses}</div>
-    {trip.expenses.map(e=>(<div className="expense" key={e.id}>
-      <div className="el"><b>{e.desc}</b><span>{t.paidBy}: {e.paidBy}</span></div>
-      <div className="ev">€ {e.amount}</div>
-    </div>))}
-    {exp ? <ExpenseForm t={t} onSave={(d,a)=>{addExpense(d,a);setExp(false);}} onCancel={()=>setExp(false)}/>
-      : <button className="btn btn-ghost" onClick={()=>setExp(true)}>+ {t.addExpense}</button>}
-  </div>);
-}
-function ExpenseForm({t,onSave,onCancel}){
-  const [d,setD]=useState('');const [a,setA]=useState('');
-  return(<div className="card">
-    <div className="field"><label>{t.desc}</label><input className="inp" value={d} onChange={e=>setD(e.target.value)}/></div>
-    <div className="field"><label>{t.amount} (€)</label><input type="number" className="inp" value={a} onChange={e=>setA(e.target.value)}/></div>
-    <button className="btn btn-primary" disabled={!d||!a} onClick={()=>onSave(d,Number(a))}>{t.save}</button>
-  </div>);
-}
-
-/* ---------------- Menu (full-screen, de baixo para cima) ---------------- */
-function MenuSheet({t,user,onClose,onNav,onLogout}){
-  const item=(ic,label,go,danger)=>(
-    <button className="navitem" style={danger?{color:'var(--danger)'}:{}} onClick={()=>go()}>
-      <span className="ni">{ic}</span>{label}</button>);
-  return(<div className="menusheet">
-    <div className="mh">
-      <div className="ava" style={user.photo?{backgroundImage:'url('+user.photo+')',backgroundSize:'cover',backgroundPosition:'center'}:{}}>{user.photo?'':(user.firstName?user.firstName[0]:'U')}</div>
-      <div><div style={{fontFamily:'Sora',fontWeight:700,fontSize:17}}>{user.firstName} {user.lastName}</div>
-        <div style={{fontSize:12,opacity:.8}}>{t.yourCode}: <span className="mono">{user.code}</span></div></div>
-      <button className="closex" onClick={onClose}>✕</button>
-    </div>
-    <div className="mlist">
-      {item('🏠',t.home,()=>onNav('home'))}
-      {item('✈️',t.newTrip,()=>onNav('new'))}
-      {item('🔑',t.joinTrip,()=>onNav('join'))}
-      {item('👤',t.profile,()=>onNav('profile'))}
-      {item('🧩',t.apps,()=>onNav('apps'))}
-      {item('⚙️',t.settings,()=>onNav('settings'))}
-      <div style={{height:1,background:'var(--line)',margin:'10px 18px'}}/>
-      {item('↩',t.logout,onLogout,true)}
-    </div>
-  </div>);
-}
-
-function BottomBar({t,onMenu,onHome,onNotif,notifCount}){
-  return(<div className="bottombar">
-    <button className="bnav" onClick={onMenu}><span className="bic">☰</span>{t.menu}</button>
-    <button className="bnav center" onClick={onHome}><span className="bic">🏠</span></button>
-    <button className="bnav" onClick={onNotif}><span className="bic">🔔</span>{t.notifications}
-      {notifCount>0&&<span className="badge">{notifCount}</span>}</button>
-  </div>);
-}
-
-/* ---------------- Configurações ---------------- */
-function SettingsScreen({t,settings,setSettings,onBack}){
-  const set=(k,v)=>setSettings({...settings,[k]:v});
-  return(<div className="screen">
-    <div className="appbar"><button className="iconbtn" onClick={onBack}>←</button>
-      <div className="ttl">{t.settings}</div><div style={{width:38}}/></div>
-    <div className="pad">
-      <p className="sub" style={{marginBottom:18}}>{t.settingsSub}</p>
-      <div className="setrow">
-        <span className="si">🔔</span>
-        <span className="st"><b>{t.receiveNotif}</b><span>{t.receiveNotifSub}</span></span>
-        <div className={"switch"+(settings.notifications?' on':'')} onClick={()=>set('notifications',!settings.notifications)}/>
-      </div>
-      <div className="setrow">
-        <span className="si">📍</span>
-        <span className="st"><b>{t.shareLoc}</b><span>{t.shareLocSub}</span></span>
-        <div className={"switch"+(settings.shareLocation?' on':'')} onClick={()=>set('shareLocation',!settings.shareLocation)}/>
-      </div>
-      <div className="sectiontitle">🎨 {t.appearance}</div>
-      <div className="segpick">
-        <button className={settings.theme==='light'?'on':''} onClick={()=>set('theme','light')}>☀️ {t.themeLight}</button>
-        <button className={settings.theme==='dark'?'on':''} onClick={()=>set('theme','dark')}>🌙 {t.themeDark}</button>
-      </div>
-    </div>
-  </div>);
-}
-
-/* ---------------- Apps de viagem ---------------- */
-const TRAVEL_APPS=[
-  ['🏨','Booking','Hotéis e reservas','#003580'],
-  ['🛏️','Airbnb','Estadias e experiências','#FF5A5F'],
-  ['🗺️','Google Maps','Rotas e locais','#34A853'],
-  ['🚗','Uber','Transporte','#000000'],
-  ['🍽️','TheFork','Reservas em restaurantes','#1B8E94'],
-  ['✈️','Skyscanner','Voos','#0770E3'],
-  ['🎟️','GetYourGuide','Passeios e ingressos','#FF5533'],
+const DOW = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+/* ===== Interpretador de roteiro de passagem aérea (parser testado) ===== */
+// pdf.js sob demanda (ver pdfToText)
+const AIRPORTS = [
+    [/GUARULHOS|GRU\b/i, { iata: 'GRU', city: 'São Paulo' }], [/CONGONHAS/i, { iata: 'CGH', city: 'São Paulo' }],
+    [/GALEAO|GALEÃO|RIO DE JANEIRO/i, { iata: 'GIG', city: 'Rio de Janeiro' }],
+    [/LISBON|LISBOA/i, { iata: 'LIS', city: 'Lisboa' }], [/PORTO/i, { iata: 'OPO', city: 'Porto' }],
+    [/LUXEMBOURG/i, { iata: 'LUX', city: 'Luxemburgo' }], [/MADRID/i, { iata: 'MAD', city: 'Madri' }],
+    [/BARCELONA/i, { iata: 'BCN', city: 'Barcelona' }], [/PARIS|CHARLES DE GAULLE/i, { iata: 'CDG', city: 'Paris' }],
+    [/LONDON|HEATHROW/i, { iata: 'LHR', city: 'Londres' }], [/FRANKFURT/i, { iata: 'FRA', city: 'Frankfurt' }],
+    [/ROME|ROMA|FIUMICINO/i, { iata: 'FCO', city: 'Roma' }], [/AMSTERDAM|SCHIPHOL/i, { iata: 'AMS', city: 'Amsterdã' }],
 ];
-function TravelAppsScreen({t,onBack}){
-  return(<div className="screen">
-    <div className="appbar"><button className="iconbtn" onClick={onBack}>←</button>
-      <div className="ttl">{t.apps}</div><div style={{width:38}}/></div>
-    <div className="pad">
-      <p className="sub" style={{marginBottom:18}}>{t.appsSub}</p>
-      {TRAVEL_APPS.map(a=>(<div className="appcard" key={a[1]}>
-        <span className="ai" style={{background:a[3]+'18'}}>{a[0]}</span>
-        <span className="at"><b>{a[1]}</b><span>{a[2]}</span></span>
-        <span className="soon">{t.comingSoon}</span>
-      </div>))}
-    </div>
-  </div>);
+const MONTHS_T = { jan: 0, feb: 1, fev: 1, mar: 2, apr: 3, abr: 3, may: 4, mai: 4, jun: 5, jul: 6, aug: 7, ago: 7, sep: 8, set: 8, oct: 9, out: 9, nov: 10, dec: 11, dez: 11 };
+const titleCase = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()).replace(/\s+/g, ' ').trim();
+function resolveAirport(rawName) {
+    let name = (rawName || '').replace(/(INTL|AIRPORT|INTERNATIONAL|TERMINAL)/gi, ' $1').replace(/\s+/g, ' ').trim();
+    for (const [re, info] of AIRPORTS) {
+        if (re.test(name))
+            return { ...info, airport: titleCase(name) };
+    }
+    const m = name.match(/\b([A-Z]{3})\b/);
+    return { iata: m ? m[1] : '—', city: titleCase((name.split(/\s{2,}|,/)[0] || name)), airport: titleCase(name) };
 }
-
-function NotifPanel({t,notifs,onClose,onAct}){
-  return(<div className="overlay" onClick={onClose}>
-    <div className="notifpanel" onClick={e=>e.stopPropagation()}>
-      <div className="appbar"><div className="ttl">🔔 {t.notifications}</div><button className="iconbtn" onClick={onClose}>✕</button></div>
-      <div className="pad" style={{flex:1,overflowY:'auto'}}>
-        {notifs.length===0&&<div className="empty"><div className="ei">🔔</div>{t.noNotif}</div>}
-        {notifs.map(n=>(<div key={n.id} className={"notifitem"+(n.read?'':' unread')}>
-          <p>{n.text}</p>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span className="nt">{n.time}</span>
-            {!n.read&&<button className="joinbtn" onClick={()=>onAct(n.id)}>{n.action||'Ver'}</button>}
-          </div>
-        </div>))}
-      </div>
-    </div>
-  </div>);
+function parseDateT(s) {
+    const m = s.match(/(\d{1,2})([A-Za-z]{3})(\d{4})/);
+    if (!m)
+        return null;
+    const mo = MONTHS_T[m[2].toLowerCase()];
+    if (mo == null)
+        return null;
+    return new Date(Date.UTC(+m[3], mo, +m[1]));
 }
-
+const fmtDateT = d => d ? d.toISOString().slice(0, 10) : null;
+function diffHM(d1, t1, d2, t2) {
+    const a = new Date(d1 + 'T' + t1 + ':00Z'), b = new Date(d2 + 'T' + t2 + ':00Z');
+    let min = Math.round((b - a) / 60000);
+    if (min < 0)
+        min = 0;
+    return { min, label: Math.floor(min / 60) + 'h' + String(min % 60).padStart(2, '0') };
+}
+function parseAirTicket(text) {
+    const linesAll = text.split(/\r?\n/);
+    let s = 0, e = linesAll.length;
+    linesAll.forEach((l, i) => {
+        if (/\bFlight\b/.test(l) && /\bDeparture\b/.test(l))
+            s = i + 1;
+        if (/^\s*\(1\)\s*OK|OBSERVA(Ç|C)/i.test(l) && e === linesAll.length && i > s)
+            e = i;
+    });
+    const lines = linesAll.slice(s, e);
+    const legRe = /\b([A-Z]{2}\d{2,4})\b[^\d]*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/;
+    const legs = [];
+    for (let i = 0; i < lines.length; i++) {
+        const m = lines[i].match(legRe);
+        if (!m)
+            continue;
+        const flight = m[1], depT = m[2], arrT = m[3];
+        const pre = lines[i].slice(0, lines[i].indexOf(flight)).trim();
+        const cols = pre.split(/\s{2,}/).filter(Boolean);
+        let from = cols[0] || '', to = cols[1] || '';
+        if (!to) {
+            for (let k = i - 1; k >= 0 && k > i - 4; k--) {
+                if (lines[k].trim()) {
+                    to = from;
+                    from = lines[k].trim();
+                    break;
+                }
+            }
+        }
+        let depDate = null, arrDate = null;
+        for (let k = i; k < Math.min(i + 3, lines.length); k++) {
+            const dts = lines[k].match(/\d{1,2}[A-Za-z]{3}\d{4}/g);
+            if (dts && dts.length >= 2) {
+                depDate = parseDateT(dts[0]);
+                arrDate = parseDateT(dts[1]);
+                break;
+            }
+            if (dts && dts.length === 1) {
+                if (!depDate)
+                    depDate = parseDateT(dts[0]);
+                else {
+                    arrDate = parseDateT(dts[0]);
+                    break;
+                }
+            }
+        }
+        let dur = null;
+        for (let k = i; k < lines.length; k++) {
+            if (k > i && legRe.test(lines[k]))
+                break;
+            const d = lines[k].match(/Dura(?:ç|c)(?:ão|ao)?\s*\/?\s*Duration:\s*(\d{1,2}:\d{2})|Duration:\s*(\d{1,2}:\d{2})/i);
+            if (d) {
+                dur = d[1] || d[2];
+                break;
+            }
+        }
+        legs.push({ flight, from: resolveAirport(from), to: resolveAirport(to), depTime: depT, arrTime: arrT,
+            depDate: fmtDateT(depDate), arrDate: fmtDateT(arrDate), duration: dur });
+    }
+    const stages = [];
+    if (legs.length) {
+        const f = legs[0];
+        stages.push({ kind: 'origin', city: f.from.city, airport: f.from.airport, iata: f.from.iata, depTime: f.depTime, depDate: f.depDate, flight: f.flight, duration: f.duration });
+        for (let i = 0; i < legs.length - 1; i++) {
+            const cur = legs[i], nxt = legs[i + 1];
+            const lay = (cur.arrDate && nxt.depDate) ? diffHM(cur.arrDate, cur.arrTime, nxt.depDate, nxt.depTime) : null;
+            stages.push({ kind: 'layover', city: cur.to.city, airport: cur.to.airport, iata: cur.to.iata, arrTime: cur.arrTime, arrDate: cur.arrDate,
+                depTime: nxt.depTime, depDate: nxt.depDate, layover: lay ? lay.label : null, inFlight: cur.flight, outFlight: nxt.flight, nextDuration: nxt.duration });
+        }
+        const l = legs[legs.length - 1];
+        stages.push({ kind: 'destination', city: l.to.city, airport: l.to.airport, iata: l.to.iata, arrTime: l.arrTime, arrDate: l.arrDate, flight: l.flight });
+    }
+    return { legs, stages };
+}
+const _scriptCache = {};
+function loadScriptOnce(src) { return _scriptCache[src] || (_scriptCache[src] = new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = () => res(); el.onerror = () => rej(new Error('falha ao carregar ' + src)); document.head.appendChild(el); })); }
+async function pdfToText(buf) {
+    if (typeof pdfjsLib === 'undefined') {
+        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    }
+    if (typeof pdfjsLib === 'undefined')
+        throw new Error('PDF indisponível');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let rows = [];
+    for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        const byY = {};
+        content.items.forEach(it => {
+            if (!it.str.trim())
+                return;
+            const y = Math.round(it.transform[5]);
+            let key = Object.keys(byY).find(k => Math.abs(k - y) <= 2);
+            if (key == null)
+                key = y;
+            (byY[key] = byY[key] || []).push({ x: it.transform[4], w: it.width || it.str.length * 4, s: it.str });
+        });
+        Object.keys(byY).map(Number).sort((a, b) => b - a).forEach(y => {
+            const items = byY[y].sort((a, b) => a.x - b.x);
+            let line = '', lastEnd = null;
+            items.forEach(it => {
+                if (lastEnd != null) {
+                    const gap = it.x - lastEnd;
+                    if (gap > 14)
+                        line += '   ';
+                    else if (gap > 1.5)
+                        line += ' ';
+                }
+                line += it.s;
+                lastEnd = it.x + it.w;
+            });
+            rows.push(line);
+        });
+    }
+    return rows.join('\n');
+}
+const brDateT = iso => { if (!iso)
+    return '—'; const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+const STAGE_COL = { origin: '#2DB5A3', layover: '#F4A259', destination: '#5B8DEF' };
+function ItinStageCard({ st, lbl }) {
+    const col = STAGE_COL[st.kind];
+    return (React.createElement("div", { className: "stageWrap" },
+        React.createElement("span", { className: "dotmark", style: { background: col } }),
+        React.createElement("div", { className: "stagebox" },
+            React.createElement("span", { className: "sbadge", style: { background: col } }, lbl[st.kind]),
+            React.createElement("div", null,
+                React.createElement("span", { className: "scity" }, st.city),
+                React.createElement("span", { className: "siata" }, st.iata)),
+            React.createElement("div", { className: "sair" }, st.airport),
+            st.kind === 'origin' && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "stimes" },
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "slab" }, lbl.dep),
+                        React.createElement("div", { className: "sval" }, st.depTime),
+                        React.createElement("div", { className: "sdt" }, brDateT(st.depDate)))),
+                React.createElement("div", null,
+                    React.createElement("span", { className: "sfly" },
+                        "\u2708\uFE0F ",
+                        st.flight),
+                    st.duration && React.createElement("span", { className: "sfly", style: { background: '#f1ede4', color: '#444' } },
+                        "\u23F1 ",
+                        st.duration.replace(':', 'h')))),
+            st.kind === 'layover' && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "stimes" },
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "slab" }, lbl.arr),
+                        React.createElement("div", { className: "sval" }, st.arrTime),
+                        React.createElement("div", { className: "sdt" }, brDateT(st.arrDate))),
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "slab" }, lbl.nextDep),
+                        React.createElement("div", { className: "sval" }, st.depTime),
+                        React.createElement("div", { className: "sdt" }, brDateT(st.depDate)))),
+                st.layover && React.createElement("div", { className: "slay" },
+                    "\u23F3 ",
+                    lbl.layoverTime,
+                    ": ",
+                    st.layover),
+                React.createElement("div", null,
+                    React.createElement("span", { className: "sfly" },
+                        "\uD83D\uDEEC ",
+                        st.inFlight),
+                    React.createElement("span", { className: "sfly" },
+                        "\u2708\uFE0F ",
+                        st.outFlight))),
+            st.kind === 'destination' && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "stimes" },
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "slab" }, lbl.arr),
+                        React.createElement("div", { className: "sval" }, st.arrTime),
+                        React.createElement("div", { className: "sdt" }, brDateT(st.arrDate)))),
+                React.createElement("div", null,
+                    React.createElement("span", { className: "sfly" },
+                        "\uD83D\uDEEC ",
+                        st.flight))))));
+}
+function ScheduleTab({ t, trip, update, toast }) {
+    const [view, setView] = useState('day');
+    const days = [...new Set(trip.activities.map(a => a.date))].sort();
+    const [curDay, setCurDay] = useState(days[0] || trip.startDate);
+    const [adding, setAdding] = useState(false);
+    const [editId, setEditId] = useState(null);
+    const [delId, setDelId] = useState(null);
+    const dayActs = trip.activities.filter(a => a.date === curDay).sort((a, b) => a.start.localeCompare(b.start));
+    const hasConflict = (a) => dayActs.some(b => b.id !== a.id && b.start < a.end && a.start < b.end);
+    const conflictExists = dayActs.some(a => hasConflict(a));
+    const allDays = (() => {
+        const dates = trip.activities.map(a => a.date).filter(Boolean);
+        const lo = [trip.startDate, ...dates].sort()[0];
+        const hi = [trip.endDate, ...dates].sort().slice(-1)[0];
+        const out = [];
+        let d = new Date(lo + 'T00:00:00');
+        const e = new Date(hi + 'T00:00:00');
+        while (d <= e) {
+            out.push(d.toISOString().slice(0, 10));
+            d.setDate(d.getDate() + 1);
+        }
+        return out;
+    })();
+    const idx = allDays.indexOf(curDay);
+    const move = dir => { const ni = Math.min(Math.max(idx + dir, 0), allDays.length - 1); setCurDay(allDays[ni]); };
+    const saveNew = (a) => {
+        update({ ...trip, activities: [...trip.activities, { ...a, id: uid(), source: 'manual', joined: ['me'] }] });
+        setAdding(false);
+        toast(t.addActivity + ' ✓');
+    };
+    const saveEdit = (a) => { update({ ...trip, activities: trip.activities.map(x => x.id === a.id ? a : x) }); setEditId(null); toast(t.profileSaved); };
+    const doDelete = (id) => { update({ ...trip, activities: trip.activities.filter(x => x.id !== id) }); setDelId(null); toast(t.activityDeleted); };
+    const toggleJoin = (id) => {
+        update({ ...trip, activities: trip.activities.map(a => a.id === id ?
+                { ...a, joined: a.joined.includes('me') ? a.joined.filter(x => x !== 'me') : [...a.joined, 'me'] } : a) });
+    };
+    const editing = editId ? trip.activities.find(a => a.id === editId) : null;
+    return (React.createElement("div", null,
+        React.createElement("div", { className: "calhead" },
+            React.createElement("div", { className: "segbtns" }, ['month', 'week', 'day'].map(v => React.createElement("button", { key: v, className: view === v ? 'on' : '', onClick: () => setView(v) }, t[v]))),
+            React.createElement("div", { style: { display: 'flex', gap: 6 } },
+                React.createElement("button", { className: "navarrow", onClick: () => move(-1) }, "\u2039"),
+                React.createElement("button", { className: "navarrow", onClick: () => move(1) }, "\u203A"))),
+        view === 'month' && React.createElement(MonthGrid, { trip: trip, curDay: curDay, setCurDay: d => { setCurDay(d); setView('day'); } }),
+        view === 'week' && React.createElement(WeekView, { t: t, trip: trip, curDay: curDay, openDay: d => { setCurDay(d); setView('day'); } }),
+        view === 'day' && React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { fontWeight: 700, fontFamily: 'Sora', margin: '4px 0 12px' } },
+                "\uD83D\uDCC5 ",
+                curDay),
+            (() => {
+                const loc = locationForDay(trip, curDay);
+                return loc ?
+                    React.createElement("div", { className: "locmark", style: { background: cityColor(loc) } },
+                        "\uD83D\uDCCD ",
+                        t.youAreIn,
+                        " ",
+                        loc) : null;
+            })(),
+            conflictExists && React.createElement("div", { className: "alert" },
+                React.createElement("span", { className: "ai" }, "\u26A0\uFE0F"),
+                React.createElement("div", null,
+                    React.createElement("b", null, t.conflict),
+                    React.createElement("p", null, "H\u00E1 atividades sobrepostas. Escolha em qual ingressar."))),
+            dayActs.length === 0 && !adding && React.createElement("div", { className: "empty" },
+                React.createElement("div", { className: "ei" }, "\uD83D\uDDD3\uFE0F"),
+                "Nada planejado neste dia."),
+            dayActs.map(a => {
+                const cf = hasConflict(a);
+                const tc = TYPE_COLOR[a.type] || '#2DB5A3';
+                return (editId === a.id
+                    ? React.createElement(ActivityForm, { key: a.id, t: t, init: a, onSave: saveEdit, onCancel: () => setEditId(null) })
+                    : React.createElement("div", { className: "tslot", key: a.id },
+                        React.createElement("div", { className: "tm" }, a.start),
+                        React.createElement("div", { style: { flex: 1 } },
+                            React.createElement("div", { className: "actblk" + (cf ? ' conflict' : ''), style: { borderLeftColor: cf ? 'var(--amber)' : tc } },
+                                React.createElement("div", { className: "blkbtns" },
+                                    React.createElement("button", { className: "blkbtn", title: t.editActivity, onClick: () => { setAdding(false); setEditId(a.id); } }, "\u270E"),
+                                    React.createElement("button", { className: "blkbtn del", title: t.deleteActivity, onClick: () => setDelId(a.id) }, "\u2715")),
+                                a.type && React.createElement("span", { className: "typetag", style: { color: tc, background: tc + '1A' } }, t[a.type]),
+                                React.createElement("b", { style: { display: 'block', paddingRight: 60 } }, a.title),
+                                React.createElement("div", { className: "meta" },
+                                    "\uD83D\uDD50 ",
+                                    a.start,
+                                    "\u2013",
+                                    a.end,
+                                    " ",
+                                    a.loc && '· 📍 ' + a.loc,
+                                    " ",
+                                    a.source === 'doc' && '· 🤖 auto'),
+                                a.desc && React.createElement("div", { className: "adesc" }, a.desc),
+                                cf && React.createElement("button", { className: "joinbtn" + (a.joined.includes('me') ? ' joined' : ''), onClick: () => toggleJoin(a.id) }, a.joined.includes('me') ? '✓ ' + t.joined : t.join)))));
+            }),
+            adding
+                ? React.createElement(ActivityForm, { t: t, init: { title: '', type: 'typeTour', date: curDay, start: '09:00', end: '10:00', loc: '', desc: '' }, onSave: saveNew, onCancel: () => setAdding(false) })
+                : React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: () => { setEditId(null); setAdding(true); } },
+                    "+ ",
+                    t.addActivity)),
+        delId && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1\uFE0F", title: t.deleteActivity, msg: "", confirmLabel: t.yesDelete, cancelLabel: t.cancel, danger: true, onConfirm: () => doDelete(delId), onCancel: () => setDelId(null) })));
+}
+function MonthGrid({ trip, curDay, setCurDay }) {
+    const base = new Date((curDay || trip.startDate) + 'T00:00:00');
+    const y = base.getFullYear(), m = base.getMonth();
+    const first = new Date(y, m, 1);
+    const start = new Date(first);
+    start.setDate(1 - ((first.getDay() + 6) % 7));
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        cells.push(d);
+    }
+    const has = ds => trip.activities.some(a => a.date === ds);
+    return (React.createElement(React.Fragment, null,
+        React.createElement("div", { style: { textAlign: 'center', fontWeight: 700, fontFamily: 'Sora', marginBottom: 8 } }, base.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })),
+        React.createElement("div", { className: "daygrid", style: { marginBottom: 6 } }, DOW.map((d, i) => React.createElement("div", { key: i, style: { textAlign: 'center', fontSize: 10, color: 'var(--muted)', fontWeight: 700 } }, d[0]))),
+        React.createElement("div", { className: "daygrid" }, cells.map((d, i) => {
+            const ds = d.toISOString().slice(0, 10);
+            const loc = locationForDay(trip, ds);
+            const col = loc ? cityColor(loc) : null;
+            return (React.createElement("button", { key: i, className: "dcell" + (d.getMonth() !== m ? ' dim' : ''), style: loc && d.getMonth() === m ? { background: col + '14', borderColor: col + '55' } : {}, onClick: () => setCurDay(ds) },
+                React.createElement("div", { className: "dn" }, d.getDate()),
+                has(ds) && React.createElement("span", { className: "dot" }),
+                loc && React.createElement("span", { style: { position: 'absolute', bottom: 3, right: 3, left: 3, fontSize: 8, fontWeight: 700,
+                        color: col, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, loc)));
+        })),
+        React.createElement("div", { className: "card sub", style: { textAlign: 'center', fontSize: 11, marginTop: 10 } }, "\uD83D\uDCCD Dias coloridos = dias de viagem, com o local de cada dia \u00B7 \u2022 = h\u00E1 atividades")));
+}
+function WeekView({ t, trip, curDay, openDay }) {
+    const week = weekDaysOf(curDay);
+    const today = new Date().toISOString().slice(0, 10);
+    const inTrip = ds => ds >= trip.startDate && ds <= trip.endDate;
+    return (React.createElement("div", null,
+        React.createElement("div", { style: { textAlign: 'center', fontWeight: 700, fontFamily: 'Sora', marginBottom: 10, fontSize: 13 } },
+            week[0].slice(8),
+            "/",
+            week[0].slice(5, 7),
+            " \u2013 ",
+            week[6].slice(8),
+            "/",
+            week[6].slice(5, 7)),
+        week.map((ds, wi) => {
+            const acts = trip.activities.filter(a => a.date === ds).sort((a, b) => a.start.localeCompare(b.start));
+            const loc = locationForDay(trip, ds);
+            const dd = new Date(ds + 'T00:00:00');
+            return (React.createElement("div", { key: ds, className: "wkday" + (ds === today ? ' today' : ''), style: inTrip(ds) ? {} : { opacity: .5 } },
+                React.createElement("div", { className: "wkh", onClick: () => openDay(ds) },
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "wd" },
+                            DOW[wi],
+                            " ",
+                            dd.getDate(),
+                            "/",
+                            String(dd.getMonth() + 1).padStart(2, '0')),
+                        React.createElement("div", { className: "wdsub" }, acts.length ? acts.length + ' ' + (acts.length === 1 ? 'atividade' : 'atividades') : t.nothingDay)),
+                    loc && React.createElement("span", { className: "locchip", style: { background: cityColor(loc) } },
+                        "\uD83D\uDCCD ",
+                        loc)),
+                acts.length === 0
+                    ? React.createElement("div", { className: "wkempty" }, "\u2014")
+                    : acts.map(a => {
+                        const tc = TYPE_COLOR[a.type] || '#2DB5A3';
+                        return (React.createElement("div", { className: "wkrow", key: a.id, onClick: () => openDay(ds) },
+                            React.createElement("div", { className: "wt" }, a.start),
+                            React.createElement("div", { className: "wblk", style: { borderLeftColor: tc } },
+                                a.title,
+                                React.createElement("div", { className: "wbt" },
+                                    a.start,
+                                    "\u2013",
+                                    a.end,
+                                    a.loc ? ' · ' + a.loc : '',
+                                    a.source === 'doc' ? ' · 🤖' : ''))));
+                    })));
+        })));
+}
+/* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
+function MapTab({ t, trip }) {
+    // trechos: usa o roteiro interpretado (com escalas) quando houver; senão o seg manual
+    const segs = [];
+    (trip.docs || []).forEach(d => {
+        if (d.itin && d.itin.legs)
+            d.itin.legs.forEach(lg => segs.push({ fromCity: lg.from.city, toCity: lg.to.city, depDate: lg.depDate, depTime: lg.depTime, arrDate: lg.arrDate, arrTime: lg.arrTime, iata: lg.from.iata + '→' + lg.to.iata }));
+        else if (d.seg)
+            segs.push(d.seg);
+    });
+    segs.sort((a, b) => ((a.depDate || '') + (a.depTime || '')).localeCompare((b.depDate || '') + (b.depTime || '')));
+    // constrói lista ordenada de paradas (cidade + data) sem repetir cidade consecutiva
+    const stops = [];
+    const push = (city, date) => {
+        if (!city)
+            return;
+        const last = stops[stops.length - 1];
+        if (!last || last.city !== city)
+            stops.push({ city, date });
+    };
+    (trip.destinations || []).filter(d => d.name && d.name !== 'A definir').forEach(d => push(cityOf(d.name), d.date));
+    segs.forEach(s => { push(s.fromCity, s.depDate); push(s.toCity, s.arrDate); });
+    const pts = stops.length ? stops : [{ city: 'A definir', date: trip.startDate }];
+    const n = pts.length;
+    const xs = i => n === 1 ? 150 : 30 + (240 * i / (n - 1));
+    const ys = i => 55 + (i % 2 === 0 ? -15 : 15);
+    return (React.createElement("div", null,
+        React.createElement("div", { className: "card", style: { background: 'linear-gradient(135deg,#dceee9,#bfe0d8)', border: 'none', minHeight: 200,
+                display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' } },
+            React.createElement("svg", { viewBox: "0 0 300 120", style: { width: '100%', height: 150 } },
+                React.createElement("polyline", { points: pts.map((_, i) => xs(i) + ',' + ys(i)).join(' '), fill: "none", stroke: "#FF6B5C", strokeWidth: "2.5", strokeDasharray: "2 6", strokeLinecap: "round" }),
+                pts.map((p, i) => (React.createElement("g", { key: i },
+                    React.createElement("circle", { cx: xs(i), cy: ys(i), r: "6", fill: i === 0 ? '#F4A259' : i === n - 1 ? '#5B8DEF' : '#1A2B4A' }),
+                    React.createElement("text", { x: xs(i), y: ys(i) + (i % 2 === 0 ? -12 : 20), fontSize: "9", fontWeight: "700", fill: "#234", textAnchor: "middle" }, p.city)))))),
+        segs.length > 0 && React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "sectiontitle" }, "\u2708\uFE0F Trechos (das passagens)"),
+            segs.map((s, i) => (React.createElement("div", { className: "dest", key: i },
+                React.createElement("span", { className: "pin" }, "\u2708\uFE0F"),
+                React.createElement("span", { className: "dd" },
+                    React.createElement("b", null,
+                        s.fromCity,
+                        " \u2192 ",
+                        s.toCity),
+                    React.createElement("span", null,
+                        s.depDate,
+                        " ",
+                        s.depTime,
+                        " \u2192 ",
+                        s.arrDate,
+                        " ",
+                        s.arrTime)))))),
+        React.createElement("div", { className: "sectiontitle" }, "\uD83D\uDCCD Lugares por onde voc\u00EA vai passar"),
+        pts.map((p, i) => {
+            const role = i === 0 ? 'Origem' : i === n - 1 ? 'Destino' : 'Escala / parada';
+            return (React.createElement("div", { className: "dest", key: i },
+                React.createElement("span", { className: "pin" }, i === 0 ? '🟠' : i === n - 1 ? '🔵' : '⚪'),
+                React.createElement("span", { className: "dd" },
+                    React.createElement("b", null, p.city),
+                    React.createElement("span", null,
+                        role,
+                        p.date ? ' · ' + brDateT(p.date) : '')),
+                React.createElement("span", { className: "locchip", style: { background: cityColor(p.city) } }, "\uD83D\uDCCD")));
+        }),
+        React.createElement("div", { className: "card sub", style: { textAlign: 'center', fontSize: 12 } }, "\uD83D\uDFE0 Origem \u00B7 \u26AA Escala \u00B7 \uD83D\uDD35 Destino final \u00B7 Anexe passagens em Docs para enriquecer a rota \u00B7 Percurso em tempo real chega na v2")));
+}
+/* --- Docs (anexo real do dispositivo + remoção; inteligência sob controle do usuário) --- */
+function DocsTab({ t, trip, update, toast, goTab }) {
+    const cats = [['tickets', t.tickets, '🎫', ['Avião', 'Trem', 'Ônibus']],
+        ['stays', t.stays, '🏨', ['Airbnb', 'Hotel', 'Booking']],
+        ['events', t.events, '🎭', ['Esporte', 'Festa', 'Teatro', 'Culinária']],
+        ['extras', t.extras, '📎', ['Diversos']]];
+    const [cat, setCat] = useState('tickets');
+    const [sub, setSub] = useState('Avião');
+    const [readId, setReadId] = useState(null); // doc sendo "lido" (passagem)
+    const [busy, setBusy] = useState(false);
+    const [confirmDoc, setConfirmDoc] = useState(null); // doc aguardando confirmação p/ cronograma
+    const fileRef = useRef(null);
+    const cur = cats.find(c => c[0] === cat);
+    const catDocs = trip.docs.filter(d => d.cat === cat && d.sub === sub);
+    const icon = cat === 'tickets' ? '🎫' : cat === 'stays' ? '🏨' : cat === 'events' ? '🎭' : '📎';
+    const typeForCat = { tickets: 'typeTransport', stays: 'typeStay', events: 'typeEvent', extras: 'typeOther' };
+    // Anexo real do dispositivo + interpretação automática quando é passagem em PDF
+    const onFile = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file)
+            return;
+        e.target.value = '';
+        const dataUrl = file.size < 2 * 1024 * 1024 ? await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); }) : null;
+        const doc = { id: uid(), cat, sub, name: file.name.replace(/\.[^.]+$/, ''), file: file.name,
+            mime: file.type || 'arquivo', size: file.size, dataUrl, offline: !!dataUrl };
+        // tenta interpretar o roteiro se for passagem em PDF
+        if (cat === 'tickets' && /pdf/i.test(file.type || file.name)) {
+            setBusy(true);
+            try {
+                const buf = await file.arrayBuffer();
+                const txt = await pdfToText(buf);
+                const itin = parseAirTicket(txt);
+                if (itin.stages.length)
+                    doc.itin = itin;
+            }
+            catch (err) { /* segue sem interpretação */ }
+            setBusy(false);
+        }
+        update({ ...trip, docs: [...trip.docs, doc] });
+        toast(t.docAttached);
+        if (cat === 'tickets')
+            setReadId(doc.id);
+    };
+    const removeDoc = (id) => {
+        update({ ...trip, docs: trip.docs.filter(d => d.id !== id),
+            activities: trip.activities.filter(a => a.docId !== id) });
+        toast(t.docRemoved);
+    };
+    const toSchedule = (d) => {
+        const act = { id: uid(), docId: d.id, date: trip.startDate, start: '15:00', end: '16:00', title: d.name,
+            type: typeForCat[d.cat] || 'typeOther', loc: '', desc: 'Criado a partir do documento: ' + d.file, source: 'doc', joined: ['me'] };
+        update({ ...trip, activities: [...trip.activities, act] });
+        toast(t.recAdded);
+    };
+    // ROTEIRO INTERPRETADO -> cria um card de PARTIDA e um de CHEGADA por trecho, em CADA data correta
+    const buildStageBlocks = (d) => {
+        const legs = d.itin.legs;
+        const blocks = [];
+        legs.forEach((lg, i) => {
+            const isLay = i > 0; // chegada deste trecho num aeroporto de escala
+            blocks.push({ id: uid(), docId: d.id, date: lg.depDate, start: lg.depTime, end: addMin(lg.depTime, 40),
+                title: '✈️ ' + t.departure + ' — ' + lg.from.city + ' (' + lg.from.iata + ')', type: 'typeTransport', loc: lg.from.airport,
+                desc: t.departure + ' ' + lg.from.airport + ' · ' + t.flight + ' ' + lg.flight + ' → ' + lg.to.city + (lg.duration ? (' · ' + lg.duration.replace(':', 'h')) : ''),
+                source: 'doc', joined: ['me'] });
+            const isFinal = i === legs.length - 1;
+            blocks.push({ id: uid(), docId: d.id, date: lg.arrDate, start: lg.arrTime, end: addMin(lg.arrTime, 30),
+                title: (isFinal ? '🛬 ' : '🛬 ') + t.arrival + ' — ' + lg.to.city + ' (' + lg.to.iata + ')', type: 'typeTransport', loc: lg.to.airport,
+                desc: t.arrival + ' ' + lg.to.airport + ' · ' + t.flight + ' ' + lg.flight + (isFinal ? '' : ' · ' + t.lblLayover), source: 'doc', joined: ['me'] });
+        });
+        const first = legs[0], last = legs[legs.length - 1];
+        const seg = { fromCity: first.from.city, toCity: last.to.city, depDate: first.depDate, depTime: first.depTime, arrDate: last.arrDate, arrTime: last.arrTime };
+        const dates = [...new Set(blocks.map(b => b.date))].sort();
+        return { blocks, seg, dates };
+    };
+    const applyStages = (d) => {
+        const { blocks, seg } = buildStageBlocks(d);
+        update({ ...trip, docs: trip.docs.map(x => x.id === d.id ? { ...x, seg } : x),
+            activities: [...trip.activities.filter(a => a.docId !== d.id), ...blocks] });
+        setConfirmDoc(null);
+        setReadId(null);
+        toast(t.stagesAdded);
+        if (goTab)
+            goTab('schedule'); // encaminha o usuário ao cronograma
+    };
+    // LEITURA MANUAL: bloco de PARTIDA e de CHEGADA + trecho (seg)
+    const saveTicket = (d, seg) => {
+        const dep = { id: uid(), docId: d.id, date: seg.depDate, start: seg.depTime, end: addMin(seg.depTime, 40),
+            title: '✈️ ' + t.departure + ' — ' + seg.fromCity, type: 'typeTransport', loc: seg.fromCity,
+            desc: seg.fromCity + ' → ' + seg.toCity + ' · ' + d.file, source: 'doc', joined: ['me'] };
+        const arr = { id: uid(), docId: d.id, date: seg.arrDate, start: seg.arrTime, end: addMin(seg.arrTime, 30),
+            title: '🛬 ' + t.arrival + ' — ' + seg.toCity, type: 'typeTransport', loc: seg.toCity,
+            desc: t.youAreIn + ' ' + seg.toCity + ' · ' + d.file, source: 'doc', joined: ['me'] };
+        update({ ...trip, docs: trip.docs.map(x => x.id === d.id ? { ...x, seg, itin: undefined } : x),
+            activities: [...trip.activities.filter(a => a.docId !== d.id), dep, arr] });
+        setReadId(null);
+        toast(t.ticketRead);
+    };
+    const human = b => b ? (b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(0) + ' KB' : (b / 1048576).toFixed(1) + ' MB') : '';
+    const readingDoc = readId ? trip.docs.find(d => d.id === readId) : null;
+    const lbl = { origin: t.lblOrigin, layover: t.lblLayover, destination: t.lblDestination, dep: t.departure, arr: t.arrival, nextDep: t.nextDep, layoverTime: t.layoverLabel };
+    return (React.createElement("div", null,
+        React.createElement("div", { className: "subtabs" }, cats.map(c => React.createElement("button", { key: c[0], className: "subtab" + (cat === c[0] ? ' on' : ''), onClick: () => { setCat(c[0]); setSub(c[3][0]); } },
+            c[2],
+            " ",
+            c[1]))),
+        React.createElement("div", { className: "subtabs" },
+            cur[3].map(s => React.createElement("button", { key: s, className: "subtab" + (sub === s ? ' on' : ''), style: sub === s ? {} : { opacity: .7 }, onClick: () => setSub(s) }, s)),
+            React.createElement("button", { className: "subtab" }, "+")),
+        cat === 'tickets' && React.createElement("div", { className: "alert", style: { background: '#eef5ff', borderColor: '#b9d4ff' } },
+            React.createElement("span", { className: "ai" }, "\uD83E\uDD16"),
+            React.createElement("div", null,
+                React.createElement("b", null, "Interpretador de passagem"),
+                React.createElement("p", null, "Anexe o PDF da passagem: o roteiro \u00E9 lido automaticamente (origem, escalas e destino com hor\u00E1rios) e vira etapas no cronograma. PDF n\u00E3o reconhecido? Voc\u00EA preenche manualmente."))),
+        React.createElement("input", { ref: fileRef, type: "file", accept: "*/*", style: { display: 'none' }, onChange: onFile }),
+        React.createElement("button", { className: "btn btn-dark", style: { marginBottom: 14 }, disabled: busy, onClick: () => fileRef.current && fileRef.current.click() }, busy ? '⏳ ' + t.interpreting : '📎 ' + t.attachDoc),
+        readingDoc && (readingDoc.itin
+            ? React.createElement("div", { className: "card", style: { borderColor: '#b9d4ff' } },
+                React.createElement("b", { style: { fontFamily: 'Sora', fontSize: 14 } },
+                    "\uD83E\uDD16 ",
+                    t.interpretedRoute),
+                React.createElement("div", { className: "sub", style: { fontSize: 11, margin: '2px 0 12px' } }, readingDoc.file),
+                readingDoc.itin.stages.map((st, i) => React.createElement(ItinStageCard, { key: i, st: st, lbl: lbl })),
+                React.createElement("button", { className: "btn btn-primary", style: { marginTop: 6 }, onClick: () => setConfirmDoc(readingDoc) },
+                    "\uD83D\uDCC5 ",
+                    t.addStages),
+                React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: () => update({ ...trip, docs: trip.docs.map(x => x.id === readingDoc.id ? { ...x, itin: undefined } : x) }) },
+                    "\u270F\uFE0F ",
+                    t.editManual))
+            : React.createElement(TicketReadForm, { t: t, trip: trip, doc: readingDoc, onSave: seg => saveTicket(readingDoc, seg), onCancel: () => setReadId(null) })),
+        catDocs.length === 0
+            ? React.createElement("div", { className: "empty" },
+                React.createElement("div", { className: "ei" }, "\uD83D\uDCC4"),
+                t.noDocs)
+            : catDocs.map(d => (React.createElement("div", { className: "docitem", key: d.id },
+                React.createElement("span", { className: "di" }, icon),
+                React.createElement("span", { className: "dt" },
+                    React.createElement("b", null, d.name),
+                    React.createElement("span", null,
+                        d.file,
+                        d.size ? ' · ' + human(d.size) : ''),
+                    d.itin
+                        ? React.createElement("div", { className: "sub", style: { fontSize: 12, marginTop: 3 } },
+                            "\uD83E\uDDED ",
+                            d.itin.stages[0].city,
+                            " \u2192 ",
+                            d.itin.stages[d.itin.stages.length - 1].city,
+                            " \u00B7 ",
+                            d.itin.legs.length,
+                            " voo(s) \u00B7 ",
+                            d.itin.stages.filter(x => x.kind === 'layover').length,
+                            " escala(s)")
+                        : d.seg && React.createElement("div", { className: "sub", style: { fontSize: 12, marginTop: 3 } },
+                            "\u2708\uFE0F ",
+                            d.seg.fromCity,
+                            " \u2192 ",
+                            d.seg.toCity,
+                            " \u00B7 ",
+                            brDateT(d.seg.depDate),
+                            " ",
+                            d.seg.depTime,
+                            " \u2192 ",
+                            brDateT(d.seg.arrDate),
+                            " ",
+                            d.seg.arrTime),
+                    React.createElement("div", { style: { marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' } },
+                        d.offline && React.createElement("span", { className: "offline" },
+                            "\u2B07 ",
+                            t.offlineAvail),
+                        d.dataUrl && React.createElement("a", { className: "joinbtn", href: d.dataUrl, download: d.file, style: { textDecoration: 'none' } }, "\u2B07 Download"),
+                        d.cat === 'tickets' && React.createElement("button", { className: "joinbtn", onClick: () => setReadId(d.id) },
+                            "\uD83E\uDD16 ",
+                            (d.itin || d.seg) ? 'Ver roteiro' : 'Ler passagem'),
+                        d.cat === 'stays' && React.createElement("button", { className: "joinbtn", onClick: () => toSchedule(d) },
+                            "\uD83D\uDCC5 ",
+                            t.addToSched))),
+                React.createElement("button", { className: "blkbtn del", onClick: () => removeDoc(d.id) }, "\u2715")))),
+        confirmDoc && confirmDoc.itin && (() => {
+            const { dates, blocks } = buildStageBlocks(confirmDoc);
+            const fmt = ds => { const p = ds.split('-'); return p[2] + '/' + p[1]; };
+            return React.createElement(ConfirmModal, { icon: "\uD83D\uDCC5", title: t.addStages + '?', msg: blocks.length + ' ' + (blocks.length === 1 ? 'card' : 'cards') + ' · ' + t.cardsWillAdd + ' ' + dates.map(fmt).join(', ') + '.', confirmLabel: '📅 ' + t.addStages, cancelLabel: t.cancel, onConfirm: () => applyStages(confirmDoc), onCancel: () => setConfirmDoc(null) });
+        })()));
+}
+function TicketReadForm({ t, trip, doc, onSave, onCancel }) {
+    const destGuess = (trip.destinations && trip.destinations[0]) ? cityOf(trip.destinations[0].name) : '';
+    const [s, setS] = useState(doc.seg || { fromCity: '', toCity: destGuess, depDate: trip.startDate, depTime: '10:00', arrDate: trip.startDate, arrTime: '13:30' });
+    const set = (k, v) => setS({ ...s, [k]: v });
+    const ok = s.fromCity && s.toCity && s.depDate && s.arrDate;
+    return (React.createElement("div", { className: "card", style: { borderColor: '#b9d4ff' } },
+        React.createElement("b", { style: { fontFamily: 'Sora', fontSize: 14 } },
+            "\uD83E\uDD16 ",
+            t.readTicket),
+        React.createElement("div", { className: "sub", style: { fontSize: 11, margin: '2px 0 12px' } }, doc.file),
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null,
+                "\uD83D\uDEEB ",
+                t.origin),
+            React.createElement("input", { className: "inp", placeholder: "S\u00E3o Paulo (GRU)", value: s.fromCity, onChange: e => set('fromCity', e.target.value) })),
+        React.createElement("div", { className: "row" },
+            React.createElement("div", { className: "field", style: { flex: 1.2 } },
+                React.createElement("label", null, t.departDT),
+                React.createElement("input", { type: "date", className: "inp", value: s.depDate, onChange: e => set('depDate', e.target.value) })),
+            React.createElement("div", { className: "field", style: { flex: 1 } },
+                React.createElement("label", null, "\u00A0"),
+                React.createElement("input", { type: "time", className: "inp", value: s.depTime, onChange: e => set('depTime', e.target.value) }))),
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null,
+                "\uD83D\uDEEC ",
+                t.destination),
+            React.createElement("input", { className: "inp", placeholder: "Lisboa (LIS)", value: s.toCity, onChange: e => set('toCity', e.target.value) })),
+        React.createElement("div", { className: "row" },
+            React.createElement("div", { className: "field", style: { flex: 1.2 } },
+                React.createElement("label", null, t.arriveDT),
+                React.createElement("input", { type: "date", className: "inp", value: s.arrDate, onChange: e => set('arrDate', e.target.value) })),
+            React.createElement("div", { className: "field", style: { flex: 1 } },
+                React.createElement("label", null, "\u00A0"),
+                React.createElement("input", { type: "time", className: "inp", value: s.arrTime, onChange: e => set('arrTime', e.target.value) }))),
+        React.createElement("div", { className: "row" },
+            React.createElement("button", { className: "btn btn-ghost", onClick: onCancel }, t.cancel),
+            React.createElement("button", { className: "btn btn-primary", disabled: !ok, onClick: () => onSave({ ...s, fromCity: s.fromCity.trim(), toCity: s.toCity.trim() }) },
+                "\uD83D\uDCC5 ",
+                t.createBlocks))));
+}
+/* --- Gallery --- */
+function GalleryTab({ t, trip, update, toast }) {
+    // seções por local da viagem (inclui origem/escalas/destino do interpretador)
+    const cities = tripLocations(trip);
+    const list = cities.length ? cities : ['Viagem'];
+    const pickRef = useRef(null);
+    const pickCity = useRef(null);
+    const openPicker = (city) => { pickCity.current = city; pickRef.current && pickRef.current.click(); };
+    const onPick = e => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length)
+            return;
+        const city = pickCity.current;
+        Promise.all(files.map(f => new Promise(res => { const r = new FileReader(); r.onload = () => res({ city, src: r.result }); r.readAsDataURL(f); })))
+            .then(imgs => { update({ ...trip, gallery: [...trip.gallery, ...imgs] }); toast(t.addPhotoGal + ' ✓'); });
+        e.target.value = '';
+    };
+    return (React.createElement("div", null,
+        React.createElement("p", { className: "sub", style: { marginBottom: 14 } },
+            "\uD83D\uDDBC\uFE0F ",
+            t.galByLocation),
+        React.createElement("input", { ref: pickRef, type: "file", accept: "image/*", multiple: true, style: { display: 'none' }, onChange: onPick }),
+        list.map(city => {
+            const ph = trip.gallery.filter(g => g.city === city);
+            return (React.createElement("div", { key: city },
+                React.createElement("div", { className: "sectiontitle" },
+                    "\uD83D\uDCCD ",
+                    city,
+                    " ",
+                    React.createElement("span", { className: "pill" }, ph.length)),
+                React.createElement("div", { className: "gal" },
+                    ph.map((g, i) => g.src
+                        ? React.createElement("div", { className: "galimg", key: i, style: { backgroundImage: 'url(' + g.src + ')' } })
+                        : React.createElement("div", { className: "ph", key: i }, "\uD83C\uDFDE\uFE0F")),
+                    React.createElement("button", { className: "galadd", onClick: () => openPicker(city) }, "\uFF0B"))));
+        })));
+}
+/* --- Suggestions (Recomendações Gerais via mock Maps) --- */
+const RECS = {
+    'Geral': [['Bairro Alto', 'Bar · ⭐ 4.7', 'Lisboa'], ['Sagrada Família', 'Turismo · ⭐ 4.8', 'Barcelona'], ['Coliseu', 'Turismo · ⭐ 4.9', 'Roma']],
+    'Culinária': [['Time Out Market', 'Gastronomia · ⭐ 4.6', 'Lisboa'], ['La Boqueria', 'Mercado · ⭐ 4.7', 'Barcelona'], ['Trastevere', 'Gastronomia · ⭐ 4.8', 'Roma']],
+    'Eventos': [['Fado ao Vivo', 'Música · ⭐ 4.7', 'Lisboa'], ['Camp Nou Tour', 'Esporte · ⭐ 4.8', 'Barcelona']],
+};
+function SuggestTab({ t, trip, update, toast }) {
+    const [sub, setSub] = useState('general');
+    const [filter, setFilter] = useState('Geral');
+    const list = RECS[filter] || RECS['Geral'];
+    return (React.createElement("div", null,
+        React.createElement("div", { className: "subtabs" },
+            React.createElement("button", { className: "subtab" + (sub === 'general' ? ' on' : ''), onClick: () => setSub('general') },
+                "\uD83C\uDF0D ",
+                t.generalRec),
+            React.createElement("button", { className: "subtab" + (sub === 'trippin' ? ' on' : ''), onClick: () => setSub('trippin') },
+                "\u2B50 ",
+                t.trippinRec)),
+        React.createElement("div", { className: "subtabs" }, Object.keys(RECS).map(k => React.createElement("button", { key: k, className: "subtab" + (filter === k ? ' on' : ''), style: filter === k ? {} : { opacity: .7 }, onClick: () => setFilter(k) }, k))),
+        sub === 'trippin' && React.createElement("div", { className: "alert", style: { background: '#fff5f3', borderColor: '#ffc9c1' } },
+            React.createElement("span", { className: "ai" }, "\u2B50"),
+            React.createElement("div", null,
+                React.createElement("b", null, t.trippinRec),
+                React.createElement("p", null, "Ranking pela base de usu\u00E1rios Trippin chega na v2."))),
+        list.map((r, i) => (React.createElement("div", { className: "sug", key: i },
+            React.createElement("span", { className: "si" }, "\uD83D\uDCCD"),
+            React.createElement("span", { className: "st" },
+                React.createElement("b", null, r[0]),
+                React.createElement("span", { className: "rt" }, r[1]),
+                React.createElement("br", null),
+                React.createElement("span", null, r[2])),
+            React.createElement("button", { className: "joinbtn", onClick: () => toast(t.recAdded) },
+                "+ ",
+                t.addToSchedule))))));
+}
+/* --- Members --- */
+function MembersTab({ t, trip, update, toast }) {
+    const [email, setEmail] = useState('');
+    const [exp, setExp] = useState(false);
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const invite = () => { if (!emailOk)
+        return; setEmail(''); toast(t.inviteSent); };
+    const remove = id => update({ ...trip, members: trip.members.filter(m => m.id !== id) });
+    const addExpense = (d, a) => { update({ ...trip, expenses: [...trip.expenses, { id: uid(), desc: d, amount: a, paidBy: 'Você' }] }); toast(t.expAdded); };
+    return (React.createElement("div", null,
+        trip.members.map(m => (React.createElement("div", { className: "member", key: m.id },
+            React.createElement("div", { className: "ava" + (m.isAdmin ? ' adm' : '') }, m.name[0]),
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement("b", { style: { fontSize: 14 } }, m.name),
+                React.createElement("div", { style: { fontSize: 12, color: 'var(--muted)' } }, m.email)),
+            m.isAdmin && React.createElement("span", { className: "admtag" }, t.admin),
+            !m.isAdmin && React.createElement("button", { className: "copybtn", style: { background: '#ffece9', color: 'var(--danger)' }, onClick: () => remove(m.id) }, t.remove)))),
+        React.createElement("div", { className: "card" },
+            React.createElement("b", { style: { fontFamily: 'Sora', fontSize: 14 } },
+                "\u2795 ",
+                t.addMember),
+            React.createElement("div", { className: "field", style: { marginTop: 10 } },
+                React.createElement("label", null, t.inviteEmail),
+                React.createElement("input", { className: "inp" + (email && !emailOk ? ' err' : ''), placeholder: "amigo@email.com", value: email, onChange: e => setEmail(e.target.value) }),
+                email && !emailOk && React.createElement("div", { className: "errmsg" }, t.invalidEmail)),
+            React.createElement("button", { className: "btn btn-lagoon", disabled: !emailOk, onClick: invite },
+                "\uD83D\uDCE7 ",
+                t.sendInvite)),
+        React.createElement("div", { className: "sectiontitle" },
+            "\uD83D\uDCB0 ",
+            t.expenses),
+        trip.expenses.map(e => (React.createElement("div", { className: "expense", key: e.id },
+            React.createElement("div", { className: "el" },
+                React.createElement("b", null, e.desc),
+                React.createElement("span", null,
+                    t.paidBy,
+                    ": ",
+                    e.paidBy)),
+            React.createElement("div", { className: "ev" },
+                "\u20AC ",
+                e.amount)))),
+        exp ? React.createElement(ExpenseForm, { t: t, onSave: (d, a) => { addExpense(d, a); setExp(false); }, onCancel: () => setExp(false) })
+            : React.createElement("button", { className: "btn btn-ghost", onClick: () => setExp(true) },
+                "+ ",
+                t.addExpense)));
+}
+function ExpenseForm({ t, onSave, onCancel }) {
+    const [d, setD] = useState('');
+    const [a, setA] = useState('');
+    return (React.createElement("div", { className: "card" },
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null, t.desc),
+            React.createElement("input", { className: "inp", value: d, onChange: e => setD(e.target.value) })),
+        React.createElement("div", { className: "field" },
+            React.createElement("label", null,
+                t.amount,
+                " (\u20AC)"),
+            React.createElement("input", { type: "number", className: "inp", value: a, onChange: e => setA(e.target.value) })),
+        React.createElement("button", { className: "btn btn-primary", disabled: !d || !a, onClick: () => onSave(d, Number(a)) }, t.save)));
+}
+/* ---------------- Menu (full-screen, de baixo para cima) ---------------- */
+function MenuSheet({ t, user, onClose, onNav, onLogout }) {
+    const item = (ic, label, go, danger) => (React.createElement("button", { className: "navitem", style: danger ? { color: 'var(--danger)' } : {}, onClick: () => go() },
+        React.createElement("span", { className: "ni" }, ic),
+        label));
+    return (React.createElement("div", { className: "menusheet" },
+        React.createElement("div", { className: "mh" },
+            React.createElement("div", { className: "ava", style: user.photo ? { backgroundImage: 'url(' + user.photo + ')', backgroundSize: 'cover', backgroundPosition: 'center' } : {} }, user.photo ? '' : (user.firstName ? user.firstName[0] : 'U')),
+            React.createElement("div", null,
+                React.createElement("div", { style: { fontFamily: 'Sora', fontWeight: 700, fontSize: 17 } },
+                    user.firstName,
+                    " ",
+                    user.lastName),
+                React.createElement("div", { style: { fontSize: 12, opacity: .8 } },
+                    t.yourCode,
+                    ": ",
+                    React.createElement("span", { className: "mono" }, user.code))),
+            React.createElement("button", { className: "closex", onClick: onClose }, "\u2715")),
+        React.createElement("div", { className: "mlist" },
+            item('🏠', t.home, () => onNav('home')),
+            item('✈️', t.newTrip, () => onNav('new')),
+            item('🔑', t.joinTrip, () => onNav('join')),
+            item('👤', t.profile, () => onNav('profile')),
+            item('🧩', t.apps, () => onNav('apps')),
+            item('⚙️', t.settings, () => onNav('settings')),
+            React.createElement("div", { style: { height: 1, background: 'var(--line)', margin: '10px 18px' } }),
+            item('↩', t.logout, onLogout, true))));
+}
+function BottomBar({ t, onMenu, onHome, onNotif, notifCount }) {
+    return (React.createElement("div", { className: "bottombar" },
+        React.createElement("button", { className: "bnav", onClick: onMenu },
+            React.createElement("span", { className: "bic" }, "\u2630"),
+            t.menu),
+        React.createElement("button", { className: "bnav center", onClick: onHome },
+            React.createElement("span", { className: "bic" }, "\uD83C\uDFE0")),
+        React.createElement("button", { className: "bnav", onClick: onNotif },
+            React.createElement("span", { className: "bic" }, "\uD83D\uDD14"),
+            t.notifications,
+            notifCount > 0 && React.createElement("span", { className: "badge" }, notifCount))));
+}
+/* ---------------- Configurações ---------------- */
+function SettingsScreen({ t, settings, setSettings, onBack }) {
+    const set = (k, v) => setSettings({ ...settings, [k]: v });
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "\u2190"),
+            React.createElement("div", { className: "ttl" }, t.settings),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.settingsSub),
+            React.createElement("div", { className: "setrow" },
+                React.createElement("span", { className: "si" }, "\uD83D\uDD14"),
+                React.createElement("span", { className: "st" },
+                    React.createElement("b", null, t.receiveNotif),
+                    React.createElement("span", null, t.receiveNotifSub)),
+                React.createElement("div", { className: "switch" + (settings.notifications ? ' on' : ''), onClick: () => set('notifications', !settings.notifications) })),
+            React.createElement("div", { className: "setrow" },
+                React.createElement("span", { className: "si" }, "\uD83D\uDCCD"),
+                React.createElement("span", { className: "st" },
+                    React.createElement("b", null, t.shareLoc),
+                    React.createElement("span", null, t.shareLocSub)),
+                React.createElement("div", { className: "switch" + (settings.shareLocation ? ' on' : ''), onClick: () => set('shareLocation', !settings.shareLocation) })),
+            React.createElement("div", { className: "sectiontitle" },
+                "\uD83C\uDFA8 ",
+                t.appearance),
+            React.createElement("div", { className: "segpick" },
+                React.createElement("button", { className: settings.theme === 'light' ? 'on' : '', onClick: () => set('theme', 'light') },
+                    "\u2600\uFE0F ",
+                    t.themeLight),
+                React.createElement("button", { className: settings.theme === 'dark' ? 'on' : '', onClick: () => set('theme', 'dark') },
+                    "\uD83C\uDF19 ",
+                    t.themeDark)))));
+}
+/* ---------------- Apps de viagem ---------------- */
+const TRAVEL_APPS = [
+    ['🏨', 'Booking', 'Hotéis e reservas', '#003580'],
+    ['🛏️', 'Airbnb', 'Estadias e experiências', '#FF5A5F'],
+    ['🗺️', 'Google Maps', 'Rotas e locais', '#34A853'],
+    ['🚗', 'Uber', 'Transporte', '#000000'],
+    ['🍽️', 'TheFork', 'Reservas em restaurantes', '#1B8E94'],
+    ['✈️', 'Skyscanner', 'Voos', '#0770E3'],
+    ['🎟️', 'GetYourGuide', 'Passeios e ingressos', '#FF5533'],
+];
+function TravelAppsScreen({ t, onBack }) {
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "\u2190"),
+            React.createElement("div", { className: "ttl" }, t.apps),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.appsSub),
+            TRAVEL_APPS.map(a => (React.createElement("div", { className: "appcard", key: a[1] },
+                React.createElement("span", { className: "ai", style: { background: a[3] + '18' } }, a[0]),
+                React.createElement("span", { className: "at" },
+                    React.createElement("b", null, a[1]),
+                    React.createElement("span", null, a[2])),
+                React.createElement("span", { className: "soon" }, t.comingSoon)))))));
+}
+function NotifPanel({ t, notifs, onClose, onAct }) {
+    return (React.createElement("div", { className: "overlay", onClick: onClose },
+        React.createElement("div", { className: "notifpanel", onClick: e => e.stopPropagation() },
+            React.createElement("div", { className: "appbar" },
+                React.createElement("div", { className: "ttl" },
+                    "\uD83D\uDD14 ",
+                    t.notifications),
+                React.createElement("button", { className: "iconbtn", onClick: onClose }, "\u2715")),
+            React.createElement("div", { className: "pad", style: { flex: 1, overflowY: 'auto' } },
+                notifs.length === 0 && React.createElement("div", { className: "empty" },
+                    React.createElement("div", { className: "ei" }, "\uD83D\uDD14"),
+                    t.noNotif),
+                notifs.map(n => (React.createElement("div", { key: n.id, className: "notifitem" + (n.read ? '' : ' unread') },
+                    React.createElement("p", null, n.text),
+                    React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+                        React.createElement("span", { className: "nt" }, n.time),
+                        !n.read && React.createElement("button", { className: "joinbtn", onClick: () => onAct(n.id) }, n.action || 'Ver')))))))));
+}
 /* ---------------- ROOT APP ---------------- */
-function App(){
-  const persisted=load();
-  const [lang,setLang]=useState(persisted.lang||null);
-  const [user,setUser]=useState(persisted.user||null);
-  const [trips,setTrips]=useState(persisted.trips||null);
-  const [screen,setScreen]=useState(persisted.user?'home':'lang');
-  const [activeTrip,setActiveTrip]=useState(null);
-  const [toastMsg,setToastMsg]=useState('');
-  const [menuOpen,setMenuOpen]=useState(false);
-  const [notifOpen,setNotifOpen]=useState(false);
-  const [delTrip,setDelTrip]=useState(null);
-  const [settings,setSettings]=useState(persisted.settings||{notifications:true,theme:'light',shareLocation:false});
-  const [notifs,setNotifs]=useState(persisted.notifs||[
-    {id:'n1',text:'Marina alterou a despesa "Hotel Lisboa" para € 420. Justificativa: ajuste 3 noites.',time:'há 2h',read:false,action:'Revisar'},
-    {id:'n2',text:'João Pedro ingressou na viagem Eurotrip 2026.',time:'ontem',read:false,action:'Ver'},
-  ]);
-
-  // persist
-  useEffect(()=>{ if(lang||user||trips) save({lang,user,trips,notifs,settings}); },[lang,user,trips,notifs,settings]);
-  // seed trips on first profile creation
-  useEffect(()=>{ if(user&&trips===null){ setTrips([seedTrip()]); } },[user]);
-  // aplica o tema (claro/escuro)
-  useEffect(()=>{ const r=document.getElementById('root'); if(r) r.setAttribute('data-theme', settings.theme==='dark'?'dark':'light'); },[settings.theme]);
-
-  const t=dict(lang||'pt-BR');
-  const toast=m=>{setToastMsg(m);setTimeout(()=>setToastMsg(''),2200);};
-  // a preferência de notificações controla o que é exibido
-  const effNotifs = settings.notifications? notifs : [];
-  const notifCount=effNotifs.filter(n=>!n.read).length;
-
-  const updateTrip=(nt)=>setTrips(trips.map(x=>x.id===nt.id?nt:x));
-  const openTrip=id=>{setActiveTrip(id);setScreen('trip');};
-  const curTrip=trips&&trips.find(x=>x.id===activeTrip);
-
-  const goHome=()=>{setScreen('home');setMenuOpen(false);};
-  const logout=()=>{ localStorage.removeItem(KEY); setLang(null);setUser(null);setTrips(null);setScreen('lang');setMenuOpen(false); };
-  const doDeleteTrip=()=>{ setTrips(trips.filter(x=>x.id!==delTrip.id)); if(activeTrip===delTrip.id)setScreen('home'); setDelTrip(null); toast(t.tripDeleted); };
-  const navFromMenu=s=>{ setMenuOpen(false);
-    if(s==='home')goHome(); else setScreen(s==='profile'?'profile-edit':s); };
-
-  const showBottom = user && trips && ['home','trip','settings','apps'].includes(screen);
-
-  return(<>
-    {screen==='lang'&&<LanguageScreen onPick={l=>{setLang(l);setScreen('profile');}}/>}
-    {screen==='profile'&&<ProfileScreen lang={lang} onDone={u=>{setUser(u);setScreen('home');toast(t.profileCreated);}}/>}
-    {screen==='home'&&user&&trips&&<>
-      <div className="appbar"><div style={{width:38}}/><div className="ttl">Trippin</div><div style={{width:38}}/></div>
-      <HomeScreen lang={lang} user={user} trips={trips} onNew={()=>setScreen('new')} onJoin={()=>setScreen('join')} onOpen={openTrip} onDelete={tr=>setDelTrip(tr)}/>
-    </>}
-    {screen==='new'&&<NewTripScreen lang={lang} toast={toast}
-      onCancel={goHome}
-      onCreate={nt=>{ setTrips([...(trips||[]),nt]); toast(t.tripCreated);
-        setTimeout(()=>{setActiveTrip(nt.id);setScreen('trip');},700); }}/>}
-    {screen==='join'&&<JoinScreen lang={lang} onBack={goHome} toast={toast}/>}
-    {screen==='profile-edit'&&user&&<ProfileEditScreen lang={lang} user={user}
-      onSave={u=>{setUser(u);setScreen('home');toast(t.profileSaved);}} onBack={goHome}/>}
-    {screen==='settings'&&<SettingsScreen t={t} settings={settings} setSettings={setSettings} onBack={goHome}/>}
-    {screen==='apps'&&<TravelAppsScreen t={t} onBack={goHome}/>}
-    {screen==='trip'&&curTrip&&<TripScreen lang={lang} trip={curTrip} update={updateTrip} onBack={goHome} toast={toast}/>}
-
-    {showBottom&&<BottomBar t={t} onMenu={()=>setMenuOpen(true)} onHome={goHome}
-      onNotif={()=>setNotifOpen(true)} notifCount={notifCount}/>}
-
-    {menuOpen&&<MenuSheet t={t} user={user||{}} onClose={()=>setMenuOpen(false)} onNav={navFromMenu} onLogout={logout}/>}
-    {notifOpen&&<NotifPanel t={t} notifs={effNotifs} onClose={()=>setNotifOpen(false)}
-      onAct={id=>{setNotifs(notifs.map(n=>n.id===id?{...n,read:true}:n));toast('✓');}}/>}
-
-    {delTrip&&<ConfirmModal icon="🗑️" title={t.deleteTripQ} msg={'"'+delTrip.name+'" — '+t.deleteTripSub}
-      confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger
-      onConfirm={doDeleteTrip} onCancel={()=>setDelTrip(null)}/>}
-
-    <Toast msg={toastMsg}/>
-  </>);
+function App() {
+    const persisted = load();
+    const [lang, setLang] = useState(persisted.lang || null);
+    const [user, setUser] = useState(persisted.user || null);
+    const [trips, setTrips] = useState(persisted.trips || null);
+    const [screen, setScreen] = useState(persisted.user ? 'home' : 'lang');
+    const [activeTrip, setActiveTrip] = useState(null);
+    const [toastMsg, setToastMsg] = useState('');
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [delTrip, setDelTrip] = useState(null);
+    const [settings, setSettings] = useState(persisted.settings || { notifications: true, theme: 'light', shareLocation: false });
+    const [notifs, setNotifs] = useState(persisted.notifs || [
+        { id: 'n1', text: 'Marina alterou a despesa "Hotel Lisboa" para € 420. Justificativa: ajuste 3 noites.', time: 'há 2h', read: false, action: 'Revisar' },
+        { id: 'n2', text: 'João Pedro ingressou na viagem Eurotrip 2026.', time: 'ontem', read: false, action: 'Ver' },
+    ]);
+    // persist
+    useEffect(() => { if (lang || user || trips)
+        save({ lang, user, trips, notifs, settings }); }, [lang, user, trips, notifs, settings]);
+    // seed trips on first profile creation
+    useEffect(() => { if (user && trips === null) {
+        setTrips([seedTrip()]);
+    } }, [user]);
+    // aplica o tema (claro/escuro)
+    useEffect(() => { const r = document.getElementById('root'); if (r)
+        r.setAttribute('data-theme', settings.theme === 'dark' ? 'dark' : 'light'); }, [settings.theme]);
+    const t = dict(lang || 'pt-BR');
+    const toast = m => { setToastMsg(m); setTimeout(() => setToastMsg(''), 2200); };
+    // a preferência de notificações controla o que é exibido
+    const effNotifs = settings.notifications ? notifs : [];
+    const notifCount = effNotifs.filter(n => !n.read).length;
+    const updateTrip = (nt) => setTrips(trips.map(x => x.id === nt.id ? nt : x));
+    const openTrip = id => { setActiveTrip(id); setScreen('trip'); };
+    const curTrip = trips && trips.find(x => x.id === activeTrip);
+    const goHome = () => { setScreen('home'); setMenuOpen(false); };
+    const logout = () => { localStorage.removeItem(KEY); setLang(null); setUser(null); setTrips(null); setScreen('lang'); setMenuOpen(false); };
+    const doDeleteTrip = () => { setTrips(trips.filter(x => x.id !== delTrip.id)); if (activeTrip === delTrip.id)
+        setScreen('home'); setDelTrip(null); toast(t.tripDeleted); };
+    const navFromMenu = s => {
+        setMenuOpen(false);
+        if (s === 'home')
+            goHome();
+        else
+            setScreen(s === 'profile' ? 'profile-edit' : s);
+    };
+    const showBottom = user && trips && ['home', 'trip', 'settings', 'apps'].includes(screen);
+    return (React.createElement(React.Fragment, null,
+        screen === 'lang' && React.createElement(LanguageScreen, { onPick: l => { setLang(l); setScreen('profile'); } }),
+        screen === 'profile' && React.createElement(ProfileScreen, { lang: lang, onDone: u => { setUser(u); setScreen('home'); toast(t.profileCreated); } }),
+        screen === 'home' && user && trips && React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "appbar" },
+                React.createElement("div", { style: { width: 38 } }),
+                React.createElement("div", { className: "ttl" }, "Trippin"),
+                React.createElement("div", { style: { width: 38 } })),
+            React.createElement(HomeScreen, { lang: lang, user: user, trips: trips, onNew: () => setScreen('new'), onJoin: () => setScreen('join'), onOpen: openTrip, onDelete: tr => setDelTrip(tr) })),
+        screen === 'new' && React.createElement(NewTripScreen, { lang: lang, toast: toast, onCancel: goHome, onCreate: nt => {
+                setTrips([...(trips || []), nt]);
+                toast(t.tripCreated);
+                setTimeout(() => { setActiveTrip(nt.id); setScreen('trip'); }, 700);
+            } }),
+        screen === 'join' && React.createElement(JoinScreen, { lang: lang, onBack: goHome, toast: toast }),
+        screen === 'profile-edit' && user && React.createElement(ProfileEditScreen, { lang: lang, user: user, onSave: u => { setUser(u); setScreen('home'); toast(t.profileSaved); }, onBack: goHome }),
+        screen === 'settings' && React.createElement(SettingsScreen, { t: t, settings: settings, setSettings: setSettings, onBack: goHome }),
+        screen === 'apps' && React.createElement(TravelAppsScreen, { t: t, onBack: goHome }),
+        screen === 'trip' && curTrip && React.createElement(TripScreen, { lang: lang, trip: curTrip, update: updateTrip, onBack: goHome, toast: toast }),
+        showBottom && React.createElement(BottomBar, { t: t, onMenu: () => setMenuOpen(true), onHome: goHome, onNotif: () => setNotifOpen(true), notifCount: notifCount }),
+        menuOpen && React.createElement(MenuSheet, { t: t, user: user || {}, onClose: () => setMenuOpen(false), onNav: navFromMenu, onLogout: logout }),
+        notifOpen && React.createElement(NotifPanel, { t: t, notifs: effNotifs, onClose: () => setNotifOpen(false), onAct: id => { setNotifs(notifs.map(n => n.id === id ? { ...n, read: true } : n)); toast('✓'); } }),
+        delTrip && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1\uFE0F", title: t.deleteTripQ, msg: '"' + delTrip.name + '" — ' + t.deleteTripSub, confirmLabel: t.yesDelete, cancelLabel: t.cancel, danger: true, onConfirm: doDeleteTrip, onCancel: () => setDelTrip(null) }),
+        React.createElement(Toast, { msg: toastMsg })));
 }
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
