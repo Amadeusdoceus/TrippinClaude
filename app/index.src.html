@@ -101,10 +101,11 @@
 
   /* Tabs (trip) */
   .tabbar{position:sticky;top:66px;z-index:20;background:var(--sand);display:flex;
-    gap:6px;padding:10px 12px;overflow-x:auto;border-bottom:1px solid var(--line)}
+    gap:6px;padding:10px 12px;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--line);
+    flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .tabbar::-webkit-scrollbar{display:none}
   .tab{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;color:var(--muted);
-    white-space:nowrap;background:#fff;border:1px solid var(--line)}
+    white-space:nowrap;background:#fff;border:1px solid var(--line);flex:0 0 auto}
   .tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 
   /* Calendar */
