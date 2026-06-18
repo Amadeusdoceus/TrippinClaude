@@ -424,6 +424,8 @@
   .camvid{flex:1;width:100%;object-fit:cover;background:#000}
   .cambar{display:flex;gap:10px;padding:14px}
   .camerr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;font-size:15px;gap:6px;padding:24px}
+  .ava-lg{width:96px;height:96px;border-radius:50%;background:var(--lagoon);background-size:cover;background-position:center;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;font-size:34px;margin:0 auto;border:3px solid var(--card);box-shadow:0 6px 18px rgba(20,33,61,.15)}
+  .ava-lg.adm{outline:3px solid var(--coral);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -450,7 +452,7 @@ const I18N = {
     deleteConfirmSub:'As informações preenchidas serão perdidas.', deleted:'Edição excluída', cancel:'Cancelar',
     yesDelete:'Sim, excluir', copyCode:'copiar', copied:'Código copiado!',
     enterCode:'Código da viagem', askJoin:'Pedir para participar', joinSent:'Pedido enviado! Aguarde aprovação do administrador.',
-    schedule:'Cronograma', map:'Mapa', docs:'Docs', gallery:'Galeria', suggestions:'Sugestões', members:'Integrantes',
+    schedule:'Cronograma', map:'Mapa', docs:'Docs', gallery:'Galeria', suggestions:'Sugestões', members:'Usuários',
     month:'Mês', week:'Semana', day:'Dia', addActivity:'Adicionar atividade', join:'Ingressar', joined:'Participando',
     conflict:'Conflito', tickets:'Passagens', stays:'Estadias', events:'Eventos', extras:'Extras',
     attachExample:'Anexar passagem (exemplo)', attachStay:'Anexar reserva (exemplo)', offlineAvail:'Offline',
@@ -473,7 +475,7 @@ const I18N = {
     appsHint:'Abrir apps parceiros',
     date:'Data', editProfile:'Editar perfil', profileSaved:'Perfil atualizado!', changePhoto:'Toque para alterar a foto',
     eventType:'Tipo do evento', descOpt:'Descrição (opcional)', editActivity:'Editar atividade',
-    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', hi:'Olá', capture:'Capturar', cameraErr:'Não foi possível acessar a câmera', cameraErrSub:'Verifique a permissão de câmera do navegador.', openGmaps:'Abrir no Google Maps', useMyLoc:'Minha localização', locating:'Localizando...', youAreHere:'Você está aqui', locOk:'Localização obtida ✓', locErr:'Não foi possível obter a localização', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
+    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', hi:'Olá', joinedOn:'Entrou em', joinCreator:'Criou o grupo da viagem', joinInvite:'Convite por e-mail aceito', joinCode:'Solicitação de ingresso por código do grupo', joinOther:'Outro', howJoined:'Como entrou', makeAdmin:'Tornar administrador', removeAdmin:'Remover permissão de admin', removeMember:'Remover do grupo', yearsOld:'anos', capture:'Capturar', cameraErr:'Não foi possível acessar a câmera', cameraErrSub:'Verifique a permissão de câmera do navegador.', openGmaps:'Abrir no Google Maps', useMyLoc:'Minha localização', locating:'Localizando...', youAreHere:'Você está aqui', locOk:'Localização obtida ✓', locErr:'Não foi possível obter a localização', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
     docAttached:'Documento anexado!', docRemoved:'Documento removido', addToSched:'Adicionar ao cronograma',
     noDocs:'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
     typeTransport:'Transporte', typeStay:'Hospedagem', typeFood:'Refeição', typeTour:'Passeio',
@@ -508,7 +510,7 @@ const I18N = {
     deleteConfirmSub:'The information entered will be lost.', deleted:'Edit discarded', cancel:'Cancel',
     yesDelete:'Yes, discard', copyCode:'copy', copied:'Code copied!',
     enterCode:'Trip code', askJoin:'Ask to join', joinSent:'Request sent! Wait for admin approval.',
-    schedule:'Schedule', map:'Map', docs:'Docs', gallery:'Gallery', suggestions:'Suggestions', members:'Members',
+    schedule:'Schedule', map:'Map', docs:'Docs', gallery:'Gallery', suggestions:'Suggestions', members:'Users',
     month:'Month', week:'Week', day:'Day', addActivity:'Add activity', join:'Join', joined:'Joined',
     conflict:'Conflict', tickets:'Tickets', stays:'Stays', events:'Events', extras:'Extras',
     attachExample:'Attach flight (sample)', attachStay:'Attach booking (sample)', offlineAvail:'Offline',
@@ -531,7 +533,7 @@ const I18N = {
     appsHint:'Open partner apps',
     date:'Date', editProfile:'Edit profile', profileSaved:'Profile updated!', changePhoto:'Tap to change photo',
     eventType:'Event type', descOpt:'Description (optional)', editActivity:'Edit activity',
-    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', hi:'Hi', capture:'Capture', cameraErr:'Could not access the camera', cameraErrSub:'Check the browser camera permission.', openGmaps:'Open in Google Maps', useMyLoc:'My location', locating:'Locating...', youAreHere:'You are here', locOk:'Location found ✓', locErr:'Could not get location', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
+    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', hi:'Hi', joinedOn:'Joined on', joinCreator:'Created the trip group', joinInvite:'Email invite accepted', joinCode:'Join request via group code', joinOther:'Other', howJoined:'How they joined', makeAdmin:'Make admin', removeAdmin:'Remove admin role', removeMember:'Remove from group', yearsOld:'years old', capture:'Capture', cameraErr:'Could not access the camera', cameraErrSub:'Check the browser camera permission.', openGmaps:'Open in Google Maps', useMyLoc:'My location', locating:'Locating...', youAreHere:'You are here', locOk:'Location found ✓', locErr:'Could not get location', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
     docAttached:'Document attached!', docRemoved:'Document removed', addToSched:'Add to schedule',
     noDocs:'No documents here. Tap "Attach doc" to add from your device.',
     typeTransport:'Transport', typeStay:'Stay', typeFood:'Meal', typeTour:'Tour',
@@ -585,9 +587,9 @@ function seedTrip(){
     id:rid(12), name:'Eurotrip 2026', startDate:'2026-07-10', endDate:'2026-07-20',
     destinations:[{name:'Lisboa, Portugal',date:'2026-07-10'},{name:'Barcelona, Espanha',date:'2026-07-14'},{name:'Roma, Itália',date:'2026-07-17'}],
     status:'active',
-    members:[{id:'me',name:'Você',email:'voce@trippin.app',isAdmin:true},
-             {id:uid(),name:'Marina Alves',email:'marina@email.com',isAdmin:false},
-             {id:uid(),name:'João Pedro',email:'joao@email.com',isAdmin:false}],
+    members:[{id:'me',firstName:'Você',lastName:'',name:'Você',email:'voce@trippin.app',phone:'+55 11 99999-9999',birth:'1990-05-12',code:'ABCDEF123456',isAdmin:true,joinedAt:'2026-05-01',joinVia:'creator'},
+             {id:uid(),firstName:'Marina',lastName:'Alves',name:'Marina Alves',email:'marina@email.com',phone:'+55 21 98888-7777',birth:'1992-08-22',code:'MARINA000001',isAdmin:false,joinedAt:'2026-05-04',joinVia:'invite'},
+             {id:uid(),firstName:'João',lastName:'Pedro',name:'João Pedro',email:'joao@email.com',phone:'+55 31 97777-6666',birth:'1988-11-30',code:'JPEDRO000001',isAdmin:false,joinedAt:'2026-05-10',joinVia:'code'}],
     activities:[
       {id:uid(),date:'2026-07-10',start:'14:00',end:'16:00',title:'Check-in Hotel Lisboa',loc:'Lisboa',source:'manual',joined:['me']},
       {id:uid(),date:'2026-07-11',start:'10:00',end:'12:00',title:'Torre de Belém',loc:'Lisboa',source:'manual',joined:['me']},
@@ -784,7 +786,7 @@ function JoinScreen({lang,onBack,toast}){
 }
 
 /* ---------------- NEW TRIP ---------------- */
-function NewTripScreen({lang,onCreate,onCancel,toast}){
+function NewTripScreen({lang,user,onCreate,onCancel,toast}){
   const t=dict(lang);
   const [name,setName]=useState('');
   const [start,setStart]=useState('');
@@ -798,10 +800,13 @@ function NewTripScreen({lang,onCreate,onCancel,toast}){
     setDests([...dests,{name, date:dq||start}]); setQ(''); setDq(''); toast(t.destAdded); };
   const create=()=>{
     if(!name||!start||!end) return;
+    const u=user||{}; const today=new Date().toISOString().slice(0,10);
+    const me={id:'me',firstName:u.firstName||'Você',lastName:u.lastName||'',name:((u.firstName||'Você')+' '+(u.lastName||'')).trim(),
+      email:u.email||'',phone:u.phone||'',birth:u.birth||'',photo:u.photo||'',code:u.code||'',isAdmin:true,joinedAt:today,joinVia:'creator'};
     const trip={ id:rid(12), name, startDate:start, endDate:end,
       destinations:dests.length?dests:[{name:'A definir',date:start}], status:'active',
-      members:[{id:'me',name:'Você',email:'voce@trippin.app',isAdmin:true}],
-      activities:[], docs:[], gallery:[], expenses:[] };
+      members:[me],
+      activities:[], docs:[], gallery:[], albums:[], expenses:[] };
     onCreate(trip);
   };
   return(<div className="screen">
@@ -850,7 +855,7 @@ function TripScreen({lang,trip,update,onBack,toast}){
   const t=dict(lang);
   const [tab,setTab]=useState('schedule');
   const tabs=[['schedule',t.schedule,'📅'],['map',t.map,'🗺️'],['docs',t.docs,'📄'],
-    ['gallery',t.gallery,'🖼️'],['suggestions',t.suggestions,'✨'],['members',t.members,'👥']];
+    ['gallery',t.gallery,'🖼️'],['members',t.members,'👥'],['suggestions',t.suggestions,'✨']];
   return(<div className="screen">
     <div className="appbar">
       <button className="iconbtn" onClick={onBack}>←</button>
@@ -1853,30 +1858,68 @@ function SuggestTab({t,trip,update,toast}){
   </div>);
 }
 
-/* --- Members --- */
+/* --- Members (Usuários da viagem) --- */
 function MembersTab({t,trip,update,toast}){
+  const [openId,setOpenId]=useState(null);
   const [email,setEmail]=useState('');
   const [exp,setExp]=useState(false);
+  const meIsAdmin=(trip.members||[]).some(m=>m.id==='me'&&m.isAdmin);
   const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const invite=()=>{ if(!emailOk)return; setEmail(''); toast(t.inviteSent); };
-  const remove=id=>update({...trip,members:trip.members.filter(m=>m.id!==id)});
+  const today=()=>new Date().toISOString().slice(0,10);
+  const invite=()=>{ if(!emailOk)return;
+    const m={id:uid(),firstName:email.split('@')[0],lastName:'',name:email.split('@')[0],email,phone:'',birth:'',photo:'',code:rid(12),isAdmin:false,joinedAt:today(),joinVia:'invite'};
+    update({...trip,members:[...trip.members,m]}); setEmail(''); toast(t.inviteSent);
+  };
+  const toggleAdmin=id=>update({...trip,members:trip.members.map(m=>m.id===id?{...m,isAdmin:!m.isAdmin}:m)});
+  const remove=id=>{ update({...trip,members:trip.members.filter(m=>m.id!==id)}); setOpenId(null); };
   const addExpense=(d,a)=>{update({...trip,expenses:[...trip.expenses,{id:uid(),desc:d,amount:a,paidBy:'Você'}]});toast(t.expAdded);};
-  return(<div>
-    {trip.members.map(m=>(<div className="member" key={m.id}>
-      <div className={"ava"+(m.isAdmin?' adm':'')}>{m.name[0]}</div>
-      <div style={{flex:1}}><b style={{fontSize:14}}>{m.name}</b>
-        <div style={{fontSize:12,color:'var(--muted)'}}>{m.email}</div></div>
-      {m.isAdmin&&<span className="admtag">{t.admin}</span>}
-      {!m.isAdmin&&<button className="copybtn" style={{background:'#ffece9',color:'var(--danger)'}} onClick={()=>remove(m.id)}>{t.remove}</button>}
-    </div>))}
+  const ageOf=b=>{ if(!b)return null; const d=new Date(b+'T00:00:00'); if(isNaN(d))return null;
+    const n=new Date(); let a=n.getFullYear()-d.getFullYear(); const md=n.getMonth()-d.getMonth();
+    if(md<0||(md===0&&n.getDate()<d.getDate())) a--; return a; };
+  const joinLabel=v=>v==='creator'?t.joinCreator:v==='invite'?t.joinInvite:v==='code'?t.joinCode:t.joinOther;
+  const init=m=>((m.firstName||m.name||'?')[0]||'?').toUpperCase();
+  const open=openId?(trip.members||[]).find(m=>m.id===openId):null;
 
-    <div className="card">
+  if(open){ const age=ageOf(open.birth);
+    return(<div>
+      <button className="blkbtn" title={t.back} onClick={()=>setOpenId(null)}>←</button>
+      <div className="card" style={{marginTop:10,textAlign:'center'}}>
+        <div className={"ava-lg"+(open.isAdmin?' adm':'')} style={open.photo?{backgroundImage:'url('+open.photo+')'}:{}}>{open.photo?'':init(open)}</div>
+        <h3 style={{fontFamily:'Sora',margin:'10px 0 2px',color:'var(--ink)'}}>{((open.firstName||'')+' '+(open.lastName||'')).trim()||open.name}</h3>
+        {open.isAdmin&&<span className="admtag" style={{display:'inline-block',marginTop:4}}>{t.admin}</span>}
+        <div className="mono" style={{marginTop:10,fontSize:12,color:'var(--muted)'}}>ID · <b style={{color:'var(--ink)'}}>{open.code||'—'}</b></div>
+      </div>
+      <div className="card">
+        <div className="lf full"><div className="k">🎂 {t.birth}</div><div className="v">{open.birth?brDateT(open.birth):'—'}{age!==null?' · '+age+' '+t.yearsOld:''}</div></div>
+        <div className="lf full"><div className="k">📧 {t.email}</div><div className="v">{open.email||'—'}</div></div>
+        <div className="lf full"><div className="k">📱 {t.phone}</div><div className="v">{open.phone||'—'}</div></div>
+        <div className="lf full"><div className="k">🚪 {t.howJoined}</div><div className="v">{joinLabel(open.joinVia)}{open.joinedAt?' · '+brDateT(open.joinedAt):''}</div></div>
+      </div>
+      {meIsAdmin&&open.id!=='me'&&<>
+        <button className="btn btn-dark" style={{marginTop:10}} onClick={()=>toggleAdmin(open.id)}>
+          {open.isAdmin?'⬇ '+t.removeAdmin:'⬆ '+t.makeAdmin}</button>
+        <button className="btn btn-ghost" style={{marginTop:8,color:'var(--danger)'}} onClick={()=>remove(open.id)}>🗑️ {t.removeMember}</button>
+      </>}
+    </div>);
+  }
+
+  return(<div>
+    {(trip.members||[]).map(m=>(<button className="member" key={m.id} onClick={()=>setOpenId(m.id)} style={{width:'100%',textAlign:'left',cursor:'pointer',background:'var(--card)'}}>
+      <div className={"ava"+(m.isAdmin?' adm':'')} style={m.photo?{backgroundImage:'url('+m.photo+')',backgroundSize:'cover'}:{}}>{m.photo?'':init(m)}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <b style={{fontSize:14,display:'block',color:'var(--ink)'}}>{((m.firstName||'')+' '+(m.lastName||'')).trim()||m.name}</b>
+        <div style={{fontSize:11,color:'var(--muted)'}}>📅 {t.joinedOn} {m.joinedAt?brDateT(m.joinedAt):'—'}</div>
+      </div>
+      {m.isAdmin&&<span className="admtag">{t.admin}</span>}
+    </button>))}
+
+    {meIsAdmin&&<div className="card">
       <b style={{fontFamily:'Sora',fontSize:14}}>➕ {t.addMember}</b>
       <div className="field" style={{marginTop:10}}><label>{t.inviteEmail}</label>
         <input className={"inp"+(email&&!emailOk?' err':'')} placeholder="amigo@email.com" value={email} onChange={e=>setEmail(e.target.value)}/>
         {email&&!emailOk&&<div className="errmsg">{t.invalidEmail}</div>}</div>
-      <button className="btn btn-lagoon" disabled={!emailOk} onClick={invite}>📧 {t.sendInvite}</button>
-    </div>
+      <button className="btn btn-primary" disabled={!emailOk} onClick={invite}>📧 {t.sendInvite}</button>
+    </div>}
 
     <div className="sectiontitle">💰 {t.expenses}</div>
     {trip.expenses.map(e=>(<div className="expense" key={e.id}>
@@ -2050,7 +2093,7 @@ function App(){
       <div className="appbar"><div style={{width:38}}/><div className="ttl">Trippin</div><div style={{width:38}}/></div>
       <HomeScreen lang={lang} user={user} trips={trips} onNew={()=>setScreen('new')} onJoin={()=>setScreen('join')} onOpen={openTrip} onDelete={tr=>setDelTrip(tr)}/>
     </>}
-    {screen==='new'&&<NewTripScreen lang={lang} toast={toast}
+    {screen==='new'&&<NewTripScreen lang={lang} user={user} toast={toast}
       onCancel={goHome}
       onCreate={nt=>{ setTrips([...(trips||[]),nt]); toast(t.tripCreated);
         setTimeout(()=>{setActiveTrip(nt.id);setScreen('trip');},700); }}/>}
