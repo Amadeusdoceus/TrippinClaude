@@ -391,6 +391,18 @@
   .srcopt .si{width:42px;height:42px;border-radius:11px;background:#eef2f7;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
   .srcopt .st{flex:1}.srcopt .st b{display:block;font-size:14px}.srcopt .st span{font-size:12px;color:var(--muted)}
   .srcopt .arr{color:var(--muted)}
+  .albumcard{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+  .albumstack{position:relative;width:74px;height:60px;flex-shrink:0;cursor:pointer}
+  .albumthumb{position:absolute;width:46px;height:46px;border-radius:7px;background-size:cover;background-position:center;border:2px solid var(--card);box-shadow:0 2px 5px rgba(20,33,61,.22)}
+  .albumthumb.s0{top:8px;left:0;transform:rotate(-7deg);z-index:1}
+  .albumthumb.s1{top:5px;left:13px;transform:rotate(2deg);z-index:2}
+  .albumthumb.s2{top:2px;left:26px;transform:rotate(8deg);z-index:3}
+  .albuminfo{flex:1;min-width:0}.albuminfo b{display:block;font-family:'Sora';font-size:15px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .albuminfo span{font-size:12px;color:var(--muted)}
+  .sel-wrap{position:relative;cursor:pointer}
+  .sel-wrap.picked{outline:3px solid var(--accent,#FF6B5C);outline-offset:-3px}
+  .imgx{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(20,33,61,.72);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
+  .selck{position:absolute;left:4px;top:4px;width:22px;height:22px;border-radius:50%;background:var(--accent,#FF6B5C);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
 </style>
 </head>
 <body>
@@ -440,7 +452,7 @@ const I18N = {
     appsHint:'Abrir apps parceiros',
     date:'Data', editProfile:'Editar perfil', profileSaved:'Perfil atualizado!', changePhoto:'Toque para alterar a foto',
     eventType:'Tipo do evento', descOpt:'Descrição (opcional)', editActivity:'Editar atividade',
-    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
+    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
     docAttached:'Documento anexado!', docRemoved:'Documento removido', addToSched:'Adicionar ao cronograma',
     noDocs:'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
     typeTransport:'Transporte', typeStay:'Hospedagem', typeFood:'Refeição', typeTour:'Passeio',
@@ -498,7 +510,7 @@ const I18N = {
     appsHint:'Open partner apps',
     date:'Date', editProfile:'Edit profile', profileSaved:'Profile updated!', changePhoto:'Tap to change photo',
     eventType:'Event type', descOpt:'Description (optional)', editActivity:'Edit activity',
-    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
+    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
     docAttached:'Document attached!', docRemoved:'Document removed', addToSched:'Add to schedule',
     noDocs:'No documents here. Tap "Attach doc" to add from your device.',
     typeTransport:'Transport', typeStay:'Stay', typeFood:'Meal', typeTour:'Tour',
@@ -830,7 +842,7 @@ function TripScreen({lang,trip,update,onBack,toast}){
     </div>
     <div className="pad">
       {tab==='schedule'&&<ScheduleTab t={t} trip={trip} update={update} toast={toast}/>}
-      {tab==='map'&&<MapTab t={t} trip={trip}/>}
+      {tab==='map'&&<MapTab t={t} trip={trip} update={update} toast={toast}/>}
       {tab==='docs'&&<DocsTab t={t} trip={trip} update={update} toast={toast} goTab={setTab}/>}
       {tab==='gallery'&&<GalleryTab t={t} trip={trip} update={update} toast={toast}/>}
       {tab==='suggestions'&&<SuggestTab t={t} trip={trip} update={update} toast={toast}/>}
@@ -1249,7 +1261,13 @@ function WeekView({t,trip,curDay,openDay}){
 }
 
 /* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
-function MapTab({t,trip}){
+function MapTab({t,trip,update,toast}){
+  const ov=trip.cityOverrides||{renames:{},hidden:[]};
+  const dn=c=>(ov.renames&&ov.renames[c])||c;
+  const [editCity,setEditCity]=useState(null); const [editVal,setEditVal]=useState('');
+  const [delCity,setDelCity]=useState(null);
+  const saveRename=(orig)=>{ const v=editVal.trim(); if(v){ update({...trip,cityOverrides:{renames:{...(ov.renames||{}),[orig]:v},hidden:ov.hidden||[]}}); toast(t.saved||'✓'); } setEditCity(null); };
+  const doDelCity=(orig)=>{ update({...trip,cityOverrides:{renames:ov.renames||{},hidden:[...(ov.hidden||[]),orig]}}); setDelCity(null); toast(t.cityRemoved); };
   // trechos: usa o roteiro interpretado (com escalas) quando houver; senão o seg manual
   const segs=[];
   (trip.docs||[]).forEach(d=>{
@@ -1257,9 +1275,8 @@ function MapTab({t,trip}){
     else if(d.seg) segs.push(d.seg);
   });
   segs.sort((a,b)=>((a.depDate||'')+ (a.depTime||'')).localeCompare((b.depDate||'')+(b.depTime||'')));
-  // constrói lista ordenada de paradas (cidade + data) sem repetir cidade consecutiva
   const stops=[];
-  const push=(city,date)=>{ if(!city)return; const last=stops[stops.length-1];
+  const push=(city,date)=>{ if(!city)return; if((ov.hidden||[]).includes(city))return; const last=stops[stops.length-1];
     if(!last||last.city!==city) stops.push({city,date}); };
   (trip.destinations||[]).filter(d=>d.name&&d.name!=='A definir').forEach(d=>push(cityOf(d.name),d.date));
   segs.forEach(s=>{ push(s.fromCity,s.depDate); push(s.toCity,s.arrDate); });
@@ -1275,7 +1292,7 @@ function MapTab({t,trip}){
         <polyline points={pts.map((_,i)=>xs(i)+','+ys(i)).join(' ')} fill="none" stroke="#FF6B5C" strokeWidth="2.5" strokeDasharray="2 6" strokeLinecap="round"/>
         {pts.map((p,i)=>(<g key={i}>
           <circle cx={xs(i)} cy={ys(i)} r="6" fill={i===0?'#F4A259':i===n-1?'#5B8DEF':'#1A2B4A'}/>
-          <text x={xs(i)} y={ys(i)+(i%2===0?-12:20)} fontSize="9" fontWeight="700" fill="#234" textAnchor="middle">{p.city}</text>
+          <text x={xs(i)} y={ys(i)+(i%2===0?-12:20)} fontSize="9" fontWeight="700" fill="#234" textAnchor="middle">{dn(p.city)}</text>
         </g>))}
       </svg>
     </div>
@@ -1284,7 +1301,7 @@ function MapTab({t,trip}){
       <div className="sectiontitle">✈️ Trechos (das passagens)</div>
       {segs.map((s,i)=>(<div className="dest" key={i}>
         <span className="pin">✈️</span>
-        <span className="dd"><b>{s.fromCity} → {s.toCity}</b>
+        <span className="dd"><b>{dn(s.fromCity)} → {dn(s.toCity)}</b>
           <span>{s.depDate} {s.depTime} → {s.arrDate} {s.arrTime}</span></span>
       </div>))}
     </>}
@@ -1293,10 +1310,22 @@ function MapTab({t,trip}){
     {pts.map((p,i)=>{const role=i===0?'Origem':i===n-1?'Destino':'Escala / parada';return(
       <div className="dest" key={i}>
       <span className="pin">{i===0?'🟠':i===n-1?'🔵':'⚪'}</span>
-      <span className="dd"><b>{p.city}</b><span>{role}{p.date?' · '+brDateT(p.date):''}</span></span>
-      <span className="locchip" style={{background:cityColor(p.city)}}>📍</span>
+      {editCity===p.city
+        ? <span className="dd"><input className="inp" style={{padding:'6px 8px',fontSize:13}} value={editVal} autoFocus
+            onChange={e=>setEditVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&saveRename(p.city)}/></span>
+        : <span className="dd"><b>{dn(p.city)}</b><span>{role}{p.date?' · '+brDateT(p.date):''}</span></span>}
+      {editCity===p.city
+        ? <><button className="blkbtn" onClick={()=>saveRename(p.city)}>✓</button><button className="blkbtn" onClick={()=>setEditCity(null)}>✕</button></>
+        : <><button className="blkbtn" title="Editar" onClick={()=>{setEditCity(p.city);setEditVal(dn(p.city));}}>✏️</button>
+            <button className="blkbtn del" title="Excluir" onClick={()=>setDelCity(p.city)}>🗑️</button></>}
     </div>);})}
-    <div className="card sub" style={{textAlign:'center',fontSize:12}}>🟠 Origem · ⚪ Escala · 🔵 Destino final · Anexe passagens em Docs para enriquecer a rota · Percurso em tempo real chega na v2</div>
+    {(ov.hidden&&ov.hidden.length>0)&&<button className="btn btn-ghost" style={{marginTop:8}}
+      onClick={()=>{update({...trip,cityOverrides:{renames:ov.renames||{},hidden:[]}});toast(t.saved||'✓');}}>↩ {t.restoreCities}</button>}
+    <div className="card sub" style={{textAlign:'center',fontSize:12}}>🟠 Origem · ⚪ Escala · 🔵 Destino final · Toque ✏️ para renomear ou 🗑️ para ocultar uma cidade</div>
+
+    {delCity&&<ConfirmModal icon="🗑️" title={t.deleteCityQ} msg={'"'+dn(delCity)+'" '+t.deleteCitySub}
+      confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger
+      onConfirm={()=>doDelCity(delCity)} onCancel={()=>setDelCity(null)}/>}
   </div>);
 }
 
@@ -1592,33 +1621,130 @@ function TicketReadForm({t,trip,doc,onSave,onCancel}){
 
 /* --- Gallery --- */
 function GalleryTab({t,trip,update,toast}){
-  // seções por local da viagem (inclui origem/escalas/destino do interpretador)
-  const cities=tripLocations(trip);
-  const list=cities.length?cities:['Viagem'];
-  const pickRef=useRef(null);
-  const pickCity=useRef(null);
-  const openPicker=(city)=>{ pickCity.current=city; pickRef.current&&pickRef.current.click(); };
-  const onPick=e=>{
-    const files=Array.from(e.target.files||[]); if(!files.length)return;
-    const city=pickCity.current;
-    Promise.all(files.map(f=>new Promise(res=>{ const r=new FileReader(); r.onload=()=>res({city,src:r.result}); r.readAsDataURL(f); })))
-      .then(imgs=>{ update({...trip,gallery:[...trip.gallery,...imgs]}); toast(t.addPhotoGal+' ✓'); });
-    e.target.value='';
+  const [openId,setOpenId]=useState(null);   // álbum aberto (null = página de álbuns)
+  const [sel,setSel]=useState([]);           // ids de imagens selecionadas no álbum
+  const [editId,setEditId]=useState(null);   // álbum em renomeação
+  const [editName,setEditName]=useState('');
+  const [delAlbum,setDelAlbum]=useState(null);
+  const [delImg,setDelImg]=useState(null);
+  const [adding,setAdding]=useState(false);  // criando novo álbum
+  const [newName,setNewName]=useState('');
+  const [shareConfirm,setShareConfirm]=useState(false);
+  const upRef=useRef(null), camRef=useRef(null);
+
+  // semeia álbuns a partir dos locais da viagem + normaliza imagens (id/album)
+  useEffect(()=>{
+    const persisted=trip.albums||[];
+    const locs=tripLocations(trip);
+    const missing=locs.filter(c=>!persisted.some(a=>a.id===c));
+    const galNeedsFix=(trip.gallery||[]).some(g=>!g.id||!g.album);
+    if(!trip.albums||missing.length||galNeedsFix){
+      const albs=[...persisted,...missing.map(c=>({id:c,name:c}))];
+      const gal=(trip.gallery||[]).map(g=>(g.id&&g.album)?g:{id:g.id||uid(),album:g.album||g.city||(albs[0]&&albs[0].id)||'viagem',src:g.src});
+      update({...trip,albums:albs,gallery:gal});
+    }
+  },[trip.docs,trip.destinations]);
+
+  const albums=trip.albums||tripLocations(trip).map(c=>({id:c,name:c}));
+  const gallery=(trip.gallery||[]).map((g,i)=>({id:g.id||('i'+i),album:g.album||g.city,src:g.src}));
+  const imgsOf=id=>gallery.filter(g=>g.album===id);
+
+  const setAlbums=a=>update({...trip,albums:a});
+  const addAlbum=()=>{ const nm=newName.trim()||('Álbum '+(albums.length+1)); update({...trip,albums:[...albums,{id:uid(),name:nm}]}); setNewName(''); setAdding(false); toast(t.albumAdded); };
+  const renameAlbum=id=>{ const v=editName.trim(); if(v) setAlbums(albums.map(a=>a.id===id?{...a,name:v}:a)); setEditId(null); };
+  const removeAlbum=id=>{ update({...trip,albums:albums.filter(a=>a.id!==id),gallery:gallery.filter(g=>g.album!==id)}); setDelAlbum(null); if(openId===id)setOpenId(null); toast(t.albumRemoved); };
+  const removeImg=imgId=>{ update({...trip,gallery:gallery.filter(g=>g.id!==imgId)}); setSel(sel.filter(x=>x!==imgId)); setDelImg(null); toast(t.imgRemoved); };
+  const toggleSel=id=>setSel(sel.includes(id)?sel.filter(x=>x!==id):[...sel,id]);
+
+  const onPick=(albumId)=>e=>{
+    const files=Array.from(e.target.files||[]); e.target.value=''; if(!files.length)return;
+    Promise.all(files.map(f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res({id:uid(),album:albumId,src:r.result});r.readAsDataURL(f);})))
+      .then(imgs=>{ update({...trip,gallery:[...gallery,...imgs]}); toast(t.addPhotoGal+' ✓'); });
   };
+  async function doShare(images){
+    setShareConfirm(false);
+    try{
+      const files=await Promise.all(images.map(async(g,i)=>{const b=await(await fetch(g.src)).blob();return new File([b],'foto_'+(i+1)+'.jpg',{type:b.type||'image/jpeg'});}));
+      if(navigator.canShare&&navigator.canShare({files})){ await navigator.share({files,title:t.gallery}); }
+      else { images.forEach((g,i)=>{const a=document.createElement('a');a.href=g.src;a.download='foto_'+(i+1)+'.jpg';a.click();}); toast(t.shareFallback); }
+    }catch(e){/* cancelado */}
+  }
+
+  // ---------- VISTA DE UM ÁLBUM ----------
+  if(openId){
+    const alb=albums.find(a=>a.id===openId)||{id:openId,name:openId};
+    const ph=imgsOf(openId);
+    const toShare=sel.length?ph.filter(g=>sel.includes(g.id)):ph;
+    return(<div>
+      <input ref={upRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={onPick(openId)}/>
+      <input ref={camRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={onPick(openId)}/>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+        <button className="blkbtn" onClick={()=>{setOpenId(null);setSel([]);}}>← {t.back}</button>
+        <b style={{fontFamily:'Sora',fontSize:16,flex:1}}>🖼️ {alb.name}</b>
+        <span className="pill">{ph.length}</span>
+      </div>
+      {sel.length>0&&<p className="sub" style={{margin:'0 0 10px'}}>{sel.length} {t.selected}</p>}
+      <div className="gal">
+        {ph.map(g=>(<div className={"galimg sel-wrap"+(sel.includes(g.id)?' picked':'')} key={g.id}
+            style={{backgroundImage:'url('+g.src+')'}} onClick={()=>toggleSel(g.id)}>
+          <button className="imgx" onClick={e=>{e.stopPropagation();setDelImg(g.id);}}>✕</button>
+          {sel.includes(g.id)&&<span className="selck">✓</span>}
+        </div>))}
+        {ph.length===0&&<div className="ph" style={{gridColumn:'1/-1'}}>🏞️ {t.noPhotos}</div>}
+      </div>
+      <div style={{display:'flex',gap:8,marginTop:14}}>
+        <button className="btn btn-dark" style={{flex:1}} onClick={()=>upRef.current&&upRef.current.click()}>📎 {t.attachPhotos}</button>
+        <button className="btn btn-dark" style={{flex:1}} onClick={()=>camRef.current&&camRef.current.click()}>📷 {t.camera}</button>
+      </div>
+      <button className="btn btn-primary" style={{marginTop:8}} disabled={ph.length===0} onClick={()=>setShareConfirm(true)}>
+        📤 {t.share}{sel.length?' ('+sel.length+')':''}</button>
+
+      {delImg&&<ConfirmModal icon="🗑️" title={t.deleteImgQ} msg={t.deleteImgSub}
+        confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger onConfirm={()=>removeImg(delImg)} onCancel={()=>setDelImg(null)}/>}
+      {shareConfirm&&<ConfirmModal icon="📤" title={t.share+'?'}
+        msg={(sel.length?sel.length+' '+t.shareSelected:ph.length+' '+t.shareAll)}
+        confirmLabel={'📤 '+t.share} cancelLabel={t.cancel} onConfirm={()=>doShare(toShare)} onCancel={()=>setShareConfirm(false)}/>}
+    </div>);
+  }
+
+  // ---------- PÁGINA DE ÁLBUNS ----------
   return(<div>
     <p className="sub" style={{marginBottom:14}}>🖼️ {t.galByLocation}</p>
-    {/* abre a galeria/arquivos do dispositivo; aceita várias imagens */}
-    <input ref={pickRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={onPick}/>
-    {list.map(city=>{const ph=trip.gallery.filter(g=>g.city===city);
-      return(<div key={city}>
-        <div className="sectiontitle">📍 {city} <span className="pill">{ph.length}</span></div>
-        <div className="gal">
-          {ph.map((g,i)=> g.src
-            ? <div className="galimg" key={i} style={{backgroundImage:'url('+g.src+')'}}/>
-            : <div className="ph" key={i}>🏞️</div>)}
-          <button className="galadd" onClick={()=>openPicker(city)}>＋</button>
+    {albums.map(a=>{const ph=imgsOf(a.id);const top=ph.slice(0,3);
+      return(<div className="albumcard" key={a.id}>
+        <div className="albumstack" onClick={()=>ph.length&&setOpenId(a.id)}>
+          {top.length===0&&<div className="albumthumb s0" style={{background:'#eef2f7',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>🏞️</div>}
+          {top.map((g,i)=><div className={"albumthumb s"+i} key={g.id} style={{backgroundImage:'url('+g.src+')',zIndex:i}}/>)}
         </div>
+        <div className="albuminfo">
+          {editId===a.id
+            ? <input className="inp" style={{padding:'6px 8px',fontSize:14}} value={editName} autoFocus
+                onChange={e=>setEditName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&renameAlbum(a.id)}/>
+            : <b onClick={()=>ph.length&&setOpenId(a.id)}>{a.name}</b>}
+          <span>{ph.length} {ph.length===1?t.photo:t.photos}</span>
+        </div>
+        {editId===a.id
+          ? <><button className="blkbtn" onClick={()=>renameAlbum(a.id)}>✓</button><button className="blkbtn" onClick={()=>setEditId(null)}>✕</button></>
+          : <><button className="blkbtn" title="Renomear" onClick={()=>{setEditId(a.id);setEditName(a.name);}}>✏️</button>
+              <button className="blkbtn del" title="Excluir" onClick={()=>setDelAlbum(a.id)}>🗑️</button>
+              <button className="blkbtn" title={t.attachPhotos} onClick={()=>setOpenId(a.id)}>＋</button></>}
       </div>);})}
+    {albums.length===0&&<div className="ph" style={{padding:24}}>🖼️ {t.noAlbums}</div>}
+
+    {adding
+      ? <div className="albumcard" style={{display:'block'}}>
+          <input className="inp" placeholder={t.albumName} value={newName} autoFocus
+            onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addAlbum()}/>
+          <div style={{display:'flex',gap:8,marginTop:8}}>
+            <button className="btn btn-primary" style={{flex:1}} onClick={addAlbum}>✓ {t.add}</button>
+            <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setAdding(false);setNewName('');}}>{t.cancel}</button>
+          </div>
+        </div>
+      : <button className="btn btn-dark" style={{marginTop:6}} onClick={()=>setAdding(true)}>＋ {t.addAlbum}</button>}
+
+    {delAlbum&&<ConfirmModal icon="🗑️" title={t.deleteAlbumQ}
+      msg={'"'+(albums.find(a=>a.id===delAlbum)||{}).name+'" '+t.deleteAlbumSub}
+      confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger onConfirm={()=>removeAlbum(delAlbum)} onCancel={()=>setDelAlbum(null)}/>}
   </div>);
 }
 
