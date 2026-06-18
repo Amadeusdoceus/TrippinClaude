@@ -35,13 +35,14 @@
   @keyframes slideR{from{transform:translateX(100%)}to{transform:translateX(0)}}
 
   /* App bar */
-  .appbar{position:sticky;top:0;z-index:30;background:var(--deep);color:#fff;
-    display:flex;align-items:center;gap:12px;padding:14px 16px;}
-  .appbar .ttl{font-family:'Sora';font-weight:700;font-size:17px;flex:1;text-align:center;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .iconbtn{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
-    justify-content:center;color:#fff;background:rgba(255,255,255,.08);font-size:18px;position:relative}
-  .iconbtn:active{background:rgba(255,255,255,.18)}
+  .appbar{position:sticky;top:0;z-index:30;background:var(--sand);color:var(--ink);
+    display:flex;align-items:center;gap:10px;padding:12px 14px;}
+  .appbar .ttl{font-family:'Sora';font-weight:800;font-size:15px;flex:0 1 auto;margin:0 auto;text-align:center;
+    background:var(--card);color:var(--coral);padding:8px 18px;border-radius:14px;box-shadow:var(--shadow);
+    max-width:62%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .iconbtn{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;
+    justify-content:center;color:var(--ink);background:var(--card);box-shadow:0 2px 8px rgba(20,33,61,.07);font-size:18px;position:relative}
+  .iconbtn:active{background:var(--line)}
   .badge{position:absolute;top:-3px;right:-3px;background:var(--coral);color:#fff;
     font-size:10px;font-weight:700;min-width:17px;height:17px;border-radius:9px;
     display:flex;align-items:center;justify-content:center;padding:0 4px;font-family:'Inter'}
@@ -122,7 +123,7 @@
   .dcell .stay{position:absolute;bottom:4px;right:4px;font-size:9px}
   .tslot{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
   .tslot .tm{font-size:12px;color:var(--muted);width:48px;flex-shrink:0;font-weight:600}
-  .actblk{background:#fff;border:1px solid var(--line);border-left:4px solid var(--lagoon);
+  .actblk{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--lagoon);
     border-radius:10px;padding:10px 12px;flex:1;margin-bottom:6px;position:relative}
   .blkbtns{position:absolute;top:8px;right:8px;display:flex;gap:6px}
   .blkbtn{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;
@@ -318,15 +319,16 @@
   /* ===== Barra inferior de navegação ===== */
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
   .bottombar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
-    background:var(--deep);display:flex;align-items:center;justify-content:space-around;
-    padding:8px 30px 11px;z-index:46;box-shadow:0 -4px 20px rgba(0,0,0,.18)}
-  .bnav{display:flex;flex-direction:column;align-items:center;gap:3px;color:rgba(255,255,255,.72);
+    background:var(--card);display:flex;align-items:center;justify-content:space-around;
+    padding:9px 26px 12px;z-index:46;border-radius:22px 22px 0 0;border-top:1px solid var(--line);
+    box-shadow:0 -6px 22px rgba(20,33,61,.10)}
+  .bnav{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);
     font-size:10px;font-weight:600;position:relative;background:none;border:none;cursor:pointer}
-  .bnav:active{color:#fff}
+  .bnav:active{color:var(--coral)}
   .bnav .bic{font-size:20px;line-height:1}
   .bnav .badge{top:-5px;right:8px}
   .bnav.center{background:var(--coral);color:#fff;width:54px;height:54px;border-radius:50%;justify-content:center;
-    margin-top:-22px;box-shadow:0 6px 16px rgba(255,107,92,.4);border:4px solid var(--sand)}
+    margin-top:-22px;box-shadow:0 6px 16px rgba(255,107,92,.4);border:4px solid var(--card)}
   .bnav.center .bic{font-size:23px}
 
   /* ===== Menu full-screen (de baixo para cima) ===== */
@@ -385,6 +387,15 @@
     background:var(--card);color:var(--ink);border-color:var(--line)}
   #root[data-theme="dark"] select.inp option{background:#1c2740}
   #root[data-theme="dark"] .btn-ghost{background:var(--card);color:var(--ink)}
+  #root[data-theme="dark"] .tab.on{background:var(--coral);color:#fff;border-color:var(--coral)}
+  #root[data-theme="dark"] .segbtns{background:var(--card)}
+  #root[data-theme="dark"] .segbtns button.on{background:var(--coral);color:#fff}
+  #root[data-theme="dark"] .blkbtn{background:#2c3a55;color:var(--ink)}
+  #root[data-theme="dark"] .typetag{background:#173a35;color:#5fd6c4}
+  #root[data-theme="dark"] .srcopt .si{background:#2c3a55}
+  #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .albumthumb{border-color:var(--card)}
+  #root[data-theme="dark"] .eyebrow{color:#ff8576}
+  #root[data-theme="dark"] .appbar .ttl{color:#ff8576}
   .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sand);border-radius:18px 18px 0 0;padding:18px;animation:slideUp .25s ease;z-index:61}
   .sheeth{font-family:'Sora';font-weight:700;font-size:15px;margin-bottom:12px}
   .srcopt{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;text-align:left}
@@ -456,7 +467,7 @@ const I18N = {
     appsHint:'Abrir apps parceiros',
     date:'Data', editProfile:'Editar perfil', profileSaved:'Perfil atualizado!', changePhoto:'Toque para alterar a foto',
     eventType:'Tipo do evento', descOpt:'Descrição (opcional)', editActivity:'Editar atividade',
-    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', capture:'Capturar', cameraErr:'Não foi possível acessar a câmera', cameraErrSub:'Verifique a permissão de câmera do navegador.', openGmaps:'Abrir no Google Maps', useMyLoc:'Minha localização', locating:'Localizando...', youAreHere:'Você está aqui', locOk:'Localização obtida ✓', locErr:'Não foi possível obter a localização', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
+    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', hi:'Olá', capture:'Capturar', cameraErr:'Não foi possível acessar a câmera', cameraErrSub:'Verifique a permissão de câmera do navegador.', openGmaps:'Abrir no Google Maps', useMyLoc:'Minha localização', locating:'Localizando...', youAreHere:'Você está aqui', locOk:'Localização obtida ✓', locErr:'Não foi possível obter a localização', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
     docAttached:'Documento anexado!', docRemoved:'Documento removido', addToSched:'Adicionar ao cronograma',
     noDocs:'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
     typeTransport:'Transporte', typeStay:'Hospedagem', typeFood:'Refeição', typeTour:'Passeio',
@@ -514,7 +525,7 @@ const I18N = {
     appsHint:'Open partner apps',
     date:'Date', editProfile:'Edit profile', profileSaved:'Profile updated!', changePhoto:'Tap to change photo',
     eventType:'Event type', descOpt:'Description (optional)', editActivity:'Edit activity',
-    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', capture:'Capture', cameraErr:'Could not access the camera', cameraErrSub:'Check the browser camera permission.', openGmaps:'Open in Google Maps', useMyLoc:'My location', locating:'Locating...', youAreHere:'You are here', locOk:'Location found ✓', locErr:'Could not get location', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
+    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', hi:'Hi', capture:'Capture', cameraErr:'Could not access the camera', cameraErrSub:'Check the browser camera permission.', openGmaps:'Open in Google Maps', useMyLoc:'My location', locating:'Locating...', youAreHere:'You are here', locOk:'Location found ✓', locErr:'Could not get location', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
     docAttached:'Document attached!', docRemoved:'Document removed', addToSched:'Add to schedule',
     noDocs:'No documents here. Tap "Attach doc" to add from your device.',
     typeTransport:'Transport', typeStay:'Stay', typeFood:'Meal', typeTour:'Tour',
@@ -712,7 +723,7 @@ function HomeScreen({lang,user,trips,onNew,onJoin,onOpen,onDelete}){
   return(<div className="screen">
     <div className="pad">
       <div className="eyebrow">{t.home}</div>
-      <h2 style={{fontSize:24}}>Olá, {user.firstName} 👋</h2>
+      <h2 style={{fontSize:24,color:'var(--ink)'}}>{t.hi}, {user.firstName} 👋</h2>
       <p className="sub" style={{marginTop:4,marginBottom:20}}>{dict(lang).welcome}</p>
 
       {active.length>0&&<>
