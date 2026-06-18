@@ -398,6 +398,22 @@
   #root[data-theme="dark"] .copybtn{background:rgba(255,255,255,.14);color:#fff}
   #root[data-theme="dark"] .joinbtn{color:#5fd6c4}
   #root[data-theme="dark"] .typetag{color:#5fd6c4}
+  #root[data-theme="dark"] .toast{background:var(--card);color:#ff8576;border:1px solid #33446a}
+  #root[data-theme="dark"] .modalbox{background:var(--card);color:var(--ink)}
+  #root[data-theme="dark"] .modalbox p{color:var(--muted)}
+  #root[data-theme="dark"] .modalbox h3{color:#ff8576}
+  #root[data-theme="dark"] .sheet{background:var(--card)}
+  #root[data-theme="dark"] .sheeth{color:#ff8576}
+  #root[data-theme="dark"] .srcopt b{color:var(--ink)}
+  #root[data-theme="dark"] .opt b,#root[data-theme="dark"] .langbtn .ln,#root[data-theme="dark"] .setrow .st b{color:var(--ink)}
+  #root[data-theme="dark"] .segpick{background:#202c45}
+  #root[data-theme="dark"] .segpick button{color:var(--muted)}
+  #root[data-theme="dark"] .segpick button.on{background:var(--card);color:#ff8576}
+  #root[data-theme="dark"] .langbtn{background:#202c45;border-color:#33446a}
+  #root[data-theme="dark"] .langbtn.on{background:var(--card);border-color:var(--coral);color:#ff8576}
+  #root[data-theme="dark"] .btn-primary{color:#fff}
+  #root[data-theme="dark"] .empty,#root[data-theme="dark"] .alert,#root[data-theme="dark"] .ph{background:var(--card);color:var(--ink);border-color:var(--line)}
+  #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .setrow .si,#root[data-theme="dark"] .srcopt .si{background:#202c45}
   #root[data-theme="dark"] .typetag{background:#173a35;color:#5fd6c4}
   #root[data-theme="dark"] .srcopt .si{background:#2c3a55}
   #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .albumthumb{border-color:var(--card)}
@@ -476,7 +492,7 @@ const I18N = {
     appsHint:'Abrir apps parceiros',
     date:'Data', editProfile:'Editar perfil', profileSaved:'Perfil atualizado!', changePhoto:'Toque para alterar a foto',
     eventType:'Tipo do evento', descOpt:'Descrição (opcional)', editActivity:'Editar atividade',
-    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', hi:'Olá', joinedOn:'Entrou em', joinCreator:'Criou o grupo da viagem', joinInvite:'Convite por e-mail aceito', joinCode:'Solicitação de ingresso por código do grupo', joinOther:'Outro', howJoined:'Como entrou', makeAdmin:'Tornar administrador', removeAdmin:'Remover permissão de admin', removeMember:'Remover do grupo', yearsOld:'anos', capture:'Capturar', cameraErr:'Não foi possível acessar a câmera', cameraErrSub:'Verifique a permissão de câmera do navegador.', openGmaps:'Abrir no Google Maps', useMyLoc:'Minha localização', locating:'Localizando...', youAreHere:'Você está aqui', locOk:'Localização obtida ✓', locErr:'Não foi possível obter a localização', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
+    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', hi:'Olá', joinedOn:'Entrou em', pendingResponse:'Aguardando resposta', pendingApproval:'Aguardando aprovação', invitedOn:'Convidado em', requestedOn:'Solicitou em', approve:'Aprovar', deny:'Recusar', memberJoined:'Membro adicionado ✓', joinCreator:'Criou o grupo da viagem', joinInvite:'Convite por e-mail aceito', joinCode:'Solicitação de ingresso por código do grupo', joinOther:'Outro', howJoined:'Como entrou', makeAdmin:'Tornar administrador', removeAdmin:'Remover permissão de admin', removeMember:'Remover do grupo', yearsOld:'anos', capture:'Capturar', cameraErr:'Não foi possível acessar a câmera', cameraErrSub:'Verifique a permissão de câmera do navegador.', openGmaps:'Abrir no Google Maps', useMyLoc:'Minha localização', locating:'Localizando...', youAreHere:'Você está aqui', locOk:'Localização obtida ✓', locErr:'Não foi possível obter a localização', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
     docAttached:'Documento anexado!', docRemoved:'Documento removido', addToSched:'Adicionar ao cronograma',
     noDocs:'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
     typeTransport:'Transporte', typeStay:'Hospedagem', typeFood:'Refeição', typeTour:'Passeio',
@@ -534,7 +550,7 @@ const I18N = {
     appsHint:'Open partner apps',
     date:'Date', editProfile:'Edit profile', profileSaved:'Profile updated!', changePhoto:'Tap to change photo',
     eventType:'Event type', descOpt:'Description (optional)', editActivity:'Edit activity',
-    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', hi:'Hi', joinedOn:'Joined on', joinCreator:'Created the trip group', joinInvite:'Email invite accepted', joinCode:'Join request via group code', joinOther:'Other', howJoined:'How they joined', makeAdmin:'Make admin', removeAdmin:'Remove admin role', removeMember:'Remove from group', yearsOld:'years old', capture:'Capture', cameraErr:'Could not access the camera', cameraErrSub:'Check the browser camera permission.', openGmaps:'Open in Google Maps', useMyLoc:'My location', locating:'Locating...', youAreHere:'You are here', locOk:'Location found ✓', locErr:'Could not get location', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
+    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', hi:'Hi', joinedOn:'Joined on', pendingResponse:'Awaiting response', pendingApproval:'Awaiting approval', invitedOn:'Invited on', requestedOn:'Requested on', approve:'Approve', deny:'Deny', memberJoined:'Member added ✓', joinCreator:'Created the trip group', joinInvite:'Email invite accepted', joinCode:'Join request via group code', joinOther:'Other', howJoined:'How they joined', makeAdmin:'Make admin', removeAdmin:'Remove admin role', removeMember:'Remove from group', yearsOld:'years old', capture:'Capture', cameraErr:'Could not access the camera', cameraErrSub:'Check the browser camera permission.', openGmaps:'Open in Google Maps', useMyLoc:'My location', locating:'Locating...', youAreHere:'You are here', locOk:'Location found ✓', locErr:'Could not get location', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
     docAttached:'Document attached!', docRemoved:'Document removed', addToSched:'Add to schedule',
     noDocs:'No documents here. Tap "Attach doc" to add from your device.',
     typeTransport:'Transport', typeStay:'Stay', typeFood:'Meal', typeTour:'Tour',
@@ -1868,8 +1884,8 @@ function MembersTab({t,trip,update,toast}){
   const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const today=()=>new Date().toISOString().slice(0,10);
   const invite=()=>{ if(!emailOk)return;
-    const m={id:uid(),firstName:email.split('@')[0],lastName:'',name:email.split('@')[0],email,phone:'',birth:'',photo:'',code:rid(12),isAdmin:false,joinedAt:today(),joinVia:'invite'};
-    update({...trip,members:[...trip.members,m]}); setEmail(''); toast(t.inviteSent);
+    const p={id:uid(),email,channel:'email',status:'pending-response',sentAt:today()};
+    update({...trip,pendingInvites:[...(trip.pendingInvites||[]),p]}); setEmail(''); toast(t.inviteSent);
   };
   const toggleAdmin=id=>update({...trip,members:trip.members.map(m=>m.id===id?{...m,isAdmin:!m.isAdmin}:m)});
   const remove=id=>{ update({...trip,members:trip.members.filter(m=>m.id!==id)}); setOpenId(null); };
@@ -1913,6 +1929,41 @@ function MembersTab({t,trip,update,toast}){
       </div>
       {m.isAdmin&&<span className="admtag">{t.admin}</span>}
     </button>))}
+
+    {(()=>{const pend=trip.pendingInvites||[]; if(!pend.length)return null;
+      const resp=pend.filter(p=>p.status==='pending-response');
+      const appr=pend.filter(p=>p.status==='pending-approval');
+      const cancel=id=>update({...trip,pendingInvites:pend.filter(p=>p.id!==id)});
+      const approve=p=>{ const m={id:uid(),firstName:(p.name||p.email||'?').split(' ')[0],lastName:'',name:p.name||p.email,
+        email:p.email||'',phone:p.phone||'',birth:'',photo:'',code:p.code||rid(12),isAdmin:false,joinedAt:today(),joinVia:p.channel==='code'?'code':'invite'};
+        update({...trip,members:[...trip.members,m],pendingInvites:pend.filter(x=>x.id!==p.id)}); toast(t.memberJoined); };
+      return(<>
+        {resp.length>0&&<>
+          <div className="sectiontitle">⏳ {t.pendingResponse}</div>
+          {resp.map(p=>(<div className="member" key={p.id}>
+            <div className="ava" style={{background:'#f1ede4',color:'var(--muted)'}}>📧</div>
+            <div style={{flex:1,minWidth:0}}>
+              <b style={{fontSize:14,display:'block',color:'var(--ink)'}}>{p.email}</b>
+              <div style={{fontSize:11,color:'var(--muted)'}}>{t.invitedOn} {brDateT(p.sentAt)}</div>
+            </div>
+            {meIsAdmin&&<button className="blkbtn del" title={t.cancel} onClick={()=>cancel(p.id)}>✕</button>}
+          </div>))}
+        </>}
+        {appr.length>0&&<>
+          <div className="sectiontitle">🔔 {t.pendingApproval}</div>
+          {appr.map(p=>(<div className="member" key={p.id}>
+            <div className="ava" style={{background:'#fff3e0',color:'var(--amber)'}}>🔑</div>
+            <div style={{flex:1,minWidth:0}}>
+              <b style={{fontSize:14,display:'block',color:'var(--ink)'}}>{p.name||p.email||'—'}</b>
+              <div style={{fontSize:11,color:'var(--muted)'}}>{t.requestedOn} {brDateT(p.sentAt)}</div>
+            </div>
+            {meIsAdmin&&<>
+              <button className="blkbtn" title={t.approve} onClick={()=>approve(p)}>✓</button>
+              <button className="blkbtn del" title={t.deny} onClick={()=>cancel(p.id)}>✕</button>
+            </>}
+          </div>))}
+        </>}
+      </>);})()}
 
     {meIsAdmin&&<div className="card">
       <b style={{fontFamily:'Sora',fontSize:14}}>➕ {t.addMember}</b>
