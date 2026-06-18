@@ -403,6 +403,10 @@
   .sel-wrap.picked{outline:3px solid var(--accent,#FF6B5C);outline-offset:-3px}
   .imgx{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;background:rgba(20,33,61,.72);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
   .selck{position:absolute;left:4px;top:4px;width:22px;height:22px;border-radius:50%;background:var(--accent,#FF6B5C);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .cammodal{position:absolute;left:0;right:0;bottom:0;top:0;background:#000;display:flex;flex-direction:column;z-index:70}
+  .camvid{flex:1;width:100%;object-fit:cover;background:#000}
+  .cambar{display:flex;gap:10px;padding:14px}
+  .camerr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;font-size:15px;gap:6px;padding:24px}
 </style>
 </head>
 <body>
@@ -452,7 +456,7 @@ const I18N = {
     appsHint:'Abrir apps parceiros',
     date:'Data', editProfile:'Editar perfil', profileSaved:'Perfil atualizado!', changePhoto:'Toque para alterar a foto',
     eventType:'Tipo do evento', descOpt:'Descrição (opcional)', editActivity:'Editar atividade',
-    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
+    deleteActivity:'Excluir atividade?', activityDeleted:'Atividade excluída', attachDoc:'Anexar doc', back:'Voltar', selected:'selecionada(s)', attachPhotos:'Anexar fotos', camera:'Câmera', share:'Compartilhar', shareSelected:'imagem(ns) selecionada(s) serão compartilhadas.', shareAll:'foto(s) do álbum serão compartilhadas.', shareFallback:'Compartilhamento não suportado; imagens baixadas.', addAlbum:'Adicionar álbum', albumAdded:'Álbum criado', albumRemoved:'Álbum excluído', imgRemoved:'Imagem excluída', deleteImgQ:'Excluir imagem?', deleteImgSub:'Esta imagem será removida do álbum.', deleteAlbumQ:'Excluir álbum?', deleteAlbumSub:'e todas as suas imagens serão removidos.', albumName:'Nome do álbum', add:'Adicionar', noPhotos:'Nenhuma foto ainda', noAlbums:'Nenhum álbum ainda', photo:'foto', photos:'fotos', gallery:'Galeria', cityRemoved:'Cidade ocultada', restoreCities:'Restaurar cidades ocultadas', deleteCityQ:'Excluir cidade?', deleteCitySub:'será ocultada do mapa.', yesDelete:'Sim, excluir', saved:'Salvo ✓', capture:'Capturar', cameraErr:'Não foi possível acessar a câmera', cameraErrSub:'Verifique a permissão de câmera do navegador.', openGmaps:'Abrir no Google Maps', useMyLoc:'Minha localização', locating:'Localizando...', youAreHere:'Você está aqui', locOk:'Localização obtida ✓', locErr:'Não foi possível obter a localização', srcUpload:'Upload', srcUploadSub:'Escolher PDF ou imagem do dispositivo', srcCamera:'Câmera', srcCameraSub:'Tirar foto de um documento físico',
     docAttached:'Documento anexado!', docRemoved:'Documento removido', addToSched:'Adicionar ao cronograma',
     noDocs:'Nenhum documento aqui. Toque em "Anexar doc" para adicionar do seu dispositivo.',
     typeTransport:'Transporte', typeStay:'Hospedagem', typeFood:'Refeição', typeTour:'Passeio',
@@ -510,7 +514,7 @@ const I18N = {
     appsHint:'Open partner apps',
     date:'Date', editProfile:'Edit profile', profileSaved:'Profile updated!', changePhoto:'Tap to change photo',
     eventType:'Event type', descOpt:'Description (optional)', editActivity:'Edit activity',
-    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
+    deleteActivity:'Delete activity?', activityDeleted:'Activity deleted', attachDoc:'Attach doc', back:'Back', selected:'selected', attachPhotos:'Attach photos', camera:'Camera', share:'Share', shareSelected:'selected image(s) will be shared.', shareAll:'photo(s) in the album will be shared.', shareFallback:'Sharing not supported; images downloaded.', addAlbum:'Add album', albumAdded:'Album created', albumRemoved:'Album deleted', imgRemoved:'Image deleted', deleteImgQ:'Delete image?', deleteImgSub:'This image will be removed from the album.', deleteAlbumQ:'Delete album?', deleteAlbumSub:'and all its images will be removed.', albumName:'Album name', add:'Add', noPhotos:'No photos yet', noAlbums:'No albums yet', photo:'photo', photos:'photos', gallery:'Gallery', cityRemoved:'City hidden', restoreCities:'Restore hidden cities', deleteCityQ:'Delete city?', deleteCitySub:'will be hidden from the map.', yesDelete:'Yes, delete', saved:'Saved ✓', capture:'Capture', cameraErr:'Could not access the camera', cameraErrSub:'Check the browser camera permission.', openGmaps:'Open in Google Maps', useMyLoc:'My location', locating:'Locating...', youAreHere:'You are here', locOk:'Location found ✓', locErr:'Could not get location', srcUpload:'Upload', srcUploadSub:'Pick a PDF or image from device', srcCamera:'Camera', srcCameraSub:'Take a photo of a physical document',
     docAttached:'Document attached!', docRemoved:'Document removed', addToSched:'Add to schedule',
     noDocs:'No documents here. Tap "Attach doc" to add from your device.',
     typeTransport:'Transport', typeStay:'Stay', typeFood:'Meal', typeTour:'Tour',
@@ -1266,6 +1270,15 @@ function MapTab({t,trip,update,toast}){
   const dn=c=>(ov.renames&&ov.renames[c])||c;
   const [editCity,setEditCity]=useState(null); const [editVal,setEditVal]=useState('');
   const [delCity,setDelCity]=useState(null);
+  const [myLoc,setMyLoc]=useState(null); const [locating,setLocating]=useState(false);
+  const locateMe=()=>{ if(!navigator.geolocation){ toast(t.locErr); return; } setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      pos=>{ setMyLoc({lat:pos.coords.latitude,lon:pos.coords.longitude}); setLocating(false); toast(t.locOk); },
+      ()=>{ setLocating(false); toast(t.locErr); }, {enableHighAccuracy:true,timeout:10000});
+  };
+  const gmapsRoute=()=>{ const cs=pts.map(p=>dn(p.city)).filter(c=>c&&c!=='A definir');
+    let url='https://www.google.com/maps/dir/'; if(myLoc)url+=myLoc.lat+','+myLoc.lon+'/'; url+=cs.map(encodeURIComponent).join('/');
+    window.open(url,'_blank'); };
   const saveRename=(orig)=>{ const v=editVal.trim(); if(v){ update({...trip,cityOverrides:{renames:{...(ov.renames||{}),[orig]:v},hidden:ov.hidden||[]}}); toast(t.saved||'✓'); } setEditCity(null); };
   const doDelCity=(orig)=>{ update({...trip,cityOverrides:{renames:ov.renames||{},hidden:[...(ov.hidden||[]),orig]}}); setDelCity(null); toast(t.cityRemoved); };
   // trechos: usa o roteiro interpretado (com escalas) quando houver; senão o seg manual
@@ -1297,6 +1310,15 @@ function MapTab({t,trip,update,toast}){
       </svg>
     </div>
 
+    <div style={{display:'flex',gap:8,marginTop:10}}>
+      <button className="btn btn-dark" style={{flex:1}} onClick={gmapsRoute}>🗺️ {t.openGmaps}</button>
+      <button className="btn btn-dark" style={{flex:1}} onClick={locateMe} disabled={locating}>{locating?'⏳ '+t.locating:'📍 '+t.useMyLoc}</button>
+    </div>
+    {myLoc&&<div className="dest" style={{marginTop:10}}>
+      <span className="pin">🟢</span>
+      <span className="dd"><b>{t.youAreHere}</b><span>{myLoc.lat.toFixed(4)}, {myLoc.lon.toFixed(4)}</span></span>
+      <a className="joinbtn" style={{textDecoration:'none'}} href={'https://www.google.com/maps/search/?api=1&query='+myLoc.lat+','+myLoc.lon} target="_blank" rel="noreferrer">Google Maps ↗</a>
+    </div>}
     {segs.length>0&&<>
       <div className="sectiontitle">✈️ Trechos (das passagens)</div>
       {segs.map((s,i)=>(<div className="dest" key={i}>
@@ -1329,6 +1351,36 @@ function MapTab({t,trip,update,toast}){
   </div>);
 }
 
+/* --- Câmera real do dispositivo via getUserMedia (foto salva no app) --- */
+function CameraModal({t,onCapture,onClose}){
+  const videoRef=useRef(null), streamRef=useRef(null);
+  const [err,setErr]=useState(null);
+  useEffect(()=>{
+    let active=true;
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){ setErr('no-api'); return; }
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})
+      .then(s=>{ if(!active){s.getTracks().forEach(tr=>tr.stop());return;} streamRef.current=s;
+        if(videoRef.current){ videoRef.current.srcObject=s; const p=videoRef.current.play(); if(p&&p.catch)p.catch(()=>{}); } })
+      .catch(e=>setErr((e&&e.name)||'denied'));
+    return ()=>{ active=false; if(streamRef.current) streamRef.current.getTracks().forEach(tr=>tr.stop()); };
+  },[]);
+  const snap=()=>{ const v=videoRef.current; if(!v)return;
+    const w=v.videoWidth||720,h=v.videoHeight||960; const c=document.createElement('canvas'); c.width=w;c.height=h;
+    c.getContext('2d').drawImage(v,0,0,w,h); const url=c.toDataURL('image/jpeg',0.85);
+    if(streamRef.current)streamRef.current.getTracks().forEach(tr=>tr.stop()); onCapture(url); };
+  return(<div className="overlay" onClick={onClose}>
+    <div className="cammodal" onClick={e=>e.stopPropagation()}>
+      {err
+        ? <div className="camerr">📷<br/>{t.cameraErr}<br/><small style={{opacity:.7}}>{t.cameraErrSub}</small></div>
+        : <video ref={videoRef} className="camvid" playsInline muted autoPlay/>}
+      <div className="cambar">
+        <button className="btn btn-ghost" style={{flex:1}} onClick={onClose}>{t.cancel}</button>
+        {!err&&<button className="btn btn-primary" style={{flex:1}} onClick={snap}>📸 {t.capture}</button>}
+      </div>
+    </div>
+  </div>);
+}
+
 /* --- Docs (anexo real do dispositivo + remoção; inteligência sob controle do usuário) --- */
 function DocsTab({t,trip,update,toast,goTab}){
   const cats=[['tickets',t.tickets,'🎫',['Avião','Trem','Ônibus']],
@@ -1342,6 +1394,7 @@ function DocsTab({t,trip,update,toast,goTab}){
   const [confirmDoc,setConfirmDoc]=useState(null); // doc aguardando confirmação p/ cronograma
   const [lodgeEdit,setLodgeEdit]=useState(false);   // edição manual da hospedagem
   const [pickSrc,setPickSrc]=useState(false);       // escolha Upload x Câmera
+  const [showCam,setShowCam]=useState(false);        // modal de câmera (getUserMedia)
   const fileRef=useRef(null);
   const camRef=useRef(null);
   const cur=cats.find(c=>c[0]===cat);
@@ -1349,10 +1402,11 @@ function DocsTab({t,trip,update,toast,goTab}){
   const icon=cat==='tickets'?'🎫':cat==='stays'?'🏨':cat==='events'?'🎭':'📎';
   const typeForCat={tickets:'typeTransport',stays:'typeStay',events:'typeEvent',extras:'typeOther'};
 
-  // Anexo real do dispositivo + interpretação automática quando é passagem em PDF
-  const onFile=async e=>{
-    const file=e.target.files&&e.target.files[0]; if(!file)return;
-    e.target.value='';
+  const onFile=e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(f) processFile(f); };
+  const onCamShot=async (dataUrl)=>{ setShowCam(false); const blob=await (await fetch(dataUrl)).blob();
+    const file=new File([blob],'foto_'+Date.now()+'.jpg',{type:'image/jpeg'}); processFile(file); };
+  // Anexo (arquivo ou foto) + interpretação automática (passagem/hospedagem)
+  const processFile=async file=>{
     const dataUrl = file.size<2*1024*1024 ? await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(file);}) : null;
     const doc={id:uid(),cat,sub,name:file.name.replace(/\.[^.]+$/,''),file:file.name,
       mime:file.type||'arquivo',size:file.size,dataUrl,offline:!!dataUrl};
@@ -1473,11 +1527,12 @@ function DocsTab({t,trip,update,toast,goTab}){
         <div className="sheeth">{t.attachDoc}</div>
         <button className="srcopt" onClick={()=>{setPickSrc(false);fileRef.current&&fileRef.current.click();}}>
           <span className="si">📁</span><span className="st"><b>{t.srcUpload}</b><span>{t.srcUploadSub}</span></span><span className="arr">→</span></button>
-        <button className="srcopt" onClick={()=>{setPickSrc(false);camRef.current&&camRef.current.click();}}>
+        <button className="srcopt" onClick={()=>{setPickSrc(false);setShowCam(true);}}>
           <span className="si">📷</span><span className="st"><b>{t.srcCamera}</b><span>{t.srcCameraSub}</span></span><span className="arr">→</span></button>
         <button className="btn btn-ghost" style={{marginTop:6}} onClick={()=>setPickSrc(false)}>{t.cancel}</button>
       </div>
     </div>}
+    {showCam&&<CameraModal t={t} onCapture={onCamShot} onClose={()=>setShowCam(false)}/>}
 
     {readingDoc&&(
       readingDoc.cat==='stays'
@@ -1630,6 +1685,7 @@ function GalleryTab({t,trip,update,toast}){
   const [adding,setAdding]=useState(false);  // criando novo álbum
   const [newName,setNewName]=useState('');
   const [shareConfirm,setShareConfirm]=useState(false);
+  const [showCam,setShowCam]=useState(false);
   const upRef=useRef(null), camRef=useRef(null);
 
   // semeia álbuns a partir dos locais da viagem + normaliza imagens (id/album)
@@ -1679,7 +1735,7 @@ function GalleryTab({t,trip,update,toast}){
       <input ref={upRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={onPick(openId)}/>
       <input ref={camRef} type="file" accept="image/*" capture="environment" style={{display:'none'}} onChange={onPick(openId)}/>
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
-        <button className="blkbtn" onClick={()=>{setOpenId(null);setSel([]);}}>← {t.back}</button>
+        <button className="blkbtn" title={t.back} onClick={()=>{setOpenId(null);setSel([]);}}>←</button>
         <b style={{fontFamily:'Sora',fontSize:16,flex:1}}>🖼️ {alb.name}</b>
         <span className="pill">{ph.length}</span>
       </div>
@@ -1694,10 +1750,12 @@ function GalleryTab({t,trip,update,toast}){
       </div>
       <div style={{display:'flex',gap:8,marginTop:14}}>
         <button className="btn btn-dark" style={{flex:1}} onClick={()=>upRef.current&&upRef.current.click()}>📎 {t.attachPhotos}</button>
-        <button className="btn btn-dark" style={{flex:1}} onClick={()=>camRef.current&&camRef.current.click()}>📷 {t.camera}</button>
+        <button className="btn btn-dark" style={{flex:1}} onClick={()=>setShowCam(true)}>📷 {t.camera}</button>
       </div>
       <button className="btn btn-primary" style={{marginTop:8}} disabled={ph.length===0} onClick={()=>setShareConfirm(true)}>
         📤 {t.share}{sel.length?' ('+sel.length+')':''}</button>
+      {showCam&&<CameraModal t={t} onClose={()=>setShowCam(false)} onCapture={(url)=>{ setShowCam(false);
+        update({...trip,gallery:[...gallery,{id:uid(),album:openId,src:url}]}); toast(t.addPhotoGal+' ✓'); }}/>}
 
       {delImg&&<ConfirmModal icon="🗑️" title={t.deleteImgQ} msg={t.deleteImgSub}
         confirmLabel={t.yesDelete} cancelLabel={t.cancel} danger onConfirm={()=>removeImg(delImg)} onCancel={()=>setDelImg(null)}/>}
