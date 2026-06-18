@@ -391,6 +391,12 @@
   #root[data-theme="dark"] .segbtns{background:var(--card)}
   #root[data-theme="dark"] .segbtns button.on{background:var(--coral);color:#fff}
   #root[data-theme="dark"] .blkbtn{background:#2c3a55;color:var(--ink)}
+  #root[data-theme="dark"] .btn-dark{background:#33446a;color:#fff}
+  #root[data-theme="dark"] .btn-ghost{background:#202c45;color:var(--ink);border-color:#33446a}
+  #root[data-theme="dark"] .navarrow{background:#202c45;color:var(--ink);border-color:#33446a}
+  #root[data-theme="dark"] .copybtn{background:rgba(255,255,255,.14);color:#fff}
+  #root[data-theme="dark"] .joinbtn{color:#5fd6c4}
+  #root[data-theme="dark"] .typetag{color:#5fd6c4}
   #root[data-theme="dark"] .typetag{background:#173a35;color:#5fd6c4}
   #root[data-theme="dark"] .srcopt .si{background:#2c3a55}
   #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .albumthumb{border-color:var(--card)}
@@ -1226,16 +1232,18 @@ function MonthGrid({trip,curDay,setCurDay}){
   const cells=[]; for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);cells.push(d);}
   const has=ds=>trip.activities.some(a=>a.date===ds);
   return(<>
-    <div style={{textAlign:'center',fontWeight:700,fontFamily:'Sora',marginBottom:8}}>
+    <div style={{textAlign:'center',fontWeight:800,fontFamily:'Sora',marginBottom:8,fontSize:15,color:'var(--ink)',textTransform:'capitalize'}}>
       {base.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</div>
     <div className="daygrid" style={{marginBottom:6}}>{DOW.map((d,i)=><div key={i} style={{textAlign:'center',fontSize:10,color:'var(--muted)',fontWeight:700}}>{d[0]}</div>)}</div>
     <div className="daygrid">
-      {cells.map((d,i)=>{const ds=d.toISOString().slice(0,10);const loc=locationForDay(trip,ds);const col=loc?cityColor(loc):null;
-        return(<button key={i} className={"dcell"+(d.getMonth()!==m?' dim':'')}
-          style={loc&&d.getMonth()===m?{background:col+'14',borderColor:col+'55'}:{}} onClick={()=>setCurDay(ds)}>
-          <div className="dn">{d.getDate()}</div>
-          {has(ds)&&<span className="dot"/>}
-          {loc&&<span style={{position:'absolute',bottom:3,right:3,left:3,fontSize:8,fontWeight:700,
+      {cells.map((d,i)=>{const ds=d.toISOString().slice(0,10);const loc=locationForDay(trip,ds);
+        const hasAct=has(ds);const hasAdd=!!loc||hasAct;const col=loc?cityColor(loc):'#2DB5A3';
+        const inMonth=d.getMonth()===m;
+        return(<button key={i} className={"dcell"+(!inMonth&&!hasAdd?' dim':'')+(hasAdd?' hasadd':'')}
+          style={hasAdd?{background:col+'2E',borderColor:col+'99'}:{}} onClick={()=>setCurDay(ds)}>
+          <div className="dn" style={{color:hasAdd?'var(--ink)':'var(--muted)',opacity:hasAdd?1:.55}}>{d.getDate()}</div>
+          {hasAct&&<span className="dot"/>}
+          {loc&&<span style={{position:'absolute',bottom:3,right:3,left:3,fontSize:8,fontWeight:800,
             color:col,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{loc}</span>}
         </button>);})}
     </div>
