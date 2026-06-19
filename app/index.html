@@ -377,49 +377,83 @@
   .cardx:active{background:rgba(0,0,0,.5)}
 
   /* ===== Tema escuro ===== */
-  #root[data-theme="dark"]{--sand:#151d2c;--ink:#E6ECF5;--card:#1c2740;--line:#2c3a55;--muted:#9aabc4;--deep:#0f1726}
-  #root[data-theme="dark"]{background:#151d2c}
+  #root[data-theme="dark"]{--sand:#151d2c;--ink:#E6ECF5;--card:#1c2740;--line:#2c3a55;--muted:#9aabc4;--deep:#0f1726;background:#151d2c;color:#E6ECF5}
+  /* --- Correção raiz: força herança de cor dentro do #root --- */
   #root[data-theme="dark"] .card,#root[data-theme="dark"] .inp,#root[data-theme="dark"] .opt,
   #root[data-theme="dark"] .tab,#root[data-theme="dark"] .subtab,#root[data-theme="dark"] .docitem,
   #root[data-theme="dark"] .member,#root[data-theme="dark"] .dest,#root[data-theme="dark"] .wkday,
   #root[data-theme="dark"] .stagebox,#root[data-theme="dark"] .dcell,#root[data-theme="dark"] .expense,
   #root[data-theme="dark"] .sug,#root[data-theme="dark"] .modalbox,#root[data-theme="dark"] .navarrow,
   #root[data-theme="dark"] .segbtns,#root[data-theme="dark"] .wkday .wkh,#root[data-theme="dark"] .langbtn,
-  #root[data-theme="dark"] .notifitem,#root[data-theme="dark"] .setrow .si,#root[data-theme="dark"] .appcard .ai{
+  #root[data-theme="dark"] .notifitem,#root[data-theme="dark"] .setrow,#root[data-theme="dark"] .setrow .si,
+  #root[data-theme="dark"] .appcard .ai,#root[data-theme="dark"] .actblk,#root[data-theme="dark"] .lodgemark,
+  #root[data-theme="dark"] .albumcard,#root[data-theme="dark"] .bottombar{
     background:var(--card);color:var(--ink);border-color:var(--line)}
-  #root[data-theme="dark"] select.inp option{background:#1c2740}
-  #root[data-theme="dark"] .btn-ghost{background:var(--card);color:var(--ink)}
-  #root[data-theme="dark"] .tab.on{background:var(--coral);color:#fff;border-color:var(--coral)}
-  #root[data-theme="dark"] .segbtns{background:var(--card)}
-  #root[data-theme="dark"] .segbtns button.on{background:var(--coral);color:#fff}
-  #root[data-theme="dark"] .blkbtn{background:#2c3a55;color:var(--ink)}
-  #root[data-theme="dark"] .btn-dark{background:#33446a;color:#fff}
+  /* --- Botões --- */
   #root[data-theme="dark"] .btn-ghost{background:#202c45;color:var(--ink);border-color:#33446a}
+  #root[data-theme="dark"] .btn-dark{background:#33446a;color:#fff}
+  #root[data-theme="dark"] .btn-primary{color:#fff}
+  #root[data-theme="dark"] .tab.on{background:var(--coral);color:#fff;border-color:var(--coral)}
+  #root[data-theme="dark"] .blkbtn{background:#2c3a55;color:var(--ink)}
+  #root[data-theme="dark"] .blkbtn.del{background:#3a1f1f;color:#ff8576}
   #root[data-theme="dark"] .navarrow{background:#202c45;color:var(--ink);border-color:#33446a}
-  #root[data-theme="dark"] .copybtn{background:rgba(255,255,255,.14);color:#fff}
-  #root[data-theme="dark"] .joinbtn{color:#5fd6c4}
-  #root[data-theme="dark"] .typetag{color:#5fd6c4}
+  #root[data-theme="dark"] .joinbtn{background:#202c45;color:#5fd6c4;border-color:#2db5a3}
+  #root[data-theme="dark"] .joinbtn.joined{background:var(--lagoon);color:#fff}
+  /* --- Chips e tags --- */
+  #root[data-theme="dark"] .typetag{background:#173a35;color:#5fd6c4}
+  #root[data-theme="dark"] .offline{background:#173a35;color:#5fd6c4}
+  #root[data-theme="dark"] .admtag{background:#3a1a1a;color:#ff8576}
+  #root[data-theme="dark"] .pill{background:#173a35;color:#5fd6c4}
+  #root[data-theme="dark"] .chip{background:var(--card);border-color:var(--line);color:var(--ink)}
+  #root[data-theme="dark"] .appcard .soon{background:#253550;color:var(--muted)}
+  /* --- Cronograma --- */
+  #root[data-theme="dark"] .actblk b,.actblk .actblk b{color:inherit}
+  #root[data-theme="dark"] .actblk.conflict{background:#252010;border-left-color:var(--amber)}
+  #root[data-theme="dark"] .wkday .wkh{background:#19243a;border-bottom-color:var(--line)}
+  #root[data-theme="dark"] .wkday.today .wkh{background:#16203a}
+  #root[data-theme="dark"] .wkrow{border-bottom-color:var(--line)}
+  #root[data-theme="dark"] .stagebox .slay{background:#251e0d;border-color:#5a3e10;color:#e8a840}
+  #root[data-theme="dark"] .sfly{background:#162040;color:#7ab0f0}
+  /* --- Formulários e resultados --- */
+  #root[data-theme="dark"] select.inp option{background:#1c2740}
+  #root[data-theme="dark"] .results{background:var(--card);border-color:var(--line)}
+  #root[data-theme="dark"] .results button{border-bottom-color:var(--line);color:var(--ink)}
+  #root[data-theme="dark"] .results button:active{background:#253550}
+  #root[data-theme="dark"] .photoadd{background:#202c45;border-color:var(--line)}
+  /* --- Modais e sheets --- */
   #root[data-theme="dark"] .toast{background:var(--card);color:#ff8576;border:1px solid #33446a}
   #root[data-theme="dark"] .modalbox{background:var(--card);color:var(--ink)}
   #root[data-theme="dark"] .modalbox p{color:var(--muted)}
   #root[data-theme="dark"] .modalbox h3{color:#ff8576}
   #root[data-theme="dark"] .sheet{background:var(--card)}
   #root[data-theme="dark"] .sheeth{color:#ff8576}
-  #root[data-theme="dark"] .srcopt b{color:var(--ink)}
-  #root[data-theme="dark"] .opt b,#root[data-theme="dark"] .langbtn .ln,#root[data-theme="dark"] .setrow .st b{color:var(--ink)}
+  /* --- Configurações e menus --- */
+  #root[data-theme="dark"] .segbtns{background:var(--card)}
+  #root[data-theme="dark"] .segbtns button.on{background:var(--coral);color:#fff}
   #root[data-theme="dark"] .segpick{background:#202c45}
   #root[data-theme="dark"] .segpick button{color:var(--muted)}
   #root[data-theme="dark"] .segpick button.on{background:var(--card);color:#ff8576}
+  #root[data-theme="dark"] .navitem:active{background:#202c45}
+  #root[data-theme="dark"] .setrow .si{background:#253550}
+  /* --- Idiomas --- */
   #root[data-theme="dark"] .langbtn{background:#202c45;border-color:#33446a}
-  #root[data-theme="dark"] .langbtn.on{background:var(--card);border-color:var(--coral);color:#ff8576}
-  #root[data-theme="dark"] .btn-primary{color:#fff}
+  #root[data-theme="dark"] .langbtn.on{background:#2a1515;border-color:var(--coral);color:#ff8576}
+  /* --- Vários --- */
   #root[data-theme="dark"] .empty,#root[data-theme="dark"] .alert,#root[data-theme="dark"] .ph{background:var(--card);color:var(--ink);border-color:var(--line)}
-  #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .setrow .si,#root[data-theme="dark"] .srcopt .si{background:#202c45}
-  #root[data-theme="dark"] .typetag{background:#173a35;color:#5fd6c4}
-  #root[data-theme="dark"] .srcopt .si{background:#2c3a55}
+  #root[data-theme="dark"] .alert p{color:var(--muted)}
+  #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .srcopt .si{background:#253550}
+  #root[data-theme="dark"] .opt b,#root[data-theme="dark"] .langbtn .ln,#root[data-theme="dark"] .setrow .st b{color:var(--ink)}
+  #root[data-theme="dark"] .srcopt b{color:var(--ink)}
   #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .albumthumb{border-color:var(--card)}
   #root[data-theme="dark"] .eyebrow{color:#ff8576}
   #root[data-theme="dark"] .appbar .ttl{color:#ff8576}
+  #root[data-theme="dark"] .sug .si{background:#253550}
+  #root[data-theme="dark"] .galadd{background:#202c45;border-color:var(--line)}
+  #root[data-theme="dark"] .copybtn{background:rgba(255,255,255,.14);color:#fff}
+  #root[data-theme="dark"] .field label{color:var(--ink)}
+  #root[data-theme="dark"] .sectiontitle{color:var(--ink)}
+  #root[data-theme="dark"] .bottombar{border-top-color:var(--line)}
+  #root[data-theme="dark"] .bnav.center{border-color:var(--card)}
   .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sand);border-radius:18px 18px 0 0;padding:18px;animation:slideUp .25s ease;z-index:61}
   .sheeth{font-family:'Sora';font-weight:700;font-size:15px;margin-bottom:12px}
   .srcopt{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;text-align:left}
