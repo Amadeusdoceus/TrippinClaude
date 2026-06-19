@@ -5,3 +5,12 @@ dist/
 .env
 .idea/
 .vscode/
+.claude/
+
+# artefatos de teste (Playwright)
+test-results/
+tests/report/
+
+# temporários do CLI do Supabase
+**/.temp/
+backend/supabase/supabase/

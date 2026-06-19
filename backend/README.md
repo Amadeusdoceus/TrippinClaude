@@ -106,6 +106,10 @@ backend; caso contrário continua funcionando em **modo local** (com
 
 ## 7. Como inspecionar os logs
 
+> Guia completo de acesso ao banco (entrar no painel, tabelas de logs e
+> cadastros, consultas prontas — sem credenciais) em
+> [`../docs/07-revisao-e-banco.md`](../docs/07-revisao-e-banco.md), seção 6.
+
 ```sql
 -- últimos eventos de uma viagem
 select created_at, action, payload

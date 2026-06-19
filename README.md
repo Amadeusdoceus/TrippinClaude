@@ -46,14 +46,25 @@ python3 -m http.server 8000
 tripping-claude-v1/
 ├── app/
 │   ├── index.html              # ← o aplicativo V1 (abra este arquivo)
+│   ├── config.js               # config pública do Supabase (só anon key)
+│   ├── src/trippin-api.js      # cliente Supabase do front-end
 │   └── interpretador-passagem.html  # interpretador de passagem aérea (PDF → etapas)
+├── scripts/
+│   └── validate-code.js        # revisão de código (sintaxe/balanceamento)
+├── tests/e2e/                  # revisão visual (Playwright)
+│   ├── smoke-screens.spec.js   #   todas as telas renderizam (pega tela em branco)
+│   ├── features.spec.js        #   testes das melhorias incrementais
+│   ├── trippin.spec.js         #   jornada do usuário + convites
+│   └── helpers.js
+├── serve-app.js                # servidor estático usado pelos testes
 ├── docs/
 │   ├── 01-VN-revisada.md    # VN-Reviewer
 │   ├── 02-UXUI-spec.md      # UX/UI Specialist
 │   ├── 03-backlog.md        # Task-Creator
 │   ├── 04-qa-report.md      # QA
 │   ├── 05-vv-report.md      # V-V tester
-│   └── 06-rollout-plan.md   # Rollout team
+│   ├── 06-rollout-plan.md   # Rollout team
+│   └── 07-revisao-e-banco.md  # processo de revisão + acesso ao banco
 ├── README.md
 ├── LICENSE
 └── .gitignore
@@ -77,6 +88,26 @@ Em **Docs → Estadias**, anexe o **PDF** ou um **print (imagem)** da reserva (A
 - **Home**: o administrador vê um **✕** no card para excluir a viagem (com confirmação).
 - **Galeria**: seções por local da viagem; o **＋** abre a galeria do dispositivo para adicionar fotos.
 - **Mapa**: mostra todos os lugares por onde você vai passar (origem, escalas e destino do interpretador).
+
+## 🧪 Revisão e testes (obrigatório antes do push)
+
+Toda mudança passa por **revisão de código** e **revisão visual** antes de ir para
+o ar. E **toda funcionalidade nova entra com seu teste** — a suíte cresce junto.
+
+```bash
+npm install          # uma vez (instala o Playwright)
+npm run validate     # revisão de código: sintaxe/balanceamento (pega "tela em branco")
+npm test             # revisão visual: percorre todas as telas (Playwright)
+npm run review       # atalho: validate + test em sequência
+```
+
+Só faça `git push` depois que `npm run review` terminar **verde**. O push dispara
+o GitHub Pages; em seguida gere a nova versão Android no Expo (pasta `mobile/`).
+
+Detalhes do processo e **como acessar o banco para consultar logs e cadastros**
+(sem credenciais) estão em [`docs/07-revisao-e-banco.md`](docs/07-revisao-e-banco.md).
+
+---
 
 ## 🗺️ Roadmap (próximas versões)
 

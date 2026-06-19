@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "validate": "node scripts/validate-code.js",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "review": "node scripts/validate-code.js && playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0"
