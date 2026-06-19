@@ -1803,6 +1803,108 @@ function WeekView({ t, trip, curDay, openDay }) {
                     })));
         })));
 }
+/* --- Mapa inline: Google Maps (ou Leaflet se sem key) embutido diretamente na aba --- */
+function InlineMapView({ cities, myLoc, t }) {
+    const mapRef = useRef(null);
+    const mapInstRef = useRef(null);
+    const myMarkerRef = useRef(null);
+    const [status, setStatus] = useState(t.mapLoading || 'Carregando mapa…');
+    const apiKey = (window.TRIPPIN_CONFIG || {}).MAPS_API_KEY;
+
+    useEffect(() => {
+        if (!cities.length) { setStatus('Nenhum destino configurado.'); return; }
+        if (apiKey) {
+            const run = () => {
+                if (!mapRef.current || mapInstRef.current) return;
+                const map = new window.google.maps.Map(mapRef.current, {
+                    zoom: 3, center: { lat: 20, lng: 10 },
+                    mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+                });
+                mapInstRef.current = map;
+                const geocoder = new window.google.maps.Geocoder();
+                const n = cities.length;
+                const pts = new Array(n).fill(null);
+                let done = 0;
+                cities.forEach((city, i) => {
+                    geocoder.geocode({ address: city }, (results, st) => {
+                        done++;
+                        if (st === 'OK' && results[0]) {
+                            const loc = results[0].geometry.location;
+                            const isFirst = i === 0, isLast = i === n - 1;
+                            const color = isFirst ? '#F4A259' : isLast ? '#5B8DEF' : '#1A2B4A';
+                            const label = isFirst ? 'Origem' : isLast ? 'Destino' : 'Escala ' + i;
+                            const marker = new window.google.maps.Marker({ map, position: loc, title: city,
+                                icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+                            const iw = new window.google.maps.InfoWindow({ content: '<b>' + city + '</b><br>' + label });
+                            marker.addListener('click', () => iw.open(map, marker));
+                            pts[i] = loc;
+                        }
+                        if (done === n) {
+                            const ordered = pts.filter(Boolean);
+                            if (!ordered.length) { setStatus('Não foi possível localizar os destinos.'); return; }
+                            setStatus('');
+                            if (ordered.length > 1)
+                                new window.google.maps.Polyline({ path: ordered, geodesic: true, strokeColor: '#FF6B5C', strokeOpacity: 0.85, strokeWeight: 2.5, map });
+                            const bounds = new window.google.maps.LatLngBounds();
+                            ordered.forEach(p => bounds.extend(p));
+                            map.fitBounds(bounds, 40);
+                        }
+                    });
+                });
+            };
+            if (window.google && window.google.maps) run();
+            else loadScriptOnce('https://maps.googleapis.com/maps/api/js?key=' + apiKey).then(run);
+        } else {
+            if (!document.getElementById('lf-css')) {
+                const l = document.createElement('link'); l.id = 'lf-css'; l.rel = 'stylesheet';
+                l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
+            }
+            loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js').then(async () => {
+                if (!mapRef.current || mapInstRef.current) return;
+                const map = window.L.map(mapRef.current); mapInstRef.current = map;
+                window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+                const pts = [];
+                for (const city of cities) {
+                    try {
+                        const r = await fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1', { headers: { 'Accept-Language': 'pt' } });
+                        const d = await r.json(); if (d[0]) pts.push({ city, lat: +d[0].lat, lon: +d[0].lon });
+                    } catch(e) {}
+                }
+                if (!pts.length) { setStatus('Não foi possível geocodificar os destinos.'); return; }
+                setStatus('');
+                const colors = ['#F4A259', '#1A2B4A', '#5B8DEF'];
+                pts.forEach((p, i) => {
+                    const color = i === 0 ? colors[0] : i === pts.length - 1 ? colors[2] : colors[1];
+                    window.L.circleMarker([p.lat, p.lon], { radius: 10, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 }).bindPopup('<b>' + p.city + '</b>').addTo(map);
+                });
+                if (pts.length > 1)
+                    window.L.polyline(pts.map(p => [p.lat, p.lon]), { color: '#FF6B5C', weight: 2.5, dashArray: '6 10' }).addTo(map);
+                const lats = pts.map(p => p.lat), lons = pts.map(p => p.lon);
+                map.fitBounds([[Math.min(...lats) - 0.5, Math.min(...lons) - 0.5], [Math.max(...lats) + 0.5, Math.max(...lons) + 0.5]]);
+            });
+        }
+        return () => { if (mapInstRef.current && !apiKey) mapInstRef.current.remove(); mapInstRef.current = null; };
+    }, [cities.join(',')]);
+
+    useEffect(() => {
+        if (!myLoc || !mapInstRef.current) return;
+        if (apiKey && window.google && window.google.maps) {
+            if (myMarkerRef.current) myMarkerRef.current.setMap(null);
+            myMarkerRef.current = new window.google.maps.Marker({ map: mapInstRef.current,
+                position: { lat: myLoc.lat, lng: myLoc.lon }, title: 'Minha localização',
+                icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#22c55e', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 } });
+            mapInstRef.current.panTo({ lat: myLoc.lat, lng: myLoc.lon });
+        } else if (window.L && mapInstRef.current) {
+            if (myMarkerRef.current) mapInstRef.current.removeLayer(myMarkerRef.current);
+            myMarkerRef.current = window.L.circleMarker([myLoc.lat, myLoc.lon], { radius: 10, color: '#fff', weight: 2, fillColor: '#22c55e', fillOpacity: 1 }).bindPopup('Você está aqui').addTo(mapInstRef.current);
+            mapInstRef.current.panTo([myLoc.lat, myLoc.lon]);
+        }
+    }, [myLoc]);
+
+    return React.createElement('div', { className: 'card', style: { padding: 0, overflow: 'hidden', border: 'none', borderRadius: 16, position: 'relative', minHeight: 240, marginBottom: 0 } },
+        status && React.createElement('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13, zIndex: 1, background: 'rgba(255,255,255,0.7)', pointerEvents: 'none' } }, status),
+        React.createElement('div', { ref: mapRef, style: { width: '100%', height: 260 } }));
+}
 /* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
 function MapTab({ t, trip, update, toast }) {
     const ov = trip.cityOverrides || { renames: {}, hidden: [] };
@@ -1812,7 +1914,7 @@ function MapTab({ t, trip, update, toast }) {
     const [delCity, setDelCity] = useState(null);
     const [myLoc, setMyLoc] = useState(null);
     const [locating, setLocating] = useState(false);
-    const [showMap, setShowMap] = useState(false);
+    // showMap removed — mapa agora é inline via InlineMapView
     const locateMe = () => {
         if (!navigator.geolocation) {
             toast(t.locErr);
@@ -1863,22 +1965,9 @@ function MapTab({ t, trip, update, toast }) {
     const xs = i => n === 1 ? 150 : 30 + (240 * i / (n - 1));
     const ys = i => 55 + (i % 2 === 0 ? -15 : 15);
     const citiesOrdered = pts.map(p => dn(p.city)).filter(c => c && c !== 'A definir');
-    if (showMap) {
-        const mapsKey = (window.TRIPPIN_CONFIG || {}).MAPS_API_KEY;
-        return mapsKey
-            ? React.createElement(GoogleMapView, { cities: citiesOrdered, t: t, onClose: () => setShowMap(false) })
-            : React.createElement(LeafletMapView, { cities: citiesOrdered, t: t, onClose: () => setShowMap(false) });
-    }
     return (React.createElement("div", null,
-        React.createElement("div", { className: "card", style: { background: 'linear-gradient(135deg,#dceee9,#bfe0d8)', border: 'none', minHeight: 200,
-                display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' } },
-            React.createElement("svg", { viewBox: "0 0 300 120", style: { width: '100%', height: 150 } },
-                React.createElement("polyline", { points: pts.map((_, i) => xs(i) + ',' + ys(i)).join(' '), fill: "none", stroke: "#FF6B5C", strokeWidth: "2.5", strokeDasharray: "2 6", strokeLinecap: "round" }),
-                pts.map((p, i) => (React.createElement("g", { key: i },
-                    React.createElement("circle", { cx: xs(i), cy: ys(i), r: "6", fill: i === 0 ? '#F4A259' : i === n - 1 ? '#5B8DEF' : '#1A2B4A' }),
-                    React.createElement("text", { x: xs(i), y: ys(i) + (i % 2 === 0 ? -12 : 20), fontSize: "9", fontWeight: "700", fill: "#234", textAnchor: "middle" }, dn(p.city))))))),
+        React.createElement(InlineMapView, { cities: citiesOrdered, myLoc: myLoc, t: t }),
         React.createElement("div", { style: { display: 'flex', gap: 8, marginTop: 10 } },
-            React.createElement("button", { className: "btn btn-lagoon", style: { flex: 1 }, onClick: () => setShowMap(true) }, "🗺️ " + (t.interactiveMap || 'Ver mapa interativo')),
             React.createElement("button", { className: "btn btn-dark", style: { flex: 1 }, onClick: locateMe, disabled: locating }, locating ? '⏳ ' + t.locating : '📍 ' + t.useMyLoc)),
         React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: gmapsRoute }, "🧭 " + t.openGmaps),
         myLoc && React.createElement("div", { className: "dest", style: { marginTop: 10 } },
