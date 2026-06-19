@@ -1851,7 +1851,7 @@ function DestPinMap({ pts, trip, t, goGallery }) {
                             lineHeight: 1.2, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, p.city),
                         React.createElement('div', { style: { fontSize: 9, color: 'var(--muted)', fontWeight: 700,
                             textTransform: 'uppercase', letterSpacing: '0.04em' } }, roleLabel));
-                })))));
+                }))));
 }
 /* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
 function MapTab({ t, trip, update, toast, goTab }) {
@@ -3171,7 +3171,7 @@ function NotifPanel({ t, notifs, onClose, onAct, onDismiss }) {
                     React.createElement("p", null, n.text),
                     React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
                         React.createElement("span", { className: "nt" }, n.time),
-                        !n.read && React.createElement("button", { className: "joinbtn", onClick: () => onAct(n.id) }, n.action || 'Ver'))))));
+                        !n.read && React.createElement("button", { className: "joinbtn", onClick: () => onAct(n.id) }, n.action || 'Ver')))))))));
 }
 /* ---------------- ROOT APP ---------------- */
 function App() {
