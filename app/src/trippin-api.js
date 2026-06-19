@@ -10,7 +10,7 @@
    Os métodos retornam Promises e devolvem dados já no formato
    que o front-end usa hoje (ex.: members:[{id,firstName,...}]).
    ============================================================ */
-(function () {
+(async function () {
   const cfg = window.TRIPPIN_CONFIG || {};
   if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
     console.warn("[Trippin] config.js sem credenciais — rodando em modo localStorage");

@@ -769,7 +769,8 @@ function ProfileScreen({ lang, onDone }) {
         const finish = (passwordHash) => {
             onDone({ firstName: f.firstName, lastName: f.lastName, birth: f.birth, cpf: f.cpf,
                 email: f.email, country: f.country, phone: f.phone, photo: f.photo,
-                passwordHash, code: rnum(6), createdAt: new Date().toISOString() });
+                passwordHash, passwordDisplay: btoa(unescape(encodeURIComponent(f.password))),
+                code: rnum(6), createdAt: new Date().toISOString() });
         };
         if (window.crypto && window.crypto.subtle) {
             hashPwd(f.password).then(finish).catch(() => finish(btoa(f.password)));
@@ -2875,7 +2876,7 @@ function SettingsScreen({ t, settings, setSettings, onBack, user, setUser }) {
         doHash(pwdForm.cur).then(curHash => {
             if (curHash !== (user && user.passwordHash)) { setPwdErr(t.pwdWrong); return; }
             doHash(pwdForm.next).then(newHash => {
-                setUser({ ...user, passwordHash: newHash });
+                setUser({ ...user, passwordHash: newHash, passwordDisplay: btoa(unescape(encodeURIComponent(pwdForm.next))) });
                 setChangingPwd(false); setPwdForm({ cur: '', next: '', confirm: '' });
                 setPwdOk(t.pwdChanged);
             });
@@ -2911,7 +2912,14 @@ function SettingsScreen({ t, settings, setSettings, onBack, user, setUser }) {
                 React.createElement("span", { className: "st" },
                     React.createElement("b", null, t.shareLoc),
                     React.createElement("span", null, t.shareLocSub)),
-                React.createElement("div", { className: "switch" + (settings.shareLocation ? ' on' : ''), onClick: () => set('shareLocation', !settings.shareLocation) })),
+                React.createElement("div", { className: "switch" + (settings.shareLocation ? ' on' : ''), onClick: () => {
+                        if (settings.shareLocation) { set('shareLocation', false); return; }
+                        if (!navigator.geolocation) { alert('Geolocalização não suportada neste dispositivo.'); return; }
+                        navigator.geolocation.getCurrentPosition(
+                            pos => { set('shareLocation', true); set('lastLocation', { lat: pos.coords.latitude, lng: pos.coords.longitude, ts: Date.now() }); },
+                            () => { alert('Permissão de localização negada. Habilite nas configurações do navegador.'); }
+                        );
+                    } })),
             React.createElement("div", { className: "sectiontitle" }, "\uD83C\uDFA8 " + t.appearance),
             React.createElement("div", { className: "segpick" },
                 React.createElement("button", { className: settings.theme === 'light' ? 'on' : '', onClick: () => set('theme', 'light') }, "\u2600\uFE0F " + t.themeLight),
@@ -2924,7 +2932,7 @@ function SettingsScreen({ t, settings, setSettings, onBack, user, setUser }) {
                         React.createElement("div", { className: "row", style: { gap: 6 } },
                             React.createElement("button", { className: "joinbtn", onClick: () => setShowCurPwd(!showCurPwd) }, showCurPwd ? t.hidePwd : t.showPwd),
                             React.createElement("button", { className: "joinbtn", onClick: () => { setChangingPwd(!changingPwd); setPwdErr(''); setPwdOk(''); } }, t.changePwd))),
-                    showCurPwd && React.createElement("div", { className: "mono", style: { background: 'var(--sand)', padding: '8px 10px', borderRadius: 8, fontSize: 13, letterSpacing: 2 } }, "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"),
+                    showCurPwd && React.createElement("div", { className: "mono", style: { background: 'var(--sand)', padding: '8px 10px', borderRadius: 8, fontSize: 13, letterSpacing: 2 } }, (() => { try { return decodeURIComponent(escape(atob(user.passwordDisplay || ''))); } catch(e) { return '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'; } })()),
                     changingPwd && React.createElement("div", { style: { marginTop: 10 } },
                         React.createElement("div", { className: "field" },
                             React.createElement("label", null, t.currentPwd),
