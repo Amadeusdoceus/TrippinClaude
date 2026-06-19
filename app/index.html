@@ -510,6 +510,16 @@ const I18N = {
         nights: 'Noites', guests: 'Hóspedes', confirmation: 'Confirmação', host: 'Anfitrião/Contato', priceLbl: 'Preço', interpretingImg: 'Lendo a imagem (OCR)…', addLodging: 'Adicionar ao cronograma',
         lodgingAdded: 'Hospedagem adicionada ao cronograma', lodgingConfirm: 'A hospedagem aparecerá no cronograma de',
         until: 'até', stayingAt: 'Hospedado em', viewLodging: 'ver hospedagem',
+        createPwd: 'Criar senha de acesso', confirmPwd: 'Confirmar senha', pwdRequired: 'Senha obrigatória (mín. 6 caracteres)',
+        pwdMismatch: 'As senhas não conferem', security: 'Segurança', showPwd: 'Mostrar', hidePwd: 'Ocultar',
+        changePwd: 'Alterar senha', currentPwd: 'Senha atual', newPwd: 'Nova senha', confirmNewPwd: 'Confirmar nova senha',
+        pwdChanged: 'Senha alterada ✓', pwdWrong: 'Senha atual incorreta',
+        biometric: 'Biometria (digital / facial)', biometricSub: 'Acesse com impressão digital ou Face ID',
+        biometricEnabled: 'Biometria ativada ✓', biometricDisabled: 'Biometria desativada',
+        biometricNotSupported: 'Seu dispositivo não suporta biometria', biometricError: 'Falha ao ativar biometria',
+        unlock: 'Entrar', unlockTitle: 'Bem-vindo de volta!', unlockSub: 'Digite sua senha para acessar o app.',
+        editBeforeAdding: 'Editar dados', addTab: 'Nova categoria', addTabHint: 'Nome da aba',
+        interactiveMap: 'Ver mapa interativo', mapLoading: 'Carregando mapa…', openGmapsNav: 'Navegar no Google Maps',
     },
     'en-US': {
         welcome: 'Everything about your trip, in one place.',
@@ -606,6 +616,10 @@ const rid = n => { const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let r = '';
 const rnum = n => { let r = ''; for (let i = 0; i < n; i++)
     r += Math.floor(Math.random() * 10); return r; };
 const uid = () => Math.random().toString(36).slice(2, 9);
+async function hashPwd(pw) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 /* seed demo trip so the app isn't empty */
 function seedTrip() {
     return {
@@ -624,6 +638,36 @@ function seedTrip() {
     };
 }
 /* ---------------- small UI helpers ---------------- */
+function LockScreen({ lang, user, onUnlock }) {
+    const t = dict(lang);
+    const [pwd, setPwd] = useState('');
+    const [show, setShow] = useState(false);
+    const [err, setErr] = useState('');
+    const [bioDone, setBioDone] = useState(false);
+    const bioAvail = !!window.PublicKeyCredential && !!user.bioCred;
+    const tryBio = async () => {
+        try {
+            const chal = crypto.getRandomValues(new Uint8Array(32));
+            await navigator.credentials.get({ publicKey: { challenge: chal, timeout: 60000, userVerification: 'required', allowCredentials: [{ type: 'public-key', id: Uint8Array.from(atob(user.bioCred), c => c.charCodeAt(0)) }] } });
+            setBioDone(true); onUnlock();
+        } catch(e) { setErr(t.biometricError || 'Falha na biometria'); }
+    };
+    useEffect(() => { if (bioAvail) tryBio(); }, []);
+    const submit = async () => {
+        const h = await hashPwd(pwd);
+        if (h === user.passwordHash) { onUnlock(); } else { setErr(t.pwdWrong); }
+    };
+    return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 32, background: 'var(--sand)' } },
+        React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "🔒"),
+        React.createElement("h2", { style: { fontFamily: 'Sora', fontSize: 22, marginBottom: 6 } }, t.unlockTitle || 'Bem-vindo de volta!'),
+        React.createElement("p", { className: "sub", style: { marginBottom: 24, textAlign: 'center' } }, t.unlockSub || 'Digite sua senha para entrar.'),
+        React.createElement("div", { className: "row", style: { width: '100%', maxWidth: 340 } },
+            React.createElement("input", { type: show ? 'text' : 'password', className: "inp", style: { flex: 1 }, placeholder: "Senha", value: pwd, autoFocus: true, onChange: e => { setPwd(e.target.value); setErr(''); }, onKeyDown: e => e.key === 'Enter' && submit() }),
+            React.createElement("button", { className: "btn btn-ghost", style: { width: 'auto', padding: '0 14px' }, onClick: () => setShow(!show) }, show ? t.hidePwd : t.showPwd)),
+        err && React.createElement("div", { className: "errmsg", style: { marginTop: 8 } }, err),
+        React.createElement("button", { className: "btn btn-primary", style: { marginTop: 14, maxWidth: 340, width: '100%' }, onClick: submit }, t.unlock || 'Entrar'),
+        bioAvail && React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 10, maxWidth: 340, width: '100%' }, onClick: tryBio }, "🫆 " + t.biometric));
+}
 function Toast({ msg }) { return msg ? React.createElement("div", { className: "toast" },
     "\u2713 ",
     msg) : null; }
@@ -677,16 +721,20 @@ function PhotoPicker({ photo, onPick, hint }) {
 }
 function ProfileScreen({ lang, onDone }) {
     const t = dict(lang);
-    const [f, setF] = useState({ firstName: '', lastName: '', birth: '', cpf: '', email: '', country: '🇧🇷 +55', phone: '', photo: '' });
+    const [f, setF] = useState({ firstName: '', lastName: '', birth: '', cpf: '', email: '', country: '🇧🇷 +55', phone: '', photo: '', password: '', confirmPwd: '' });
     const [touched, setTouched] = useState(false);
+    const [showPwd, setShowPwd] = useState(false);
     const set = (k, v) => setF({ ...f, [k]: v });
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
-    const valid = f.firstName && f.lastName && f.birth && emailOk && f.phone;
-    const submit = () => {
+    const pwdOk = f.password.length >= 6;
+    const pwdMatch = f.password === f.confirmPwd;
+    const valid = f.firstName && f.lastName && f.birth && emailOk && f.phone && pwdOk && pwdMatch;
+    const submit = async () => {
         setTouched(true);
-        if (!valid)
-            return;
-        onDone({ ...f, code: rnum(6), createdAt: new Date().toISOString() });
+        if (!valid) return;
+        const passwordHash = await hashPwd(f.password);
+        const { password, confirmPwd, ...rest } = f;
+        onDone({ ...rest, passwordHash, code: rnum(6), createdAt: new Date().toISOString() });
     };
     return (React.createElement("div", { className: "screen" },
         React.createElement("div", { className: "appbar" },
@@ -695,41 +743,37 @@ function ProfileScreen({ lang, onDone }) {
             React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.profileSub),
             React.createElement(PhotoPicker, { photo: f.photo, onPick: v => set('photo', v), hint: t.changePhoto }),
             React.createElement("div", { className: "field" },
-                React.createElement("label", null,
-                    t.firstName,
-                    " ",
-                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("label", null, t.firstName, " ", React.createElement("span", { className: "req" }, "*")),
                 React.createElement("input", { className: "inp" + (touched && !f.firstName ? ' err' : ''), value: f.firstName, onChange: e => set('firstName', e.target.value) })),
             React.createElement("div", { className: "field" },
-                React.createElement("label", null,
-                    t.lastName,
-                    " ",
-                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("label", null, t.lastName, " ", React.createElement("span", { className: "req" }, "*")),
                 React.createElement("input", { className: "inp" + (touched && !f.lastName ? ' err' : ''), value: f.lastName, onChange: e => set('lastName', e.target.value) })),
             React.createElement("div", { className: "field" },
-                React.createElement("label", null,
-                    t.birth,
-                    " ",
-                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("label", null, t.birth, " ", React.createElement("span", { className: "req" }, "*")),
                 React.createElement("input", { type: "date", className: "inp" + (touched && !f.birth ? ' err' : ''), value: f.birth, onChange: e => set('birth', e.target.value) })),
             React.createElement("div", { className: "field" },
                 React.createElement("label", null, t.cpf),
                 React.createElement("input", { className: "inp", placeholder: "000.000.000-00", value: f.cpf, onChange: e => set('cpf', e.target.value) })),
             React.createElement("div", { className: "field" },
-                React.createElement("label", null,
-                    t.email,
-                    " ",
-                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("label", null, t.email, " ", React.createElement("span", { className: "req" }, "*")),
                 React.createElement("input", { className: "inp" + (touched && !emailOk ? ' err' : ''), placeholder: "voce@email.com", value: f.email, onChange: e => set('email', e.target.value) }),
                 touched && !emailOk && React.createElement("div", { className: "errmsg" }, t.invalidEmail)),
             React.createElement("div", { className: "field" },
-                React.createElement("label", null,
-                    t.phone,
-                    " ",
-                    React.createElement("span", { className: "req" }, "*")),
+                React.createElement("label", null, t.phone, " ", React.createElement("span", { className: "req" }, "*")),
                 React.createElement("div", { className: "row" },
                     React.createElement("select", { className: "inp", style: { maxWidth: 120 }, value: f.country, onChange: e => set('country', e.target.value) }, COUNTRIES.map(c => React.createElement("option", { key: c }, c))),
                     React.createElement("input", { className: "inp" + (touched && !f.phone ? ' err' : ''), placeholder: "11 99999-9999", value: f.phone, onChange: e => set('phone', e.target.value) }))),
+            React.createElement("div", { className: "sectiontitle" }, "🔒 " + t.security),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.createPwd, " ", React.createElement("span", { className: "req" }, "*")),
+                React.createElement("div", { className: "row" },
+                    React.createElement("input", { type: showPwd ? "text" : "password", className: "inp" + (touched && !pwdOk ? ' err' : ''), placeholder: "mín. 6 caracteres", value: f.password, onChange: e => set('password', e.target.value) }),
+                    React.createElement("button", { className: "btn btn-ghost", style: { width: 'auto', padding: '0 14px', whiteSpace: 'nowrap' }, onClick: () => setShowPwd(!showPwd) }, showPwd ? t.hidePwd : t.showPwd)),
+                touched && !pwdOk && React.createElement("div", { className: "errmsg" }, t.pwdRequired)),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.confirmPwd, " ", React.createElement("span", { className: "req" }, "*")),
+                React.createElement("input", { type: showPwd ? "text" : "password", className: "inp" + (touched && !pwdMatch ? ' err' : ''), placeholder: "repita a senha", value: f.confirmPwd, onChange: e => set('confirmPwd', e.target.value) }),
+                touched && !pwdMatch && React.createElement("div", { className: "errmsg" }, t.pwdMismatch)),
             React.createElement("button", { className: "btn btn-primary", style: { marginTop: 8 }, onClick: submit }, t.confirm))));
 }
 function ProfileEditScreen({ lang, user, onSave, onBack }) {
@@ -1724,6 +1768,7 @@ function MapTab({ t, trip, update, toast }) {
     const [delCity, setDelCity] = useState(null);
     const [myLoc, setMyLoc] = useState(null);
     const [locating, setLocating] = useState(false);
+    const [showLeaflet, setShowLeaflet] = useState(false);
     const locateMe = () => {
         if (!navigator.geolocation) {
             toast(t.locErr);
@@ -1764,12 +1809,17 @@ function MapTab({ t, trip, update, toast }) {
         if (!last || last.city !== city)
             stops.push({ city, date });
     };
-    (trip.destinations || []).filter(d => d.name && d.name !== 'A definir').forEach(d => push(cityOf(d.name), d.date));
-    segs.forEach(s => { push(s.fromCity, s.depDate); push(s.toCity, s.arrDate); });
+    const allPts = [];
+    (trip.destinations || []).filter(d => d.name && d.name !== 'A definir').forEach(d => allPts.push({ city: cityOf(d.name), date: d.date }));
+    segs.forEach(s => { if (s.fromCity) allPts.push({ city: s.fromCity, date: s.depDate }); if (s.toCity) allPts.push({ city: s.toCity, date: s.arrDate }); });
+    allPts.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    allPts.forEach(p => push(p.city, p.date));
     const pts = stops.length ? stops : [{ city: 'A definir', date: trip.startDate }];
     const n = pts.length;
     const xs = i => n === 1 ? 150 : 30 + (240 * i / (n - 1));
     const ys = i => 55 + (i % 2 === 0 ? -15 : 15);
+    const citiesOrdered = pts.map(p => dn(p.city)).filter(c => c && c !== 'A definir');
+    if (showLeaflet) return React.createElement(LeafletMapView, { cities: citiesOrdered, t: t, onClose: () => setShowLeaflet(false) });
     return (React.createElement("div", null,
         React.createElement("div", { className: "card", style: { background: 'linear-gradient(135deg,#dceee9,#bfe0d8)', border: 'none', minHeight: 200,
                 display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' } },
@@ -1779,10 +1829,9 @@ function MapTab({ t, trip, update, toast }) {
                     React.createElement("circle", { cx: xs(i), cy: ys(i), r: "6", fill: i === 0 ? '#F4A259' : i === n - 1 ? '#5B8DEF' : '#1A2B4A' }),
                     React.createElement("text", { x: xs(i), y: ys(i) + (i % 2 === 0 ? -12 : 20), fontSize: "9", fontWeight: "700", fill: "#234", textAnchor: "middle" }, dn(p.city))))))),
         React.createElement("div", { style: { display: 'flex', gap: 8, marginTop: 10 } },
-            React.createElement("button", { className: "btn btn-dark", style: { flex: 1 }, onClick: gmapsRoute },
-                "\uD83D\uDDFA\uFE0F ",
-                t.openGmaps),
+            React.createElement("button", { className: "btn btn-lagoon", style: { flex: 1 }, onClick: () => setShowLeaflet(true) }, "🗺️ " + (t.interactiveMap || 'Ver mapa interativo')),
             React.createElement("button", { className: "btn btn-dark", style: { flex: 1 }, onClick: locateMe, disabled: locating }, locating ? '⏳ ' + t.locating : '📍 ' + t.useMyLoc)),
+        React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: gmapsRoute }, "🧭 " + t.openGmaps),
         myLoc && React.createElement("div", { className: "dest", style: { marginTop: 10 } },
             React.createElement("span", { className: "pin" }, "\uD83D\uDFE2"),
             React.createElement("span", { className: "dd" },
@@ -1835,6 +1884,49 @@ function MapTab({ t, trip, update, toast }) {
             t.restoreCities),
         React.createElement("div", { className: "card sub", style: { textAlign: 'center', fontSize: 12 } }, "\uD83D\uDFE0 Origem \u00B7 \u26AA Escala \u00B7 \uD83D\uDD35 Destino final \u00B7 Toque \u270F\uFE0F para renomear ou \uD83D\uDDD1\uFE0F para ocultar uma cidade"),
         delCity && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1\uFE0F", title: t.deleteCityQ, msg: '"' + dn(delCity) + '" ' + t.deleteCitySub, confirmLabel: t.yesDelete, cancelLabel: t.cancel, danger: true, onConfirm: () => doDelCity(delCity), onCancel: () => setDelCity(null) })));
+}
+function LeafletMapView({ cities, onClose, t }) {
+    const mapRef = useRef(null);
+    const instRef = useRef(null);
+    const [status, setStatus] = useState(t.mapLoading || 'Carregando mapa…');
+    useEffect(() => {
+        if (!document.getElementById('lf-css')) {
+            const l = document.createElement('link'); l.id = 'lf-css'; l.rel = 'stylesheet';
+            l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
+        }
+        loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js').then(async () => {
+            if (!mapRef.current || instRef.current) return;
+            const map = window.L.map(mapRef.current); instRef.current = map;
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            const pts = [];
+            for (const city of cities.filter(Boolean)) {
+                try {
+                    const r = await fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1', { headers: { 'Accept-Language': 'pt' } });
+                    const d = await r.json(); if (d[0]) pts.push({ city, lat: +d[0].lat, lon: +d[0].lon });
+                } catch(e) {}
+            }
+            if (!pts.length) { setStatus('Não foi possível geocodificar os destinos.'); return; }
+            setStatus('');
+            const colors = ['#F4A259', '#1A2B4A', '#5B8DEF'];
+            pts.forEach((p, i) => {
+                const color = i === 0 ? colors[0] : i === pts.length - 1 ? colors[2] : colors[1];
+                window.L.circleMarker([p.lat, p.lon], { radius: 11, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1 }).bindPopup('<b>' + p.city + '</b><br>' + (i === 0 ? 'Origem' : i === pts.length - 1 ? 'Destino' : 'Parada ' + i)).addTo(map);
+            });
+            if (pts.length > 1) window.L.polyline(pts.map(p => [p.lat, p.lon]), { color: '#FF6B5C', weight: 2.5, dashArray: '6 10' }).addTo(map);
+            const lats = pts.map(p => p.lat), lons = pts.map(p => p.lon);
+            map.fitBounds([[Math.min(...lats) - 0.5, Math.min(...lons) - 0.5], [Math.max(...lats) + 0.5, Math.max(...lons) + 0.5]]);
+        });
+        return () => { if (instRef.current) { instRef.current.remove(); instRef.current = null; } };
+    }, []);
+    const gmUrl = 'https://www.google.com/maps/dir/' + cities.filter(Boolean).map(encodeURIComponent).join('/');
+    return React.createElement('div', { style: { position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#fff' } },
+        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', boxShadow: '0 2px 8px rgba(0,0,0,.1)', background: '#fff', zIndex: 1 } },
+            React.createElement('button', { className: 'iconbtn', onClick: onClose }, '←'),
+            React.createElement('div', { className: 'ttl' }, '🗺️ Mapa da Viagem'),
+            React.createElement('div', { style: { width: 38 } })),
+        status && React.createElement('div', { style: { padding: 20, color: 'var(--muted)', textAlign: 'center' } }, status),
+        React.createElement('div', { ref: mapRef, style: { flex: 1 } }),
+        React.createElement('a', { href: gmUrl, target: '_blank', rel: 'noreferrer', style: { display: 'block', background: '#4285F4', color: '#fff', textAlign: 'center', padding: '14px', fontWeight: 600, textDecoration: 'none', fontSize: 15 } }, '🧭 ' + (t.openGmapsNav || 'Navegar no Google Maps')));
 }
 /* --- Câmera real do dispositivo via getUserMedia (foto salva no app) --- */
 function CameraModal({ t, onCapture, onClose }) {
@@ -1908,6 +2000,12 @@ function DocsTab({ t, trip, update, toast, goTab }) {
     const [lodgeEdit, setLodgeEdit] = useState(false); // edição manual da hospedagem
     const [pickSrc, setPickSrc] = useState(false); // escolha Upload x Câmera
     const [showCam, setShowCam] = useState(false); // modal de câmera (getUserMedia)
+    const [addingTab, setAddingTab] = useState(false);
+    const [newTabName, setNewTabName] = useState('');
+    const [customSubsMap, setCustomSubsMap] = useState(() => { try { return JSON.parse(localStorage.getItem('trippin_custom_subs') || '{}'); } catch(e) { return {}; } });
+    const customSubs = customSubsMap[cat] || [];
+    const saveCustomSubs = (c, subs) => { const m = { ...customSubsMap, [c]: subs }; setCustomSubsMap(m); localStorage.setItem('trippin_custom_subs', JSON.stringify(m)); };
+    const addCustomSub = () => { const nm = newTabName.trim(); if (!nm) return; saveCustomSubs(cat, [...customSubs, nm]); setSub(nm); setNewTabName(''); setAddingTab(false); };
     const fileRef = useRef(null);
     const camRef = useRef(null);
     const cur = cats.find(c => c[0] === cat);
@@ -2055,7 +2153,13 @@ function DocsTab({ t, trip, update, toast, goTab }) {
             c[1]))),
         React.createElement("div", { className: "subtabs" },
             cur[3].map(s => React.createElement("button", { key: s, className: "subtab" + (sub === s ? ' on' : ''), style: sub === s ? {} : { opacity: .7 }, onClick: () => setSub(s) }, s)),
-            React.createElement("button", { className: "subtab" }, "+")),
+            customSubs.map(s => React.createElement("button", { key: s, className: "subtab" + (sub === s ? ' on' : ''), style: sub === s ? {} : { opacity: .7 }, onClick: () => setSub(s) }, s)),
+            addingTab
+                ? React.createElement("div", { style: { display: 'flex', gap: 6, alignItems: 'center' } },
+                    React.createElement("input", { className: "inp", style: { padding: '5px 8px', fontSize: 13, width: 110 }, placeholder: t.addTabHint || 'Nome da aba', value: newTabName, autoFocus: true, onChange: e => setNewTabName(e.target.value), onKeyDown: e => e.key === 'Enter' && addCustomSub() }),
+                    React.createElement("button", { className: "subtab on", onClick: addCustomSub }, "✓"),
+                    React.createElement("button", { className: "subtab", onClick: () => { setAddingTab(false); setNewTabName(''); } }, "✕"))
+                : React.createElement("button", { className: "subtab", style: { color: 'var(--coral)', fontWeight: 700 }, onClick: () => setAddingTab(true) }, "+ " + (t.addTab || 'Nova aba')))),
         cat === 'tickets' && React.createElement("div", { className: "alert", style: { background: '#eef5ff', borderColor: '#b9d4ff' } },
             React.createElement("span", { className: "ai" }, "\uD83E\uDD16"),
             React.createElement("div", null,
@@ -2112,8 +2216,7 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                         "\uD83D\uDCC5 ",
                         t.addStages),
                     React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: () => update({ ...trip, docs: trip.docs.map(x => x.id === readingDoc.id ? { ...x, itin: undefined } : x) }) },
-                        "\u270F\uFE0F ",
-                        t.editManual))
+                        "✏️ " + (t.editBeforeAdding || 'Editar dados')),
                 : React.createElement(TicketReadForm, { t: t, trip: trip, doc: readingDoc, onSave: seg => saveTicket(readingDoc, seg), onCancel: () => setReadId(null) })),
         catDocs.length === 0
             ? React.createElement("div", { className: "empty" },
@@ -2714,8 +2817,38 @@ function BottomBar({ t, onMenu, onHome, onNotif, notifCount }) {
             notifCount > 0 && React.createElement("span", { className: "badge" }, notifCount))));
 }
 /* ---------------- Configurações ---------------- */
-function SettingsScreen({ t, settings, setSettings, onBack }) {
+function SettingsScreen({ t, settings, setSettings, onBack, user, setUser }) {
     const set = (k, v) => setSettings({ ...settings, [k]: v });
+    const [showCurPwd, setShowCurPwd] = useState(false);
+    const [changingPwd, setChangingPwd] = useState(false);
+    const [pwdForm, setPwdForm] = useState({ cur: '', next: '', confirm: '' });
+    const [pwdErr, setPwdErr] = useState('');
+    const [pwdOk, setPwdOk] = useState('');
+    const bioAvail = !!window.PublicKeyCredential;
+    const bioOn = !!(user && user.bioCred);
+    const savePwd = async () => {
+        setPwdErr(''); setPwdOk('');
+        const curHash = await hashPwd(pwdForm.cur);
+        if (curHash !== (user && user.passwordHash)) { setPwdErr(t.pwdWrong); return; }
+        if (pwdForm.next.length < 6) { setPwdErr(t.pwdRequired); return; }
+        if (pwdForm.next !== pwdForm.confirm) { setPwdErr(t.pwdMismatch); return; }
+        const newHash = await hashPwd(pwdForm.next);
+        setUser({ ...user, passwordHash: newHash });
+        setChangingPwd(false); setPwdForm({ cur: '', next: '', confirm: '' });
+        setPwdOk(t.pwdChanged);
+    };
+    const toggleBio = async () => {
+        if (!bioAvail) { alert(t.biometricNotSupported); return; }
+        if (bioOn) { setUser({ ...user, bioCred: null }); alert(t.biometricDisabled); return; }
+        try {
+            const chal = crypto.getRandomValues(new Uint8Array(32));
+            const uid16 = crypto.getRandomValues(new Uint8Array(16));
+            const cred = await navigator.credentials.create({ publicKey: { challenge: chal, rp: { name: 'Trippin' }, user: { id: uid16, name: user.email, displayName: user.firstName }, pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }], authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' }, timeout: 60000 } });
+            const credB64 = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+            setUser({ ...user, bioCred: credB64 });
+            alert(t.biometricEnabled);
+        } catch(e) { alert(t.biometricError || 'Falha ao ativar biometria'); }
+    };
     return (React.createElement("div", { className: "screen" },
         React.createElement("div", { className: "appbar" },
             React.createElement("button", { className: "iconbtn", onClick: onBack }, "\u2190"),
@@ -2735,16 +2868,38 @@ function SettingsScreen({ t, settings, setSettings, onBack }) {
                     React.createElement("b", null, t.shareLoc),
                     React.createElement("span", null, t.shareLocSub)),
                 React.createElement("div", { className: "switch" + (settings.shareLocation ? ' on' : ''), onClick: () => set('shareLocation', !settings.shareLocation) })),
-            React.createElement("div", { className: "sectiontitle" },
-                "\uD83C\uDFA8 ",
-                t.appearance),
+            React.createElement("div", { className: "sectiontitle" }, "\uD83C\uDFA8 " + t.appearance),
             React.createElement("div", { className: "segpick" },
-                React.createElement("button", { className: settings.theme === 'light' ? 'on' : '', onClick: () => set('theme', 'light') },
-                    "\u2600\uFE0F ",
-                    t.themeLight),
-                React.createElement("button", { className: settings.theme === 'dark' ? 'on' : '', onClick: () => set('theme', 'dark') },
-                    "\uD83C\uDF19 ",
-                    t.themeDark)))));
+                React.createElement("button", { className: settings.theme === 'light' ? 'on' : '', onClick: () => set('theme', 'light') }, "\u2600\uFE0F " + t.themeLight),
+                React.createElement("button", { className: settings.theme === 'dark' ? 'on' : '', onClick: () => set('theme', 'dark') }, "\uD83C\uDF19 " + t.themeDark)),
+            React.createElement("div", { className: "sectiontitle" }, "\uD83D\uDD12 " + t.security),
+            user && user.passwordHash && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "card", style: { marginBottom: 12 } },
+                    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
+                        React.createElement("b", { style: { fontSize: 14 } }, "\uD83D\uDD11 Senha"),
+                        React.createElement("div", { className: "row", style: { gap: 6 } },
+                            React.createElement("button", { className: "joinbtn", onClick: () => setShowCurPwd(!showCurPwd) }, showCurPwd ? t.hidePwd : t.showPwd),
+                            React.createElement("button", { className: "joinbtn", onClick: () => { setChangingPwd(!changingPwd); setPwdErr(''); setPwdOk(''); } }, t.changePwd))),
+                    showCurPwd && React.createElement("div", { className: "mono", style: { background: 'var(--sand)', padding: '8px 10px', borderRadius: 8, fontSize: 13, letterSpacing: 2 } }, "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"),
+                    changingPwd && React.createElement("div", { style: { marginTop: 10 } },
+                        React.createElement("div", { className: "field" },
+                            React.createElement("label", null, t.currentPwd),
+                            React.createElement("input", { type: "password", className: "inp", value: pwdForm.cur, onChange: e => setPwdForm({ ...pwdForm, cur: e.target.value }) })),
+                        React.createElement("div", { className: "field" },
+                            React.createElement("label", null, t.newPwd),
+                            React.createElement("input", { type: "password", className: "inp", value: pwdForm.next, onChange: e => setPwdForm({ ...pwdForm, next: e.target.value }) })),
+                        React.createElement("div", { className: "field" },
+                            React.createElement("label", null, t.confirmNewPwd),
+                            React.createElement("input", { type: "password", className: "inp", value: pwdForm.confirm, onChange: e => setPwdForm({ ...pwdForm, confirm: e.target.value }) })),
+                        pwdErr && React.createElement("div", { className: "errmsg" }, pwdErr),
+                        pwdOk && React.createElement("div", { style: { color: 'var(--lagoon)', fontSize: 13 } }, pwdOk),
+                        React.createElement("button", { className: "btn btn-primary", style: { marginTop: 8 }, onClick: savePwd }, t.save))),
+                React.createElement("div", { className: "setrow", style: { marginTop: 0 } },
+                    React.createElement("span", { className: "si" }, "\uD83E\uDEC6"),
+                    React.createElement("span", { className: "st" },
+                        React.createElement("b", null, t.biometric),
+                        React.createElement("span", null, bioAvail ? t.biometricSub : t.biometricNotSupported)),
+                    bioAvail && React.createElement("div", { className: "switch" + (bioOn ? ' on' : ''), onClick: toggleBio }))))));
 }
 /* ---------------- Apps de viagem ---------------- */
 const TRAVEL_APPS = [
@@ -2796,6 +2951,7 @@ function App() {
     const [user, setUser] = useState(persisted.user || null);
     const [trips, setTrips] = useState(persisted.trips || null);
     const [screen, setScreen] = useState(persisted.user ? 'home' : 'lang');
+    const [locked, setLocked] = useState(() => !!(persisted.user && persisted.user.passwordHash && !sessionStorage.getItem('trippin_unlocked')));
     const [activeTrip, setActiveTrip] = useState(null);
     const [toastMsg, setToastMsg] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
@@ -2836,6 +2992,7 @@ function App() {
             setScreen(s === 'profile' ? 'profile-edit' : s);
     };
     const showBottom = user && trips && ['home', 'trip', 'settings', 'apps'].includes(screen);
+    if (locked && user) return React.createElement(LockScreen, { lang: lang || 'pt-BR', user: user, onUnlock: () => { sessionStorage.setItem('trippin_unlocked', '1'); setLocked(false); } });
     return (React.createElement(React.Fragment, null,
         screen === 'lang' && React.createElement(LanguageScreen, { onPick: l => { setLang(l); setScreen('profile'); } }),
         screen === 'profile' && React.createElement(ProfileScreen, { lang: lang, onDone: u => { setUser(u); setScreen('home'); toast(t.profileCreated); } }),
@@ -2852,7 +3009,7 @@ function App() {
             } }),
         screen === 'join' && React.createElement(JoinScreen, { lang: lang, onBack: goHome, toast: toast }),
         screen === 'profile-edit' && user && React.createElement(ProfileEditScreen, { lang: lang, user: user, onSave: u => { setUser(u); setScreen('home'); toast(t.profileSaved); }, onBack: goHome }),
-        screen === 'settings' && React.createElement(SettingsScreen, { t: t, settings: settings, setSettings: setSettings, onBack: goHome }),
+        screen === 'settings' && React.createElement(SettingsScreen, { t: t, settings: settings, setSettings: setSettings, onBack: goHome, user: user, setUser: u => { setUser(u); } }),
         screen === 'apps' && React.createElement(TravelAppsScreen, { t: t, onBack: goHome }),
         screen === 'trip' && curTrip && React.createElement(TripScreen, { lang: lang, trip: curTrip, update: updateTrip, onBack: goHome, toast: toast }),
         showBottom && React.createElement(BottomBar, { t: t, onMenu: () => setMenuOpen(true), onHome: goHome, onNotif: () => setNotifOpen(true), notifCount: notifCount }),
