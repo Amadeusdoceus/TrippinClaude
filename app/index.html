@@ -1812,7 +1812,7 @@ function MapTab({ t, trip, update, toast }) {
     const [delCity, setDelCity] = useState(null);
     const [myLoc, setMyLoc] = useState(null);
     const [locating, setLocating] = useState(false);
-    const [showLeaflet, setShowLeaflet] = useState(false);
+    const [showMap, setShowMap] = useState(false);
     const locateMe = () => {
         if (!navigator.geolocation) {
             toast(t.locErr);
@@ -1863,7 +1863,12 @@ function MapTab({ t, trip, update, toast }) {
     const xs = i => n === 1 ? 150 : 30 + (240 * i / (n - 1));
     const ys = i => 55 + (i % 2 === 0 ? -15 : 15);
     const citiesOrdered = pts.map(p => dn(p.city)).filter(c => c && c !== 'A definir');
-    if (showLeaflet) return React.createElement(LeafletMapView, { cities: citiesOrdered, t: t, onClose: () => setShowLeaflet(false) });
+    if (showMap) {
+        const mapsKey = (window.TRIPPIN_CONFIG || {}).MAPS_API_KEY;
+        return mapsKey
+            ? React.createElement(GoogleMapView, { cities: citiesOrdered, t: t, onClose: () => setShowMap(false) })
+            : React.createElement(LeafletMapView, { cities: citiesOrdered, t: t, onClose: () => setShowMap(false) });
+    }
     return (React.createElement("div", null,
         React.createElement("div", { className: "card", style: { background: 'linear-gradient(135deg,#dceee9,#bfe0d8)', border: 'none', minHeight: 200,
                 display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' } },
@@ -1873,7 +1878,7 @@ function MapTab({ t, trip, update, toast }) {
                     React.createElement("circle", { cx: xs(i), cy: ys(i), r: "6", fill: i === 0 ? '#F4A259' : i === n - 1 ? '#5B8DEF' : '#1A2B4A' }),
                     React.createElement("text", { x: xs(i), y: ys(i) + (i % 2 === 0 ? -12 : 20), fontSize: "9", fontWeight: "700", fill: "#234", textAnchor: "middle" }, dn(p.city))))))),
         React.createElement("div", { style: { display: 'flex', gap: 8, marginTop: 10 } },
-            React.createElement("button", { className: "btn btn-lagoon", style: { flex: 1 }, onClick: () => setShowLeaflet(true) }, "🗺️ " + (t.interactiveMap || 'Ver mapa interativo')),
+            React.createElement("button", { className: "btn btn-lagoon", style: { flex: 1 }, onClick: () => setShowMap(true) }, "🗺️ " + (t.interactiveMap || 'Ver mapa interativo')),
             React.createElement("button", { className: "btn btn-dark", style: { flex: 1 }, onClick: locateMe, disabled: locating }, locating ? '⏳ ' + t.locating : '📍 ' + t.useMyLoc)),
         React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: gmapsRoute }, "🧭 " + t.openGmaps),
         myLoc && React.createElement("div", { className: "dest", style: { marginTop: 10 } },
@@ -1961,6 +1966,66 @@ function LeafletMapView({ cities, onClose, t }) {
             map.fitBounds([[Math.min(...lats) - 0.5, Math.min(...lons) - 0.5], [Math.max(...lats) + 0.5, Math.max(...lons) + 0.5]]);
         });
         return () => { if (instRef.current) { instRef.current.remove(); instRef.current = null; } };
+    }, []);
+    const gmUrl = 'https://www.google.com/maps/dir/' + cities.filter(Boolean).map(encodeURIComponent).join('/');
+    return React.createElement('div', { style: { position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#fff' } },
+        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', boxShadow: '0 2px 8px rgba(0,0,0,.1)', background: '#fff', zIndex: 1 } },
+            React.createElement('button', { className: 'iconbtn', onClick: onClose }, '←'),
+            React.createElement('div', { className: 'ttl' }, '🗺️ Mapa da Viagem'),
+            React.createElement('div', { style: { width: 38 } })),
+        status && React.createElement('div', { style: { padding: 20, color: 'var(--muted)', textAlign: 'center' } }, status),
+        React.createElement('div', { ref: mapRef, style: { flex: 1 } }),
+        React.createElement('a', { href: gmUrl, target: '_blank', rel: 'noreferrer', style: { display: 'block', background: '#4285F4', color: '#fff', textAlign: 'center', padding: '14px', fontWeight: 600, textDecoration: 'none', fontSize: 15 } }, '🧭 ' + (t.openGmapsNav || 'Navegar no Google Maps')));
+}
+/* --- Google Maps: exibe rota interativa com geocodificação via API --- */
+function GoogleMapView({ cities, onClose, t }) {
+    const mapRef = useRef(null);
+    const [status, setStatus] = useState(t.mapLoading || 'Carregando mapa…');
+    useEffect(() => {
+        const apiKey = (window.TRIPPIN_CONFIG || {}).MAPS_API_KEY;
+        function initMap() {
+            if (!mapRef.current) return;
+            const map = new window.google.maps.Map(mapRef.current, {
+                zoom: 3, center: { lat: 20, lng: 10 },
+                mapTypeControl: false, streetViewControl: true,
+                fullscreenControl: false,
+            });
+            const geocoder = new window.google.maps.Geocoder();
+            const n = cities.length;
+            if (!n) { setStatus('Nenhum destino configurado.'); return; }
+            const pts = new Array(n).fill(null);
+            let done = 0;
+            cities.forEach((city, i) => {
+                geocoder.geocode({ address: city }, (results, st) => {
+                    done++;
+                    if (st === 'OK' && results[0]) {
+                        const loc = results[0].geometry.location;
+                        const isFirst = i === 0, isLast = i === n - 1;
+                        const color = isFirst ? '#F4A259' : isLast ? '#5B8DEF' : '#1A2B4A';
+                        const label = isFirst ? 'Origem' : isLast ? 'Destino' : 'Escala ' + i;
+                        const marker = new window.google.maps.Marker({
+                            map, position: loc, title: city,
+                            icon: { path: window.google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+                        });
+                        const iw = new window.google.maps.InfoWindow({ content: '<b>' + city + '</b><br>' + label });
+                        marker.addListener('click', () => iw.open(map, marker));
+                        pts[i] = loc;
+                    }
+                    if (done === n) {
+                        const ordered = pts.filter(Boolean);
+                        if (!ordered.length) { setStatus('Não foi possível localizar os destinos.'); return; }
+                        setStatus('');
+                        if (ordered.length > 1)
+                            new window.google.maps.Polyline({ path: ordered, geodesic: true, strokeColor: '#FF6B5C', strokeOpacity: 0.85, strokeWeight: 2.5, map });
+                        const bounds = new window.google.maps.LatLngBounds();
+                        ordered.forEach(p => bounds.extend(p));
+                        map.fitBounds(bounds, 60);
+                    }
+                });
+            });
+        }
+        if (window.google && window.google.maps) { initMap(); }
+        else { loadScriptOnce('https://maps.googleapis.com/maps/api/js?key=' + apiKey).then(initMap); }
     }, []);
     const gmUrl = 'https://www.google.com/maps/dir/' + cities.filter(Boolean).map(encodeURIComponent).join('/');
     return React.createElement('div', { style: { position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#fff' } },
