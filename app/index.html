@@ -1812,15 +1812,17 @@ function InlineMapView({ cities, myLoc, t }) {
     const apiKey = (window.TRIPPIN_CONFIG || {}).MAPS_API_KEY;
 
     useEffect(() => {
-        if (!cities.length) { setStatus('Nenhum destino configurado.'); return; }
         if (apiKey) {
             const run = () => {
                 if (!mapRef.current || mapInstRef.current) return;
                 const map = new window.google.maps.Map(mapRef.current, {
-                    zoom: 3, center: { lat: 20, lng: 10 },
+                    zoom: cities.length ? 3 : 5,
+                    center: { lat: -14.24, lng: -51.93 }, // Brasil como centro padrão
                     mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
                 });
                 mapInstRef.current = map;
+                setStatus('');
+                if (!cities.length) return; // mapa carregado, sem destinos para geocodificar
                 const geocoder = new window.google.maps.Geocoder();
                 const n = cities.length;
                 const pts = new Array(n).fill(null);
@@ -1841,8 +1843,7 @@ function InlineMapView({ cities, myLoc, t }) {
                         }
                         if (done === n) {
                             const ordered = pts.filter(Boolean);
-                            if (!ordered.length) { setStatus('Não foi possível localizar os destinos.'); return; }
-                            setStatus('');
+                            if (!ordered.length) return;
                             if (ordered.length > 1)
                                 new window.google.maps.Polyline({ path: ordered, geodesic: true, strokeColor: '#FF6B5C', strokeOpacity: 0.85, strokeWeight: 2.5, map });
                             const bounds = new window.google.maps.LatLngBounds();
@@ -1861,8 +1862,10 @@ function InlineMapView({ cities, myLoc, t }) {
             }
             loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js').then(async () => {
                 if (!mapRef.current || mapInstRef.current) return;
-                const map = window.L.map(mapRef.current); mapInstRef.current = map;
+                const map = window.L.map(mapRef.current, { center: [-14.24, -51.93], zoom: cities.length ? 3 : 5 }); mapInstRef.current = map;
                 window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+                setStatus('');
+                if (!cities.length) return;
                 const pts = [];
                 for (const city of cities) {
                     try {
@@ -1870,8 +1873,7 @@ function InlineMapView({ cities, myLoc, t }) {
                         const d = await r.json(); if (d[0]) pts.push({ city, lat: +d[0].lat, lon: +d[0].lon });
                     } catch(e) {}
                 }
-                if (!pts.length) { setStatus('Não foi possível geocodificar os destinos.'); return; }
-                setStatus('');
+                if (!pts.length) return;
                 const colors = ['#F4A259', '#1A2B4A', '#5B8DEF'];
                 pts.forEach((p, i) => {
                     const color = i === 0 ? colors[0] : i === pts.length - 1 ? colors[2] : colors[1];
@@ -1902,7 +1904,8 @@ function InlineMapView({ cities, myLoc, t }) {
     }, [myLoc]);
 
     return React.createElement('div', { className: 'card', style: { padding: 0, overflow: 'hidden', border: 'none', borderRadius: 16, position: 'relative', minHeight: 240, marginBottom: 0 } },
-        status && React.createElement('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13, zIndex: 1, background: 'rgba(255,255,255,0.7)', pointerEvents: 'none' } }, status),
+        status && React.createElement('div', { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13, zIndex: 1, background: 'rgba(255,255,255,0.8)', pointerEvents: 'none' } }, status),
+        !cities.length && !status && React.createElement('div', { style: { position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: 11, padding: '4px 10px', borderRadius: 20, zIndex: 1, whiteSpace: 'nowrap', pointerEvents: 'none' } }, '📍 Adicione destinos para ver a rota'),
         React.createElement('div', { ref: mapRef, style: { width: '100%', height: 260 } }));
 }
 /* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
