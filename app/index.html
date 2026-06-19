@@ -653,9 +653,9 @@ function LockScreen({ lang, user, onUnlock }) {
         } catch(e) { setErr(t.biometricError || 'Falha na biometria'); }
     };
     useEffect(() => { if (bioAvail) tryBio(); }, []);
-    const submit = async () => {
-        const h = await hashPwd(pwd);
-        if (h === user.passwordHash) { onUnlock(); } else { setErr(t.pwdWrong); }
+    const doHash = (pw) => (window.crypto && window.crypto.subtle) ? hashPwd(pw) : Promise.resolve(btoa(pw));
+    const submit = () => {
+        doHash(pwd).then(h => { if (h === user.passwordHash) { onUnlock(); } else { setErr(t.pwdWrong || 'Senha incorreta'); } });
     };
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 32, background: 'var(--sand)' } },
         React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "🔒"),
@@ -729,12 +729,19 @@ function ProfileScreen({ lang, onDone }) {
     const pwdOk = f.password.length >= 6;
     const pwdMatch = f.password === f.confirmPwd;
     const valid = f.firstName && f.lastName && f.birth && emailOk && f.phone && pwdOk && pwdMatch;
-    const submit = async () => {
+    const submit = () => {
         setTouched(true);
         if (!valid) return;
-        const passwordHash = await hashPwd(f.password);
-        const { password, confirmPwd, ...rest } = f;
-        onDone({ ...rest, passwordHash, code: rnum(6), createdAt: new Date().toISOString() });
+        const finish = (passwordHash) => {
+            onDone({ firstName: f.firstName, lastName: f.lastName, birth: f.birth, cpf: f.cpf,
+                email: f.email, country: f.country, phone: f.phone, photo: f.photo,
+                passwordHash, code: rnum(6), createdAt: new Date().toISOString() });
+        };
+        if (window.crypto && window.crypto.subtle) {
+            hashPwd(f.password).then(finish).catch(() => finish(btoa(f.password)));
+        } else {
+            finish(btoa(f.password));
+        }
     };
     return (React.createElement("div", { className: "screen" },
         React.createElement("div", { className: "appbar" },
@@ -2826,16 +2833,19 @@ function SettingsScreen({ t, settings, setSettings, onBack, user, setUser }) {
     const [pwdOk, setPwdOk] = useState('');
     const bioAvail = !!window.PublicKeyCredential;
     const bioOn = !!(user && user.bioCred);
-    const savePwd = async () => {
+    const doHash = (pw) => (window.crypto && window.crypto.subtle) ? hashPwd(pw) : Promise.resolve(btoa(pw));
+    const savePwd = () => {
         setPwdErr(''); setPwdOk('');
-        const curHash = await hashPwd(pwdForm.cur);
-        if (curHash !== (user && user.passwordHash)) { setPwdErr(t.pwdWrong); return; }
         if (pwdForm.next.length < 6) { setPwdErr(t.pwdRequired); return; }
         if (pwdForm.next !== pwdForm.confirm) { setPwdErr(t.pwdMismatch); return; }
-        const newHash = await hashPwd(pwdForm.next);
-        setUser({ ...user, passwordHash: newHash });
-        setChangingPwd(false); setPwdForm({ cur: '', next: '', confirm: '' });
-        setPwdOk(t.pwdChanged);
+        doHash(pwdForm.cur).then(curHash => {
+            if (curHash !== (user && user.passwordHash)) { setPwdErr(t.pwdWrong); return; }
+            doHash(pwdForm.next).then(newHash => {
+                setUser({ ...user, passwordHash: newHash });
+                setChangingPwd(false); setPwdForm({ cur: '', next: '', confirm: '' });
+                setPwdOk(t.pwdChanged);
+            });
+        });
     };
     const toggleBio = async () => {
         if (!bioAvail) { alert(t.biometricNotSupported); return; }
