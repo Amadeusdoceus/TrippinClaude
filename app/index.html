@@ -2200,7 +2200,7 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                     React.createElement("input", { className: "inp", style: { padding: '5px 8px', fontSize: 13, width: 110 }, placeholder: t.addTabHint || 'Nome da aba', value: newTabName, autoFocus: true, onChange: e => setNewTabName(e.target.value), onKeyDown: e => e.key === 'Enter' && addCustomSub() }),
                     React.createElement("button", { className: "subtab on", onClick: addCustomSub }, "✓"),
                     React.createElement("button", { className: "subtab", onClick: () => { setAddingTab(false); setNewTabName(''); } }, "✕"))
-                : React.createElement("button", { className: "subtab", style: { color: 'var(--coral)', fontWeight: 700 }, onClick: () => setAddingTab(true) }, "+ " + (t.addTab || 'Nova aba')))),
+                : React.createElement("button", { className: "subtab", style: { color: 'var(--coral)', fontWeight: 700 }, onClick: () => setAddingTab(true) }, "+ " + (t.addTab || 'Nova aba'))),
         cat === 'tickets' && React.createElement("div", { className: "alert", style: { background: '#eef5ff', borderColor: '#b9d4ff' } },
             React.createElement("span", { className: "ai" }, "\uD83E\uDD16"),
             React.createElement("div", null,
