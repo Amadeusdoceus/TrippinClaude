@@ -439,8 +439,10 @@
   #root[data-theme="dark"] .langbtn{background:#202c45;border-color:#33446a}
   #root[data-theme="dark"] .langbtn.on{background:#2a1515;border-color:var(--coral);color:#ff8576}
   /* --- Vários --- */
-  #root[data-theme="dark"] .empty,#root[data-theme="dark"] .alert,#root[data-theme="dark"] .ph{background:var(--card);color:var(--ink);border-color:var(--line)}
-  #root[data-theme="dark"] .alert p{color:var(--muted)}
+  #root[data-theme="dark"] .empty,#root[data-theme="dark"] .ph{background:var(--card);color:var(--ink);border-color:var(--line)}
+  #root[data-theme="dark"] .alert{color:#14213D}
+  #root[data-theme="dark"] .alert p{color:#3a4a6b}
+  #root[data-theme="dark"] .alert b{color:#14213D}
   #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .srcopt .si{background:#253550}
   #root[data-theme="dark"] .opt b,#root[data-theme="dark"] .langbtn .ln,#root[data-theme="dark"] .setrow .st b{color:var(--ink)}
   #root[data-theme="dark"] .srcopt b{color:var(--ink)}
@@ -2636,25 +2638,37 @@ function MembersTab({ t, trip, update, toast }) {
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     const today = () => new Date().toISOString().slice(0, 10);
     const invite = async () => {
-        if (!emailOk)
-            return;
-        // Caminho 1: backend conectado -> dispara e-mail via Resend e grava no banco
-        if (window.TrippinAPI && window.TrippinAPI.invites) {
+        if (!emailOk) return;
+        const cfg = window.TRIPPIN_CONFIG || {};
+        if (cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
             try {
-                await window.TrippinAPI.invites.sendByEmail(trip.id, email);
-                // recarrega pendentes do servidor (verdade única)
-                const pend = await window.TrippinAPI.members.pendingInvites(trip.id);
-                update({ ...trip, pendingInvites: pend });
+                const resp = await fetch(cfg.SUPABASE_URL + '/functions/v1/send-invite', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': cfg.SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + cfg.SUPABASE_ANON_KEY,
+                    },
+                    body: JSON.stringify({
+                        trip_id: trip.id,
+                        trip_name: trip.name,
+                        email,
+                        sender_name: (window._trippinUser && window._trippinUser.firstName) || '',
+                    }),
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Erro ao enviar convite');
+                const p = { id: data.token || uid(), email, channel: 'email', status: 'pending-response', sentAt: new Date().toISOString().slice(0, 10) };
+                update({ ...trip, pendingInvites: [...(trip.pendingInvites || []), p] });
                 setEmail('');
                 toast(t.inviteSent);
                 return;
-            }
-            catch (err) {
+            } catch (err) {
                 toast('⚠ ' + ((err && err.message) || 'falha no envio'));
                 return;
             }
         }
-        // Caminho 2 (sem backend): grava só localmente para fins de demo
+        // Fallback sem backend: grava só localmente
         const p = { id: uid(), email, channel: 'email', status: 'pending-response', sentAt: today() };
         update({ ...trip, pendingInvites: [...(trip.pendingInvites || []), p] });
         setEmail('');
@@ -3017,9 +3031,10 @@ function App() {
     // persist
     useEffect(() => { if (lang || user || trips)
         save({ lang, user, trips, notifs, settings }); }, [lang, user, trips, notifs, settings]);
-    // seed trips on first profile creation
+    useEffect(() => { window._trippinUser = user; }, [user]);
+    // start with empty trips list on first profile creation
     useEffect(() => { if (user && trips === null) {
-        setTrips([seedTrip()]);
+        setTrips([]);
     } }, [user]);
     // aplica o tema (claro/escuro)
     useEffect(() => { const r = document.getElementById('root'); if (r)
