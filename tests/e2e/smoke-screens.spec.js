@@ -35,6 +35,7 @@ async function assertNotBlank(page, contextLabel) {
 
 test.describe('Smoke · todas as telas renderizam sem quebrar', () => {
   test('percorre onboarding, abas da viagem e telas de sistema', async ({ page }) => {
+    test.slow(); // jornada longa (6 abas + menu + config): triplica o tempo limite
     const criticalErrors = trackErrors(page);
 
     // ── Onboarding ──────────────────────────────────────────────

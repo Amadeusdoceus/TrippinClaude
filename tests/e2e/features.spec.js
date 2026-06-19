@@ -46,6 +46,27 @@ test.describe('Safe area (corte de tela no APK)', () => {
   });
 });
 
+// ── #1/#7 LARGURA TOTAL NO CELULAR (sem bordas brancas laterais) ──────────────
+test.describe('Largura total no celular', () => {
+  test('#root e a bottombar ocupam toda a largura da viewport', async ({ page }) => {
+    await page.goto('/');
+    await selectLanguage(page);
+    await registerUser(page, { firstName: 'Largura' });
+
+    const vw = await page.evaluate(() => window.innerWidth);
+    const rootW = await page.evaluate(() => document.getElementById('root').getBoundingClientRect().width);
+    // no viewport mobile (Pixel 5 ≈ 393px) o root deve preencher tudo — sem faixas claras
+    expect(Math.abs(rootW - vw), 'sobra de largura nas laterais do #root').toBeLessThanOrEqual(1);
+
+    // a barra inferior também deve ir de ponta a ponta
+    const barW = await page.evaluate(() => {
+      const b = document.querySelector('.bottombar');
+      return b ? b.getBoundingClientRect().width : 0;
+    });
+    expect(Math.abs(barW - vw), 'a bottombar não alcança as bordas').toBeLessThanOrEqual(1);
+  });
+});
+
 // ── #2/#4/#6 MODAIS E PAINEL (sem overlay preto, blur) ────────────────────────
 test.describe('Estilo de modais e painel', () => {
   test('overlay/modal usam backdrop-filter (blur) em vez de fundo preto', async ({ page }) => {

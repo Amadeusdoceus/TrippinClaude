@@ -23,9 +23,15 @@
   html,body{margin:0;padding:0}
   body{font-family:'Inter',system-ui,sans-serif;background:#E9E5DC;color:var(--ink);
     display:flex;justify-content:center;min-height:100vh}
-  #root{width:100%;max-width:430px;background:var(--sand);min-height:100vh;min-height:100dvh;
-    box-shadow:0 0 60px rgba(0,0,0,.12);position:relative;overflow:hidden;
+  #root{width:100%;background:var(--sand);min-height:100vh;min-height:100dvh;
+    position:relative;overflow:hidden;
     padding-top:env(safe-area-inset-top,0px)}
+  /* celular: ocupa a largura toda (sem bordas claras nas laterais).
+     desktop: centraliza num cartão de 430px com sombra. */
+  @media (min-width:700px){
+    #root{max-width:430px;box-shadow:0 0 60px rgba(0,0,0,.12)}
+    .bottombar{max-width:430px}
+  }
   h1,h2,h3,h4,.display{font-family:'Sora',sans-serif;margin:0}
   .mono{font-family:'JetBrains Mono',monospace}
   button{font-family:inherit;cursor:pointer;border:none;background:none}
@@ -324,7 +330,7 @@
 
   /* ===== Barra inferior de navegação ===== */
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
-  .bottombar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+  .bottombar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;
     background:var(--card);display:flex;align-items:center;justify-content:space-around;
     padding:9px 26px calc(12px + env(safe-area-inset-bottom,0px));z-index:46;border-radius:22px 22px 0 0;border-top:1px solid var(--line);
     box-shadow:0 -6px 22px rgba(20,33,61,.10)}
