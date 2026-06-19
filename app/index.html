@@ -2637,9 +2637,26 @@ function MembersTab({ t, trip, update, toast }) {
     const meIsAdmin = (trip.members || []).some(m => m.id === 'me' && m.isAdmin);
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     const today = () => new Date().toISOString().slice(0, 10);
+    const openMailto = () => {
+        const appUrl = (window.TRIPPIN_CONFIG || {}).APP_URL || 'https://amadeusdoceus.github.io/TrippinClaude';
+        const senderName = (window._trippinUser && (window._trippinUser.firstName || window._trippinUser.name)) || 'Um amigo';
+        const subject = encodeURIComponent('Convite para ' + trip.name + ' no Trippin');
+        const body = encodeURIComponent(
+            'Olá!\n\n' +
+            senderName + ' te convidou para participar da viagem "' + trip.name + '" no Trippin.\n\n' +
+            'Acesse o app e crie sua conta para participar:\n' + appUrl + '\n\n' +
+            'Nos vemos lá! ✈️'
+        );
+        window.open('mailto:' + email + '?subject=' + subject + '&body=' + body);
+    };
     const invite = async () => {
         if (!emailOk) return;
         const cfg = window.TRIPPIN_CONFIG || {};
+        const registerInvite = (token) => {
+            const p = { id: token || uid(), email, channel: 'email', status: 'pending-response', sentAt: today() };
+            update({ ...trip, pendingInvites: [...(trip.pendingInvites || []), p] });
+            setEmail('');
+        };
         if (cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
             try {
                 const resp = await fetch(cfg.SUPABASE_URL + '/functions/v1/send-invite', {
@@ -2657,22 +2674,28 @@ function MembersTab({ t, trip, update, toast }) {
                     }),
                 });
                 const data = await resp.json();
-                if (!resp.ok) throw new Error(data.error || 'Erro ao enviar convite');
-                const p = { id: data.token || uid(), email, channel: 'email', status: 'pending-response', sentAt: new Date().toISOString().slice(0, 10) };
-                update({ ...trip, pendingInvites: [...(trip.pendingInvites || []), p] });
-                setEmail('');
-                toast(t.inviteSent);
+                if (resp.ok && data.ok) {
+                    registerInvite(data.token);
+                    toast(t.inviteSent);
+                    return;
+                }
+                // Se o servidor falhou (ex: domínio não verificado no Resend), abre mailto
+                registerInvite();
+                openMailto();
+                toast('📧 Abrindo seu e-mail para enviar o convite…');
                 return;
-            } catch (err) {
-                toast('⚠ ' + ((err && err.message) || 'falha no envio'));
+            } catch (_err) {
+                // Sem conexão ou erro inesperado — abre mailto como fallback
+                registerInvite();
+                openMailto();
+                toast('📧 Abrindo seu e-mail para enviar o convite…');
                 return;
             }
         }
-        // Fallback sem backend: grava só localmente
-        const p = { id: uid(), email, channel: 'email', status: 'pending-response', sentAt: today() };
-        update({ ...trip, pendingInvites: [...(trip.pendingInvites || []), p] });
-        setEmail('');
-        toast(t.inviteSent);
+        // Sem backend: abre mailto diretamente
+        registerInvite();
+        openMailto();
+        toast('📧 Abrindo seu e-mail para enviar o convite…');
     };
     const toggleAdmin = id => update({ ...trip, members: trip.members.map(m => m.id === id ? { ...m, isAdmin: !m.isAdmin } : m) });
     const remove = id => { update({ ...trip, members: trip.members.filter(m => m.id !== id) }); setOpenId(null); };
