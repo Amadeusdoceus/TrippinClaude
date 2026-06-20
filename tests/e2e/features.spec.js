@@ -67,9 +67,9 @@ test.describe('Largura total no celular', () => {
   });
 });
 
-// ── #2/#4/#6 MODAIS E PAINEL (sem overlay preto, blur) ────────────────────────
+// ── MODAIS E PAINEL: sem blur (mostra a tela atrás, sem borrão) ───────────────
 test.describe('Estilo de modais e painel', () => {
-  test('overlay/modal usam backdrop-filter (blur) em vez de fundo preto', async ({ page }) => {
+  test('overlay/modal/sheet NÃO usam blur — só o pop-up aparece sobre a tela', async ({ page }) => {
     await page.goto('/');
     const hasBlur = await page.evaluate(() => {
       let blur = false;
@@ -77,13 +77,13 @@ test.describe('Estilo de modais e painel', () => {
         let rules;
         try { rules = sheet.cssRules; } catch (_) { continue; }
         for (const r of Array.from(rules || [])) {
-          if (r.selectorText && /\.(overlay|modal)\b/.test(r.selectorText) &&
-              /backdrop-filter/.test(r.cssText)) blur = true;
+          if (r.selectorText && /\.(overlay|modal|sheet)\b/.test(r.selectorText) &&
+              /backdrop-filter\s*:\s*blur/.test(r.cssText)) blur = true;
         }
       }
       return blur;
     });
-    expect(hasBlur, '.overlay/.modal deveriam usar backdrop-filter: blur').toBe(true);
+    expect(hasBlur, '.overlay/.modal/.sheet não devem ter backdrop-filter: blur').toBe(false);
   });
 });
 
@@ -107,6 +107,67 @@ test.describe('Aba Mapa — visualização de pins', () => {
     // o mapa de pins renderiza a seção de lugares (substituindo o Google Maps)
     await expect(page.locator('text=Lugares por onde você vai passar')).toBeVisible();
     expect(criticalErrors()).toHaveLength(0);
+  });
+});
+
+// ── NOTIFICAÇÕES: aba lateral à direita (~metade) + boas-vindas ──────────────
+test.describe('Notificações — aba lateral à direita', () => {
+  test('abre como drawer no canto direito (~metade da tela) com boas-vindas', async ({ page }) => {
+    await page.goto('/');
+    await selectLanguage(page);
+    await registerUser(page, { firstName: 'Drawer' });
+
+    await page.evaluate(() => {
+      const b = Array.from(document.querySelectorAll('button')).find(el => /🔔/.test(el.textContent));
+      b && b.click();
+    });
+    await page.waitForTimeout(300);
+
+    const panel = page.locator('.notifpanel');
+    await expect(panel).toBeVisible();
+    expect(await panel.innerText(), 'notificação de boas-vindas').toMatch(/Bem-vindo/i);
+
+    const geo = await page.evaluate(() => {
+      const root = document.getElementById('root').getBoundingClientRect();
+      const p = document.querySelector('.notifpanel').getBoundingClientRect();
+      return { rootRight: root.right, rootW: root.width, vh: window.innerHeight, pRight: p.right, pW: p.width, pH: p.height };
+    });
+    expect(Math.abs(geo.pRight - geo.rootRight), 'colado à borda direita').toBeLessThanOrEqual(2);
+    expect(geo.pW, 'largura ~metade da tela').toBeLessThanOrEqual(geo.rootW * 0.62);
+    expect(geo.pH, 'altura quase cheia').toBeGreaterThanOrEqual(geo.vh * 0.9);
+  });
+});
+
+// ── MAPA: pinos com cidade + ícone do modo de transporte entre trechos ───────
+test.describe('Aba Mapa — pinos e ícone de transporte', () => {
+  test('cidades viram pinos e o trecho mostra o ícone do transporte (avião)', async ({ page }) => {
+    // semeia uma viagem com 2 destinos + passagem de avião Lisboa→Barcelona
+    await page.addInitScript(() => {
+      const trip = {
+        id: 'tmap', name: 'MapaTrip', startDate: '2026-07-10', endDate: '2026-07-20', status: 'active',
+        destinations: [{ name: 'Lisboa, Portugal', date: '2026-07-10' }, { name: 'Barcelona, Espanha', date: '2026-07-14' }],
+        members: [{ id: 'me', name: 'Você', isAdmin: true, joinVia: 'creator', joinedAt: '2026-05-01' }],
+        activities: [],
+        docs: [{ id: 'd1', cat: 'tickets', sub: 'Avião', name: 'voo', file: 'voo.pdf',
+                 seg: { fromCity: 'Lisboa', toCity: 'Barcelona', depDate: '2026-07-11', depTime: '10:00', arrDate: '2026-07-11', arrTime: '12:00' } }],
+        gallery: [], expenses: [],
+      };
+      const state = { lang: 'pt-BR', user: { firstName: 'Map', name: 'Map Tester' }, trips: [trip],
+        settings: { notifications: true, theme: 'light', shareLocation: false }, notifs: [] };
+      localStorage.setItem('trippin_v1', JSON.stringify(state));
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => document.body.innerText.includes('MapaTrip'));
+    await page.locator('text=MapaTrip').first().click();
+    await page.waitForTimeout(300);
+    await clickButton(page, 'Mapa');
+    await page.waitForTimeout(300);
+
+    await expect(page.locator('.mapcanvas')).toBeVisible();
+    const txt = await page.locator('.mapcanvas').innerText();
+    expect(txt, 'cidade de origem').toContain('Lisboa');
+    expect(txt, 'cidade de destino').toContain('Barcelona');
+    expect(txt, 'ícone de avião no trecho').toContain('✈️');
   });
 });
 

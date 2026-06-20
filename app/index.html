@@ -271,13 +271,32 @@
     max-width:430px;display:flex;gap:10px;padding:14px 16px;background:linear-gradient(transparent,var(--sand) 30%)}
 
   /* drawer + notif overlay */
-  .overlay{position:fixed;inset:0;max-width:430px;left:50%;transform:translateX(-50%);
-    background:rgba(20,33,61,.18);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:50;animation:fade .2s}
+  .overlay{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+    background:rgba(20,33,61,.10);z-index:50;animation:fade .2s}
   .drawer{position:absolute;top:0;left:0;bottom:0;width:78%;max-width:320px;background:var(--sand);
     box-shadow:8px 0 30px rgba(0,0,0,.2);animation:slideL .25s ease;display:flex;flex-direction:column}
-  .notifpanel{position:absolute;top:66px;right:0;left:auto;bottom:80px;width:88%;max-width:340px;background:var(--sand);
-    box-shadow:-4px 0 24px rgba(20,33,61,.18);animation:slideR .8s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;
-    border-radius:16px 0 0 16px;overflow:hidden}
+  /* notificações: aba lateral ancorada à direita, ocupando ~metade da tela e altura cheia */
+  .notifpanel{position:absolute;top:0;right:0;left:auto;bottom:0;width:50%;min-width:208px;max-width:300px;background:var(--sand);
+    box-shadow:-6px 0 30px rgba(20,33,61,.28);animation:slideR .3s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;
+    border-radius:18px 0 0 18px;overflow:hidden}
+  .notifpanel .appbar{padding:12px 10px}
+  .notifpanel .ttl{font-size:13px;padding:6px 10px;max-width:none}
+  /* map canvas (aba Mapa) — fundo claro estilo mapa com pinos e ícone de transporte */
+  .mapcanvas{position:relative;background:#e8f1fb;
+    background-image:radial-gradient(rgba(91,141,239,.20) 1.1px,transparent 1.6px);
+    background-size:15px 15px;border-radius:16px;padding:20px 8px 14px;overflow-x:auto;overflow-y:hidden}
+  .maprow{display:flex;align-items:flex-start;min-width:min-content}
+  .mapstop{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;width:84px;text-align:center}
+  .mappin{cursor:pointer;line-height:0;filter:drop-shadow(0 3px 5px rgba(20,33,61,.22))}
+  .mapcity{margin-top:6px;background:#fff;border-radius:8px;padding:3px 7px;font-size:11px;font-weight:700;color:var(--ink);
+    max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 1px 3px rgba(20,33,61,.12)}
+  .maprole{margin-top:3px;font-size:8.5px;color:#5a6b86;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .mapconn{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;flex:0 0 auto;width:44px;padding-top:9px}
+  .mapconn .ic{font-size:17px;line-height:1;margin-bottom:3px;height:18px}
+  .mapconn .ln{width:100%;border-top:2.5px dashed #5B8DEF;opacity:.7}
+  #root[data-theme="dark"] .mapcanvas{background:#16243e;background-image:radial-gradient(rgba(120,160,230,.18) 1.1px,transparent 1.6px)}
+  #root[data-theme="dark"] .mapcity{background:var(--card);color:#e8edf6}
+  #root[data-theme="dark"] .maprole{color:#9fb0cc}
   .drawer .dh{background:var(--deep);color:#fff;padding:22px 18px}
   .drawer .dh .ava{width:54px;height:54px;font-size:20px;margin-bottom:10px}
   .navitem{display:flex;align-items:center;gap:13px;padding:15px 18px;font-size:15px;font-weight:500;color:var(--ink)}
@@ -291,8 +310,8 @@
   .notifitem .dismiss{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#f1ede4;color:var(--muted);font-size:11px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;line-height:1}
 
   /* modal */
-  .modal{position:fixed;inset:0;max-width:430px;left:50%;transform:translateX(-50%);
-    background:rgba(20,33,61,.2);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:60;display:flex;align-items:center;justify-content:center;
+  .modal{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+    background:rgba(20,33,61,.12);z-index:60;display:flex;align-items:center;justify-content:center;
     padding:16px;animation:fade .2s}
   .modalbox{background:#fff;border-radius:24px;padding:24px 20px;width:100%;animation:pop .2s ease;text-align:center;
     box-shadow:0 16px 48px rgba(20,33,61,.22)}
@@ -466,7 +485,7 @@
   #root[data-theme="dark"] .sectiontitle{color:var(--ink)}
   #root[data-theme="dark"] .bottombar{border-top-color:var(--line)}
   #root[data-theme="dark"] .bnav.center{border-color:var(--card)}
-  .sheet{position:absolute;left:14px;right:14px;top:50%;transform:translateY(-50%);background:var(--sand);border-radius:22px;padding:20px;animation:pop .22s ease;z-index:61;box-shadow:0 16px 48px rgba(20,33,61,.22)}
+  .sheet{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);background:var(--sand);border-radius:22px;padding:22px 18px;animation:pop .22s ease;z-index:61;box-shadow:0 18px 52px rgba(20,33,61,.30)}
   .sheeth{font-family:'Sora';font-weight:700;font-size:15px;margin-bottom:12px}
   .srcopt{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;text-align:left}
   .srcopt .si{width:42px;height:42px;border-radius:11px;background:#eef2f7;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
@@ -1814,49 +1833,52 @@ function WeekView({ t, trip, curDay, openDay }) {
         })));
 }
 /* --- Mapa inline: Google Maps (ou Leaflet se sem key) embutido diretamente na aba --- */
-function DestPinMap({ pts, trip, t, goGallery }) {
-    const albums = (trip && trip.albums) || [];
-    const gallery = (trip && trip.gallery) || [];
-    const imgsOf = id => gallery.filter(g => g.album === id);
-    const findAlbum = city => albums.find(a =>
-        (a.name || '').toLowerCase() === (city || '').toLowerCase() ||
-        (a.id || '').toLowerCase() === (city || '').toLowerCase());
+/* modo de transporte (a partir da categoria/sub do anexo) -> ícone */
+function modeIcon(mode) {
+    const m = (mode || '').toString().toLowerCase();
+    if (/avi[aã]|fly|flight|plane|a[ée]re/.test(m)) return '✈️';
+    if (/trem|train|rail/.test(m)) return '🚆';
+    if (/[ôo]nibus|bus|coach/.test(m)) return '🚌';
+    if (/carro|car|drive|auto|uber/.test(m)) return '🚗';
+    if (/moto/.test(m)) return '🏍️';
+    return null;
+}
+function DestPinMap({ pts, segs, t, goGallery }) {
     const n = pts.length;
     if (!n) return React.createElement('div', { className: 'card', style: { textAlign: 'center', padding: '32px 20px', color: 'var(--muted)' } },
         React.createElement('div', { style: { fontSize: 36, marginBottom: 10 } }, '🗺️'),
         React.createElement('div', { style: { fontSize: 14 } }, 'Adicione destinos para visualizar o mapa da viagem'));
-    return React.createElement('div', { className: 'card', style: { padding: '16px 12px', marginBottom: 0 } },
-        React.createElement('div', { style: { position: 'relative' } },
-            n > 1 && React.createElement('div', { style: { position: 'absolute', top: 33, left: '8%', right: '8%', height: 3, borderRadius: 2,
-                background: 'linear-gradient(to right,#F4A259,#1A2B4A 50%,#5B8DEF)', zIndex: 0 } }),
-            React.createElement('div', { style: { display: 'flex', overflowX: 'auto', gap: 0, paddingBottom: 8, scrollbarWidth: 'none' } },
-                pts.map((p, i) => {
-                    const isFirst = i === 0, isLast = i === n - 1;
-                    const color = isFirst ? '#F4A259' : isLast ? '#5B8DEF' : '#1A2B4A';
-                    const album = findAlbum(p.city);
-                    const imgs = album ? imgsOf(album.id) : [];
-                    const cover = imgs[0];
-                    const roleLabel = isFirst ? 'Origem' : isLast ? 'Destino' : 'Parada';
-                    return React.createElement('div', { key: i, style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                        flex: '1 0 0', minWidth: 72, maxWidth: 100, position: 'relative', zIndex: 1 } },
-                        React.createElement('div', { style: { width: 66, height: 66, borderRadius: 14, overflow: 'hidden',
-                            border: '3px solid ' + color, background: '#f1ede4', cursor: 'pointer', position: 'relative',
-                            boxShadow: '0 3px 12px rgba(20,33,61,.15)' },
-                            onClick: () => goGallery && goGallery('gallery') },
-                            cover
-                                ? React.createElement('img', { src: cover.src, alt: p.city, style: { width: '100%', height: '100%', objectFit: 'cover' } })
-                                : React.createElement('div', { style: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 } },
-                                    isFirst ? '🟠' : isLast ? '🔵' : '⚪'),
-                            React.createElement('button', { style: { position: 'absolute', bottom: 3, right: 3, width: 20, height: 20,
-                                borderRadius: 10, background: color, color: '#fff', fontSize: 14, fontWeight: 800,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none',
-                                cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,.3)', lineHeight: 1 },
-                                onClick: e => { e.stopPropagation(); goGallery && goGallery('gallery'); } }, '+')),
-                        React.createElement('div', { style: { fontSize: 10.5, fontWeight: 700, color: 'var(--ink)', textAlign: 'center',
-                            lineHeight: 1.2, maxWidth: 72, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, p.city),
-                        React.createElement('div', { style: { fontSize: 9, color: 'var(--muted)', fontWeight: 700,
-                            textTransform: 'uppercase', letterSpacing: '0.04em' } }, roleLabel));
-                }))));
+    const norm = c => (c || '').toString().trim().toLowerCase();
+    const segList = segs || [];
+    // ícone do trecho entre duas cidades, conforme o anexo (passagem) que liga as duas
+    const legMode = (a, b) => {
+        const na = norm(a), nb = norm(b);
+        const s = segList.find(g => norm(g.fromCity) === na && norm(g.toCity) === nb)
+            || segList.find(g => na && nb && norm(g.fromCity).includes(na) && norm(g.toCity).includes(nb));
+        return s ? modeIcon(s.mode) : null;
+    };
+    const pinSvg = color => React.createElement('svg', { width: 30, height: 38, viewBox: '0 0 24 32', 'aria-hidden': true },
+        React.createElement('path', { d: 'M12 0C5.37 0 0 5.37 0 12c0 8.5 12 20 12 20s12-11.5 12-20C24 5.37 18.63 0 12 0z', fill: color }),
+        React.createElement('circle', { cx: 12, cy: 12, r: 4.6, fill: '#fff' }));
+    const children = [];
+    pts.forEach((p, i) => {
+        const isFirst = i === 0, isLast = i === n - 1;
+        const color = isFirst ? '#F4A259' : isLast ? '#5B8DEF' : '#1A2B4A';
+        const role = isFirst ? 'Origem' : isLast ? 'Destino' : 'Parada';
+        children.push(React.createElement('div', { key: 'p' + i, className: 'mapstop' },
+            React.createElement('div', { className: 'mappin', onClick: () => goGallery && goGallery('gallery') }, pinSvg(color)),
+            React.createElement('div', { className: 'mapcity', title: p.city }, p.city),
+            React.createElement('div', { className: 'maprole' }, role)));
+        if (i < n - 1) {
+            const ic = legMode(pts[i].city, pts[i + 1].city);
+            children.push(React.createElement('div', { key: 'c' + i, className: 'mapconn' },
+                React.createElement('div', { className: 'ic' }, ic || ''),
+                React.createElement('div', { className: 'ln' })));
+        }
+    });
+    return React.createElement('div', { className: 'card', style: { padding: '14px 10px', marginBottom: 0 } },
+        React.createElement('div', { className: 'mapcanvas' },
+            React.createElement('div', { className: 'maprow' }, children)));
 }
 /* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
 function MapTab({ t, trip, update, toast, goTab }) {
@@ -1893,9 +1915,9 @@ function MapTab({ t, trip, update, toast, goTab }) {
     const segs = [];
     (trip.docs || []).forEach(d => {
         if (d.itin && d.itin.legs)
-            d.itin.legs.forEach(lg => segs.push({ fromCity: lg.from.city, toCity: lg.to.city, depDate: lg.depDate, depTime: lg.depTime, arrDate: lg.arrDate, arrTime: lg.arrTime, iata: lg.from.iata + '→' + lg.to.iata }));
+            d.itin.legs.forEach(lg => segs.push({ fromCity: lg.from.city, toCity: lg.to.city, depDate: lg.depDate, depTime: lg.depTime, arrDate: lg.arrDate, arrTime: lg.arrTime, iata: lg.from.iata + '→' + lg.to.iata, mode: d.sub }));
         else if (d.seg)
-            segs.push(d.seg);
+            segs.push({ ...d.seg, mode: d.seg.mode || d.sub });
     });
     segs.sort((a, b) => ((a.depDate || '') + (a.depTime || '')).localeCompare((b.depDate || '') + (b.depTime || '')));
     const stops = [];
@@ -1904,8 +1926,8 @@ function MapTab({ t, trip, update, toast, goTab }) {
             return;
         if ((ov.hidden || []).includes(city))
             return;
-        const last = stops[stops.length - 1];
-        if (!last || last.city !== city)
+        // lugares únicos, na ordem da primeira passagem (evita rota "dobrada" por empate de datas)
+        if (!stops.some(s => s.city === city))
             stops.push({ city, date });
     };
     const allPts = [];
@@ -1919,7 +1941,7 @@ function MapTab({ t, trip, update, toast, goTab }) {
     const ys = i => 55 + (i % 2 === 0 ? -15 : 15);
     const citiesOrdered = pts.map(p => dn(p.city)).filter(c => c && c !== 'A definir');
     return (React.createElement("div", null,
-        React.createElement(DestPinMap, { pts: pts, trip: trip, t: t, goGallery: goTab }),
+        React.createElement(DestPinMap, { pts: pts, segs: segs, t: t, goGallery: goTab }),
         React.createElement("div", { style: { display: 'flex', gap: 8, marginTop: 10 } },
             React.createElement("button", { className: "btn btn-dark", style: { flex: 1 }, onClick: locateMe, disabled: locating }, locating ? '⏳ ' + t.locating : '📍 ' + t.useMyLoc)),
         React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: gmapsRoute }, "🧭 " + t.openGmaps),
@@ -3073,7 +3095,7 @@ function NotifPanel({ t, notifs, onClose, onAct, onDismiss }) {
                     React.createElement("p", null, n.text),
                     React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
                         React.createElement("span", { className: "nt" }, n.time),
-                        !n.read && React.createElement("button", { className: "joinbtn", onClick: () => onAct(n.id) }, n.action || 'Ver')))))))));
+                        !n.read && n.action && React.createElement("button", { className: "joinbtn", onClick: () => onAct(n.id) }, n.action)))))))));
 }
 /* ---------------- ROOT APP ---------------- */
 function App() {
@@ -3090,8 +3112,7 @@ function App() {
     const [delTrip, setDelTrip] = useState(null);
     const [settings, setSettings] = useState(persisted.settings || { notifications: true, theme: 'light', shareLocation: false });
     const [notifs, setNotifs] = useState(persisted.notifs || [
-        { id: 'n1', text: 'Marina alterou a despesa "Hotel Lisboa" para € 420. Justificativa: ajuste 3 noites.', time: 'há 2h', read: false, action: 'Revisar' },
-        { id: 'n2', text: 'João Pedro ingressou na viagem Eurotrip 2026.', time: 'ontem', read: false, action: 'Ver' },
+        { id: 'welcome', text: 'Bem-vindo ao Trippin! ✈️ Crie sua viagem, anexe passagens e reservas, e acompanhe seu roteiro no mapa.', time: 'agora', read: false, action: null },
     ]);
     // persist
     useEffect(() => { if (lang || user || trips)

@@ -49,18 +49,39 @@ const DARK  = [20, 33, 61];   // #14213D
 const CORAL = [255, 107, 92]; // #FF6B5C
 const WHITE = [255, 255, 255];
 
-// Ícone 1024×1024: fundo escuro + círculo coral central
+// Silhueta de avião (apontando para cima) em espaço 0..100, centrada em x=50.
+// União de 3 polígonos: fuselagem, asas (enflechadas) e empenagem.
+const PLANE = [
+    [[50, 16], [54, 26], [53, 70], [50, 80], [47, 70], [46, 26]], // fuselagem
+    [[50, 40], [86, 62], [50, 54], [14, 62]],                     // asas
+    [[50, 66], [66, 80], [50, 75], [34, 80]],                     // cauda
+];
+function pointInPoly(px, py, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+        if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi))
+            inside = !inside;
+    }
+    return inside;
+}
+function planeHit(px, py) { return PLANE.some(poly => pointInPoly(px, py, poly)); }
+
+// Ícone 1024×1024: fundo escuro + disco coral + avião branco (identifica o app na tela)
 function iconDraw(x, y, w, h) {
-    const cx = w / 2, cy = h / 2, r = w * 0.38;
-    const dx = x - cx, dy = y - cy;
-    if (dx * dx + dy * dy < r * r) return CORAL;
+    const s = w / 100, px = x / s, py = y / s;
+    if (planeHit(px, py)) return WHITE;
+    const dx = px - 50, dy = py - 50;
+    if (dx * dx + dy * dy < 42 * 42) return CORAL;
     return DARK;
 }
 
-// Splash 1284×2778: fundo escuro + faixa coral no centro
+// Splash: fundo escuro + avião coral centralizado
 function splashDraw(x, y, w, h) {
-    const band = Math.abs(y - h / 2) < h * 0.05;
-    return band ? CORAL : DARK;
+    const size = w * 0.34, ox = w / 2 - size / 2, oy = h / 2 - size / 2;
+    const px = (x - ox) / size * 100, py = (y - oy) / size * 100;
+    if (px >= 0 && px <= 100 && py >= 0 && py <= 100 && planeHit(px, py)) return CORAL;
+    return DARK;
 }
 
 fs.writeFileSync('assets/icon.png',          makePNG(1024, 1024, DARK, iconDraw));
