@@ -35,7 +35,9 @@
         "WRITE_EXTERNAL_STORAGE"
       ]
     },
-    "plugins": [],
+    "plugins": [
+      "expo-asset"
+    ],
     "extra": {
       "eas": {
         "projectId": "9ae0d2f8-3ac5-4552-a7ff-f45a5fbbab53"
