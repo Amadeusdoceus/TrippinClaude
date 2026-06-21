@@ -352,3 +352,43 @@ test.describe('Pop-ups — sem salto do canto direito', () => {
     expect(res.sheetAnim || '', 'sheet deve animar com popsheet').toContain('popsheet');
   });
 });
+
+// ── ADICIONAR ETAPAS COM DATA NULA — não pode dar tela branca ─────────────────
+test.describe('Roteiro → cronograma com datas nulas (sem tela branca)', () => {
+  test('adicionar etapas de um itin com datas nulas não derruba o app', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.addInitScript(() => {
+      const itin = { legs: [
+        { flight: '1714', from: { iata: 'LUX', city: 'Luxemburgo', airport: 'Findel' }, to: { iata: 'AMS', city: 'Amsterdã', airport: 'Schiphol' }, depTime: '18:25', arrTime: '19:35', depDate: null, arrDate: null, duration: null },
+        { flight: '1981', from: { iata: 'AMS', city: 'Amsterdã', airport: 'Schiphol' }, to: { iata: 'DBV', city: 'Dubrovnik', airport: 'Boskovic' }, depTime: '21:00', arrTime: '23:25', depDate: null, arrDate: null, duration: null },
+      ], stages: [
+        { kind: 'origin', city: 'Luxemburgo', airport: 'Findel', iata: 'LUX', depTime: '18:25', depDate: null, flight: '1714' },
+        { kind: 'layover', city: 'Amsterdã', airport: 'Schiphol', iata: 'AMS', arrTime: '19:35', depTime: '21:00', arrDate: null, depDate: null },
+        { kind: 'destination', city: 'Dubrovnik', airport: 'Boskovic', iata: 'DBV', arrTime: '23:25', arrDate: null, flight: '1981' },
+      ] };
+      const trip = { id: 'tx', name: 'NullDateTrip', startDate: '2026-06-30', endDate: '2026-07-10', status: 'active',
+        destinations: [{ name: 'São Paulo, Brasil', date: '2026-06-30' }],
+        members: [{ id: 'me', name: 'Você', isAdmin: true, joinVia: 'creator', joinedAt: '2026-05-01' }],
+        activities: [], docs: [{ id: 'dx', cat: 'tickets', sub: 'Avião', name: 'voo', file: 'voo.jpg', itin }], gallery: [], expenses: [] };
+      localStorage.setItem('trippin_v1', JSON.stringify({ lang: 'pt-BR', user: { firstName: 'X', name: 'X' }, trips: [trip], settings: { notifications: true, theme: 'light', shareLocation: false }, notifs: [] }));
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => document.body.innerText.includes('NullDateTrip'));
+    await page.locator('text=NullDateTrip').first().click();
+    await page.waitForTimeout(300);
+    await clickButton(page, 'Docs');
+    await page.waitForTimeout(300);
+    await clickButton(page, 'Ver roteiro');
+    await page.waitForTimeout(300);
+    await clickButton(page, 'Adicionar etapas ao cronograma'); // abre o modal de confirmação
+    await page.waitForTimeout(300);
+    // confirma no modal
+    await page.evaluate(() => { const x = Array.from(document.querySelectorAll('.modal button')).find(e => /Adicionar etapas/i.test(e.textContent)); x && x.click(); });
+    await page.waitForTimeout(400);
+
+    const rootEmpty = await page.evaluate(() => (document.getElementById('root').innerText || '').trim().length === 0);
+    expect(rootEmpty, 'tela branca: #root ficou vazio ao adicionar etapas').toBe(false);
+    expect(errors.filter(e => !isKnownError(e)), 'erro de runtime ao montar o cronograma').toHaveLength(0);
+  });
+});

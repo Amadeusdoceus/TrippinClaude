@@ -1597,18 +1597,28 @@ function parseLodging(text) {
     return { name: name || null, city: city || null, address: address || null, host: host || null, price: price || null,
         ciDate: ci, ciTime: ciT, coDate: co, coTime: coT, nights, guests: guestsM ? +guestsM[1] : null, code: code || null };
 }
-// OCR de imagem (prints de hospedagem) via Tesseract.js — carregado SOB DEMANDA (não bloqueia o app)
-async function imageToText(file) {
-    if (typeof Tesseract === 'undefined') {
+// OCR de imagem via Tesseract.js — carregado SOB DEMANDA (não bloqueia o app).
+// Worker persistente + idioma único ('por'): evita reinicializar e baixar o
+// modelo do inglês a cada leitura (muito mais rápido, sobretudo no celular).
+let _ocrWorker = null;
+async function getOcrWorker() {
+    if (_ocrWorker)
+        return _ocrWorker;
+    if (typeof Tesseract === 'undefined')
         await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js');
-    }
     if (typeof Tesseract === 'undefined')
         throw new Error('OCR indisponível');
-    // upscale: prints costumam ser pequenos; ampliar melhora bastante o OCR
+    // createWorker(lang) já baixa+inicializa o idioma; o modelo fica em cache (IndexedDB)
+    _ocrWorker = await Tesseract.createWorker('por');
+    return _ocrWorker;
+}
+async function imageToText(file) {
+    const worker = await getOcrWorker();
+    // upscale moderado: prints pequenos lêem melhor ampliados, sem explodir o custo
     let input = file;
     try {
         const img = await createImageBitmap(file);
-        const scale = Math.min(2.5, Math.max(1, 1700 / Math.max(img.width, img.height)));
+        const scale = Math.min(2, Math.max(1, 1500 / Math.max(img.width, img.height)));
         if (scale > 1.05) {
             const c = document.createElement('canvas');
             c.width = Math.round(img.width * scale);
@@ -1621,7 +1631,7 @@ async function imageToText(file) {
         }
     }
     catch (e) { /* sem upscale: usa o arquivo original */ }
-    const { data } = await Tesseract.recognize(input, 'por+eng');
+    const { data } = await worker.recognize(input);
     return data.text || '';
 }
 const STAGE_COL = { origin: '#2DB5A3', layover: '#F4A259', destination: '#5B8DEF' };
@@ -2252,20 +2262,26 @@ function DocsTab({ t, trip, update, toast, goTab }) {
     // ROTEIRO INTERPRETADO -> cria um card de PARTIDA e um de CHEGADA por trecho, em CADA data correta
     const buildStageBlocks = (d) => {
         const legs = d.itin.legs;
+        // fallbacks: datas/horas podem vir nulas do OCR (parser solto). Sem isso,
+        // uma data nula derruba o app ao montar o cronograma (tela branca).
+        const fallbackDate = (legs.map(l => l.depDate || l.arrDate).find(Boolean)) || trip.startDate || trip.endDate;
+        const dt = v => v || fallbackDate;
+        const tm = v => v || '00:00';
+        const fl = v => v ? (t.flight + ' ' + v) : '';
         const blocks = [];
         legs.forEach((lg, i) => {
-            const isLay = i > 0; // chegada deste trecho num aeroporto de escala
-            blocks.push({ id: uid(), docId: d.id, date: lg.depDate, start: lg.depTime, end: addMin(lg.depTime, 40),
+            const depDate = dt(lg.depDate), arrDate = dt(lg.arrDate), depT = tm(lg.depTime), arrT = tm(lg.arrTime);
+            blocks.push({ id: uid(), docId: d.id, date: depDate, start: depT, end: addMin(depT, 40),
                 title: '✈️ ' + t.departure + ' — ' + lg.from.city + ' (' + lg.from.iata + ')', type: 'typeTransport', loc: lg.from.airport,
-                desc: t.departure + ' ' + lg.from.airport + ' · ' + t.flight + ' ' + lg.flight + ' → ' + lg.to.city + (lg.duration ? (' · ' + lg.duration.replace(':', 'h')) : ''),
+                desc: t.departure + ' ' + lg.from.airport + (fl(lg.flight) ? ' · ' + fl(lg.flight) : '') + ' → ' + lg.to.city + (lg.duration ? (' · ' + lg.duration.replace(':', 'h')) : ''),
                 source: 'doc', joined: ['me'] });
             const isFinal = i === legs.length - 1;
-            blocks.push({ id: uid(), docId: d.id, date: lg.arrDate, start: lg.arrTime, end: addMin(lg.arrTime, 30),
-                title: (isFinal ? '🛬 ' : '🛬 ') + t.arrival + ' — ' + lg.to.city + ' (' + lg.to.iata + ')', type: 'typeTransport', loc: lg.to.airport,
-                desc: t.arrival + ' ' + lg.to.airport + ' · ' + t.flight + ' ' + lg.flight + (isFinal ? '' : ' · ' + t.lblLayover), source: 'doc', joined: ['me'] });
+            blocks.push({ id: uid(), docId: d.id, date: arrDate, start: arrT, end: addMin(arrT, 30),
+                title: '🛬 ' + t.arrival + ' — ' + lg.to.city + ' (' + lg.to.iata + ')', type: 'typeTransport', loc: lg.to.airport,
+                desc: t.arrival + ' ' + lg.to.airport + (fl(lg.flight) ? ' · ' + fl(lg.flight) : '') + (isFinal ? '' : ' · ' + t.lblLayover), source: 'doc', joined: ['me'] });
         });
         const first = legs[0], last = legs[legs.length - 1];
-        const seg = { fromCity: first.from.city, toCity: last.to.city, depDate: first.depDate, depTime: first.depTime, arrDate: last.arrDate, arrTime: last.arrTime };
+        const seg = { fromCity: first.from.city, toCity: last.to.city, depDate: dt(first.depDate), depTime: tm(first.depTime), arrDate: dt(last.arrDate), arrTime: tm(last.arrTime) };
         const dates = [...new Set(blocks.map(b => b.date))].sort();
         return { blocks, seg, dates };
     };
@@ -2464,7 +2480,7 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                 React.createElement("button", { className: "blkbtn del", onClick: () => removeDoc(d.id) }, "\u2715")))),
         confirmDoc && confirmDoc.itin && (() => {
             const { dates, blocks } = buildStageBlocks(confirmDoc);
-            const fmt = ds => { const p = ds.split('-'); return p[2] + '/' + p[1]; };
+            const fmt = ds => { const p = (ds || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] : '—'; };
             return React.createElement(ConfirmModal, { icon: "\uD83D\uDCC5", title: t.addStages + '?', msg: blocks.length + ' ' + (blocks.length === 1 ? 'card' : 'cards') + ' · ' + t.cardsWillAdd + ' ' + dates.map(fmt).join(', ') + '.', confirmLabel: '📅 ' + t.addStages, cancelLabel: t.cancel, onConfirm: () => applyStages(confirmDoc), onCancel: () => setConfirmDoc(null) });
         })(),
         confirmDoc && confirmDoc.lodging && !confirmDoc.itin && (() => {
