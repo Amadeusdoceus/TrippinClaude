@@ -246,3 +246,109 @@ test.describe('Configurações — compartilhar localização', () => {
     expect(isOn, 'switch de localização deveria ficar ligado após permitir GPS').toBe(true);
   });
 });
+
+// ── INTERPRETADOR DE IMAGEM — parser "solto" (prints de confirmação) ─────────
+test.describe('Interpretador de imagem (parser solto)', () => {
+  test('lê confirmação estilo Azul (POA → GRU, Voo 2863, datas dd/mm)', async ({ page }) => {
+    await page.goto('/');
+    const azul = [
+      '14:00',
+      'Reserva PR42KX realizada com sucesso',
+      'Voo para São Paulo, Guarulhos Intl',
+      'POA → GRU',
+      'Voo 2863',
+      'Porto Alegre, Salgado Filho Intl   São Paulo, Guarulhos Intl',
+      '30/06/2026 - 14:30   30/06/2026 - 16:15',
+    ].join('\n');
+    const r = await page.evaluate((t) => window._trippinParse.parseAirTicketLoose(t), azul);
+    expect(r.stages.map(s => s.kind)).toEqual(['origin', 'destination']);
+    expect(r.stages[0]).toMatchObject({ iata: 'POA', city: 'Porto Alegre', depTime: '14:30', depDate: '2026-06-30' });
+    expect(r.stages[1]).toMatchObject({ iata: 'GRU', city: 'São Paulo', arrTime: '16:15' });
+    expect(r.stages[0].flight).toBe('2863');
+  });
+
+  test('lê confirmação estilo KLM/esky (IATA entre parênteses, escala em AMS)', async ({ page }) => {
+    await page.goto('/');
+    const klm = [
+      '14:04', 'Informações sobre o voo',
+      'Luxembourg → Dubrovnik',
+      'Duração total da viagem: 5h 00min  1 escala',
+      '18:25', '3 jul.', 'Findel (LUX)', 'Luxembourg, Luxemburgo', 'Número do voo: 1714',
+      '19:35', '3 jul.', 'Schiphol (AMS)', 'Tempo de parada: 1h 25min',
+      '21:00', '3 jul.', 'Schiphol (AMS)', 'Número do voo: 1981',
+      '23:25', '3 jul.', 'Ruđer Bošković (DBV)',
+    ].join('\n');
+    const r = await page.evaluate((t) => window._trippinParse.parseAirTicketLoose(t), klm);
+    expect(r.stages.map(s => s.kind)).toEqual(['origin', 'layover', 'destination']);
+    expect(r.stages[0]).toMatchObject({ iata: 'LUX', city: 'Luxemburgo', depTime: '18:25', flight: '1714' });
+    expect(r.stages[1]).toMatchObject({ iata: 'AMS', city: 'Amsterdã', arrTime: '19:35', depTime: '21:00', layover: '1h25' });
+    expect(r.stages[2]).toMatchObject({ iata: 'DBV', city: 'Dubrovnik', arrTime: '23:25' });
+    // não confunde o relógio da status bar (14:04) com horário de voo
+    expect(r.stages[0].depTime).not.toBe('14:04');
+  });
+});
+
+// ── ROTEIRO INTERPRETADO — botão X fecha e volta ─────────────────────────────
+test.describe('Roteiro interpretado — botão fechar (X)', () => {
+  test('X fecha o card de roteiro e volta para a lista de documentos', async ({ page }) => {
+    await page.addInitScript(() => {
+      const trip = {
+        id: 'tdoc', name: 'DocTrip', startDate: '2026-06-30', endDate: '2026-07-05', status: 'active',
+        destinations: [{ name: 'São Paulo, Brasil', date: '2026-06-30' }],
+        members: [{ id: 'me', name: 'Você', isAdmin: true, joinVia: 'creator', joinedAt: '2026-05-01' }],
+        activities: [],
+        docs: [{ id: 'dk', cat: 'tickets', sub: 'Avião', name: 'voo', file: 'voo.pdf',
+          itin: { legs: [], stages: [
+            { kind: 'origin', city: 'São Paulo', airport: 'Guarulhos', iata: 'GRU', depTime: '20:45', depDate: '2026-06-30', flight: 'TP88' },
+            { kind: 'destination', city: 'Lisboa', airport: 'Lisbon', iata: 'LIS', arrTime: '10:35', arrDate: '2026-07-01', flight: 'TP88' },
+          ] } }],
+        gallery: [], expenses: [],
+      };
+      const state = { lang: 'pt-BR', user: { firstName: 'Doc', name: 'Doc Tester' }, trips: [trip],
+        settings: { notifications: true, theme: 'light', shareLocation: false }, notifs: [] };
+      localStorage.setItem('trippin_v1', JSON.stringify(state));
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => document.body.innerText.includes('DocTrip'));
+    await page.locator('text=DocTrip').first().click();
+    await page.waitForTimeout(300);
+    await clickButton(page, 'Docs');
+    await page.waitForTimeout(300);
+
+    // abre o roteiro interpretado
+    await clickButton(page, 'Ver roteiro');
+    await page.waitForTimeout(300);
+    const card = page.locator('.card', { hasText: 'Roteiro interpretado' });
+    await expect(card).toBeVisible();
+
+    // X fecha e volta (o card some)
+    await card.getByRole('button', { name: 'Fechar' }).click();
+    await page.waitForTimeout(200);
+    await expect(page.locator('text=Roteiro interpretado')).toHaveCount(0);
+  });
+});
+
+// ── POP-UPS centralizam sem o bug do canto inferior direito ───────────────────
+test.describe('Pop-ups — sem salto do canto direito', () => {
+  test('overlay/modal centralizam sem transform; sheet preserva o centro na animação', async ({ page }) => {
+    await page.goto('/');
+    const res = await page.evaluate(() => {
+      let overlayT = null, modalT = null, sheetAnim = null, popsheet = false;
+      for (const sheet of Array.from(document.styleSheets)) {
+        let rules; try { rules = sheet.cssRules; } catch (_) { continue; }
+        for (const r of Array.from(rules || [])) {
+          if (r.type === 7 && r.name === 'popsheet') popsheet = true;        // CSSKeyframesRule
+          if (!r.selectorText) continue;
+          if (r.selectorText === '.overlay') overlayT = r.style.transform;
+          if (r.selectorText === '.modal') modalT = r.style.transform;
+          if (r.selectorText === '.sheet') sheetAnim = r.style.animationName || r.style.animation;
+        }
+      }
+      return { overlayT, modalT, sheetAnim, popsheet };
+    });
+    expect(res.overlayT || '', 'overlay não deve usar transform (centra via margin)').toBe('');
+    expect(res.modalT || '', 'modal não deve usar transform (centra via margin)').toBe('');
+    expect(res.popsheet, 'keyframe popsheet deve existir').toBe(true);
+    expect(res.sheetAnim || '', 'sheet deve animar com popsheet').toContain('popsheet');
+  });
+});

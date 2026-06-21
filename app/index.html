@@ -39,6 +39,8 @@
   .screen{padding:0 0 90px;animation:fade .25s ease}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+  /* sheet: mantém o translateY(-50%) durante o pop (senão "salta" do canto p/ o centro) */
+  @keyframes popsheet{from{opacity:0;transform:translateY(-50%) scale(.94)}to{opacity:1;transform:translateY(-50%) scale(1)}}
   @keyframes slideL{from{transform:translateX(-100%)}to{transform:translateX(0)}}
   @keyframes slideR{from{transform:translateX(100%)}to{transform:translateX(0)}}
 
@@ -271,7 +273,7 @@
     max-width:430px;display:flex;gap:10px;padding:14px 16px;background:linear-gradient(transparent,var(--sand) 30%)}
 
   /* drawer + notif overlay */
-  .overlay{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+  .overlay{position:fixed;top:0;bottom:0;left:0;right:0;margin:0 auto;width:100%;max-width:430px;
     background:rgba(20,33,61,.10);z-index:50;animation:fade .2s}
   .drawer{position:absolute;top:0;left:0;bottom:0;width:78%;max-width:320px;background:var(--sand);
     box-shadow:8px 0 30px rgba(0,0,0,.2);animation:slideL .25s ease;display:flex;flex-direction:column}
@@ -310,7 +312,7 @@
   .notifitem .dismiss{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#f1ede4;color:var(--muted);font-size:11px;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;line-height:1}
 
   /* modal */
-  .modal{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;
+  .modal{position:fixed;top:0;bottom:0;left:0;right:0;margin:0 auto;width:100%;max-width:430px;
     background:rgba(20,33,61,.12);z-index:60;display:flex;align-items:center;justify-content:center;
     padding:16px;animation:fade .2s}
   .modalbox{background:#fff;border-radius:24px;padding:24px 20px;width:100%;animation:pop .2s ease;text-align:center;
@@ -320,7 +322,7 @@
   .modalbox p{font-size:14px;color:var(--muted);margin:0 0 20px;line-height:1.5}
 
   /* toast */
-  .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);
+  .toast{position:fixed;bottom:96px;left:0;right:0;margin:0 auto;width:max-content;max-width:90%;background:var(--ink);
     color:#fff;padding:13px 20px;border-radius:30px;font-size:14px;font-weight:500;z-index:70;
     box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .2s;display:flex;align-items:center;gap:8px}
 
@@ -485,7 +487,7 @@
   #root[data-theme="dark"] .sectiontitle{color:var(--ink)}
   #root[data-theme="dark"] .bottombar{border-top-color:var(--line)}
   #root[data-theme="dark"] .bnav.center{border-color:var(--card)}
-  .sheet{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);background:var(--sand);border-radius:22px;padding:22px 18px;animation:pop .22s ease;z-index:61;box-shadow:0 18px 52px rgba(20,33,61,.30)}
+  .sheet{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);background:var(--sand);border-radius:22px;padding:22px 18px;animation:popsheet .22s ease;z-index:61;box-shadow:0 18px 52px rgba(20,33,61,.30)}
   .sheeth{font-family:'Sora';font-weight:700;font-size:15px;margin-bottom:12px}
   .srcopt{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;text-align:left}
   .srcopt .si{width:42px;height:42px;border-radius:11px;background:#eef2f7;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
@@ -1295,6 +1297,9 @@ function parseAirTicket(text) {
         legs.push({ flight, from: resolveAirport(from), to: resolveAirport(to), depTime: depT, arrTime: arrT,
             depDate: fmtDateT(depDate), arrDate: fmtDateT(arrDate), duration: dur });
     }
+    return { legs, stages: legsToStages(legs) };
+}
+function legsToStages(legs) {
     const stages = [];
     if (legs.length) {
         const f = legs[0];
@@ -1308,8 +1313,67 @@ function parseAirTicket(text) {
         const l = legs[legs.length - 1];
         stages.push({ kind: 'destination', city: l.to.city, airport: l.to.airport, iata: l.to.iata, arrTime: l.arrTime, arrDate: l.arrDate, flight: l.flight });
     }
-    return { legs, stages };
+    return stages;
 }
+/* ===== Fallback "solto": interpreta layouts de imagem (print de confirmação):
+        rota "AAA → BBB" + datas dd/mm/yyyy (estilo Azul) ou endpoints
+        "Nome (IATA)" em sequência (estilo KLM/esky). Horários e datas são
+        atribuídos ao endpoint mais próximo no texto (ignora relógio da status bar). */
+const IATA_CITY = (() => { const m = {}; AIRPORTS.forEach(([re, info]) => { m[info.iata] = info.city; });
+    Object.assign(m, { DBV: 'Dubrovnik', POA: 'Porto Alegre', SDU: 'Rio de Janeiro', BSB: 'Brasília', CNF: 'Belo Horizonte', SSA: 'Salvador', REC: 'Recife', FOR: 'Fortaleza', CWB: 'Curitiba', FLN: 'Florianópolis', BRU: 'Bruxelas', MUC: 'Munique', ZRH: 'Zurique', GVA: 'Genebra', DUB: 'Dublin', VIE: 'Viena', JFK: 'Nova York', EWR: 'Nova York', MIA: 'Miami', MCO: 'Orlando', LAX: 'Los Angeles' });
+    return m; })();
+const pad2 = n => String(n).padStart(2, '0');
+const cleanName = s => (s || '').replace(/\d{1,2}:\d{2}/g, '').replace(/\b\d{1,2}\s+[A-Za-zçãéêíóôúÀ-ÿ]{3,9}\.?/g, '').replace(/\s{2,}/g, ' ').trim();
+function resolveIata(iata, nameHint) {
+    const nm = cleanName(nameHint);
+    const city = IATA_CITY[iata] || titleCase((nm.split(/,|\(/)[0] || iata));
+    return { iata: iata || '—', city: city, airport: titleCase(nm || city || iata) };
+}
+function looseMonth(w) { return MONTHS_T[(w || '').toLowerCase().slice(0, 3)]; }
+function parseAirTicketLoose(text) {
+    const T = (text || '').replace(/ /g, ' ');
+    const flights = [];
+    const fRe = /(?:n[uú]mero do voo|flight\s*(?:n[ºo]\.?|number)?|voo)\s*[:#]?\s*([A-Z]{0,3}\s?\d{2,4})/gi;
+    let fm; while ((fm = fRe.exec(T))) flights.push(fm[1].replace(/\s+/g, ''));
+    // 1) endpoints: primeiro por "Nome (IATA)"; se não houver, por código IATA
+    //    conhecido isolado (ex.: "POA", "GRU" — estilo Azul, sem parênteses).
+    let eps = []; let em;
+    const epRe = /([^\n(]*)\(([A-Z]{3})\)/g;
+    while ((em = epRe.exec(T))) eps.push({ iata: em[2], name: em[1], idx: em.index });
+    if (eps.length < 2) {
+        eps = []; let m; const re = /\b([A-Z]{3})\b/g;
+        while ((m = re.exec(T))) if (IATA_CITY[m[1]]) eps.push({ iata: m[1], name: '', idx: m.index });
+    }
+    if (eps.length < 2)
+        return { legs: [], stages: [] };
+    // 2) data-hora combinada "dd/mm/yyyy - HH:MM" (estilo Azul) — pareia data+hora
+    const dts = []; let dm; const dtRe = /(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[-–—]?\s*(\d{1,2}:\d{2})/g;
+    while ((dm = dtRe.exec(T))) dts.push({ time: dm[4], date: dm[3] + '-' + pad2(dm[2]) + '-' + pad2(dm[1]) });
+    // 3) horários e datas avulsos (estilo KLM) — atribuídos por proximidade
+    const times = []; let tm; const tRe = /\b(\d{1,2}:\d{2})\b/g;
+    while ((tm = tRe.exec(T))) times.push({ v: tm[1], idx: tm.index });
+    const dates = []; let dw; const dwRe = /\b(\d{1,2})\s+([A-Za-zçãéêíóôúÀ-ÿ]{3,9})\.?(?:\s+(\d{4}))?/g;
+    while ((dw = dwRe.exec(T))) { const mo = looseMonth(dw[2]); if (mo == null) continue;
+        const y = dw[3] ? +dw[3] : new Date().getUTCFullYear();
+        dates.push({ v: y + '-' + pad2(mo + 1) + '-' + pad2(+dw[1]), idx: dw.index }); }
+    const nearest = (pool, idx) => { let best = null, bd = Infinity;
+        pool.forEach(p => { if (p.used) return; const d = Math.abs(p.idx - idx); if (d < bd) { bd = d; best = p; } });
+        if (best) best.used = true; return best ? best.v : null; };
+    const useDts = dts.length >= eps.length; // uma data-hora por endpoint?
+    eps.forEach((ep, i) => {
+        if (useDts) { ep.time = dts[i] ? dts[i].time : null; ep.date = dts[i] ? dts[i].date : null; }
+        else { ep.time = nearest(times, ep.idx); ep.date = nearest(dates, ep.idx); }
+    });
+    // 4) pares de endpoints (dep, arr) viram trechos
+    const legs = [];
+    for (let k = 0; 2 * k + 1 < eps.length; k++) {
+        const a = eps[2 * k], b = eps[2 * k + 1];
+        legs.push({ flight: flights[k] || null, from: resolveIata(a.iata, a.name), to: resolveIata(b.iata, b.name),
+            depTime: a.time, arrTime: b.time, depDate: a.date, arrDate: b.date, duration: null });
+    }
+    return { legs, stages: legsToStages(legs) };
+}
+if (typeof window !== 'undefined') window._trippinParse = { parseAirTicket, parseAirTicketLoose };
 const _scriptCache = {};
 function loadScriptOnce(src) { return _scriptCache[src] || (_scriptCache[src] = new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = () => res(); el.onerror = () => rej(new Error('falha ao carregar ' + src)); document.head.appendChild(el); })); }
 async function pdfToText(buf) {
@@ -1540,7 +1604,24 @@ async function imageToText(file) {
     }
     if (typeof Tesseract === 'undefined')
         throw new Error('OCR indisponível');
-    const { data } = await Tesseract.recognize(file, 'por+eng');
+    // upscale: prints costumam ser pequenos; ampliar melhora bastante o OCR
+    let input = file;
+    try {
+        const img = await createImageBitmap(file);
+        const scale = Math.min(2.5, Math.max(1, 1700 / Math.max(img.width, img.height)));
+        if (scale > 1.05) {
+            const c = document.createElement('canvas');
+            c.width = Math.round(img.width * scale);
+            c.height = Math.round(img.height * scale);
+            const ctx = c.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, c.width, c.height);
+            input = c.toDataURL('image/png');
+        }
+    }
+    catch (e) { /* sem upscale: usa o arquivo original */ }
+    const { data } = await Tesseract.recognize(input, 'por+eng');
     return data.text || '';
 }
 const STAGE_COL = { origin: '#2DB5A3', layover: '#F4A259', destination: '#5B8DEF' };
@@ -2112,7 +2193,9 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                     else {
                         txt = await imageToText(file);
                     }
-                    const itin = parseAirTicket(txt);
+                    let itin = parseAirTicket(txt);
+                    if (!itin.stages.length)
+                        itin = parseAirTicketLoose(txt); // fallback p/ prints/imagens
                     if (itin.stages.length)
                         doc.itin = itin;
                 }
@@ -2284,9 +2367,11 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                         t.editManual)))
             : readingDoc.itin
                 ? React.createElement("div", { className: "card", style: { borderColor: '#b9d4ff' } },
-                    React.createElement("b", { style: { fontFamily: 'Sora', fontSize: 14 } },
-                        "\uD83E\uDD16 ",
-                        t.interpretedRoute),
+                    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+                        React.createElement("b", { style: { fontFamily: 'Sora', fontSize: 14 } },
+                            "\uD83E\uDD16 ",
+                            t.interpretedRoute),
+                        React.createElement("button", { className: "iconbtn", title: t.close || 'Fechar', "aria-label": t.close || 'Fechar', onClick: () => { setReadId(null); setEditStages(null); } }, "\u2715")),
                     React.createElement("div", { className: "sub", style: { fontSize: 11, margin: '2px 0 12px' } }, readingDoc.file),
                     editStages
                         ? React.createElement("div", null,
