@@ -1141,9 +1141,11 @@ function locationAnchors(trip) {
     (trip.destinations || []).forEach(d => { if (d.date && d.name && d.name !== 'A definir')
         a.push({ date: d.date, city: cityOf(d.name) }); });
     (trip.docs || []).forEach(doc => {
-        if (doc.itin && doc.itin.legs) {
-            doc.itin.legs.forEach(lg => { if (lg.arrDate && lg.to && lg.to.city)
-                a.push({ date: lg.arrDate, city: lg.to.city, doc: true }); });
+        if (doc.itin && doc.itin.legs && doc.itin.legs.length) {
+            // SÓ o destino final da passagem (a última perna). Escalas não são "onde você fica".
+            const last = doc.itin.legs[doc.itin.legs.length - 1];
+            if (last.arrDate && last.to && last.to.city)
+                a.push({ date: last.arrDate, city: last.to.city, doc: true });
         }
         else {
             const p = doc.seg;
@@ -1156,8 +1158,14 @@ function locationAnchors(trip) {
     });
     return a.sort((x, y) => x.date === y.date ? ((x.doc ? 1 : 0) - (y.doc ? 1 : 0)) : x.date.localeCompare(y.date));
 }
-// vale do dia da chegada/destino até o fim OU até o próximo destino
-function locationForDay(trip, day) { const a = locationAnchors(trip).filter(x => x.date <= day); return a.length ? a[a.length - 1].city : null; }
+// local do dia: vale do destino até o próximo; após a ÚLTIMA data/destino (fim da viagem) volta a ser nulo
+function locationForDay(trip, day) {
+    const a = locationAnchors(trip);
+    if (!a.length) return null;
+    if (day > a[a.length - 1].date) return null; // depois do último destino: sem local (dia "apagado")
+    const past = a.filter(x => x.date <= day);
+    return past.length ? past[past.length - 1].city : null;
+}
 // hospedagens ativas num dia (check-in <= dia <= check-out), já adicionadas ao cronograma
 function lodgingForDay(trip, day) {
     return (trip.docs || []).map(d => d.lodging).filter(L => L && L.scheduled && L.ciDate && L.coDate && L.ciDate <= day && day <= L.coDate);
@@ -1179,9 +1187,11 @@ function tripLocations(trip) {
             items.push({ date: doc.lodging.ciDate, city: doc.lodging.city });
     });
     items.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-    const out = [];
-    items.forEach(i => { if (i.city && !out.includes(i.city))
-        out.push(i.city); });
+    const out = [], seen = new Set();
+    items.forEach(i => { const k = (i.city || '').trim().toLowerCase(); if (i.city && !seen.has(k)) {
+        seen.add(k);
+        out.push(i.city);
+    } });
     return out;
 }
 // 7 dias (segunda→domingo) da semana que contém o dia
@@ -1373,7 +1383,10 @@ function parseAirTicketLoose(text) {
     }
     return { legs, stages: legsToStages(legs) };
 }
-if (typeof window !== 'undefined') window._trippinParse = { parseAirTicket, parseAirTicketLoose };
+if (typeof window !== 'undefined') {
+    window._trippinParse = { parseAirTicket, parseAirTicketLoose };
+    window._trippinLoc = { locationAnchors, locationForDay, tripLocations };
+}
 const _scriptCache = {};
 function loadScriptOnce(src) { return _scriptCache[src] || (_scriptCache[src] = new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = () => res(); el.onerror = () => rej(new Error('falha ao carregar ' + src)); document.head.appendChild(el); })); }
 async function pdfToText(buf) {
@@ -1770,6 +1783,9 @@ function ScheduleTab({ t, trip, update, toast }) {
     })();
     const idx = allDays.indexOf(curDay);
     const move = dir => { const ni = Math.min(Math.max(idx + dir, 0), allDays.length - 1); setCurDay(allDays[ni]); };
+    // na vista de mês as setas navegam entre meses (livre, sem limite da viagem)
+    const moveMonth = dir => { const b = new Date((curDay || trip.startDate) + 'T00:00:00'); b.setDate(1); b.setMonth(b.getMonth() + dir); setCurDay(b.toISOString().slice(0, 10)); };
+    const arrow = dir => view === 'month' ? moveMonth(dir) : move(dir);
     const saveNew = (a) => {
         update({ ...trip, activities: [...trip.activities, { ...a, id: uid(), source: 'manual', joined: ['me'] }] });
         setAdding(false);
@@ -1786,8 +1802,8 @@ function ScheduleTab({ t, trip, update, toast }) {
         React.createElement("div", { className: "calhead" },
             React.createElement("div", { className: "segbtns" }, ['month', 'week', 'day'].map(v => React.createElement("button", { key: v, className: view === v ? 'on' : '', onClick: () => setView(v) }, t[v]))),
             React.createElement("div", { style: { display: 'flex', gap: 6 } },
-                React.createElement("button", { className: "navarrow", onClick: () => move(-1) }, "\u2039"),
-                React.createElement("button", { className: "navarrow", onClick: () => move(1) }, "\u203A"))),
+                React.createElement("button", { className: "navarrow", onClick: () => arrow(-1) }, "\u2039"),
+                React.createElement("button", { className: "navarrow", onClick: () => arrow(1) }, "\u203A"))),
         view === 'month' && React.createElement(MonthGrid, { trip: trip, curDay: curDay, setCurDay: d => { setCurDay(d); setView('day'); } }),
         view === 'week' && React.createElement(WeekView, { t: t, trip: trip, curDay: curDay, openDay: d => { setCurDay(d); setView('day'); } }),
         view === 'day' && React.createElement(React.Fragment, null,
@@ -2022,9 +2038,18 @@ function MapTab({ t, trip, update, toast, goTab }) {
             stops.push({ city, date });
     };
     const allPts = [];
-    (trip.destinations || []).filter(d => d.name && d.name !== 'A definir').forEach(d => allPts.push({ city: cityOf(d.name), date: d.date }));
-    segs.forEach(s => { if (s.fromCity) allPts.push({ city: s.fromCity, date: s.depDate }); if (s.toCity) allPts.push({ city: s.toCity, date: s.arrDate }); });
-    allPts.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    (trip.destinations || []).filter(d => d.name && d.name !== 'A definir').forEach(d => allPts.push({ city: cityOf(d.name), date: d.date || trip.startDate, time: '00:00' }));
+    // por passagem: datas nulas (OCR não leu) herdam a 1a data conhecida do doc -> a cidade não "pula" para o início
+    (trip.docs || []).forEach(d => {
+        const legs = (d.itin && d.itin.legs) ? d.itin.legs
+            : (d.seg ? [{ from: { city: d.seg.fromCity }, to: { city: d.seg.toCity }, depDate: d.seg.depDate, depTime: d.seg.depTime, arrDate: d.seg.arrDate, arrTime: d.seg.arrTime }] : []);
+        const fb = legs.map(l => l.depDate || l.arrDate).find(Boolean) || trip.startDate;
+        legs.forEach(l => {
+            if (l.from && l.from.city) allPts.push({ city: l.from.city, date: l.depDate || fb, time: l.depTime || '00:00' });
+            if (l.to && l.to.city) allPts.push({ city: l.to.city, date: l.arrDate || l.depDate || fb, time: l.arrTime || '00:00' });
+        });
+    });
+    allPts.sort((a, b) => ((a.date || '') + 'T' + (a.time || '00:00')).localeCompare((b.date || '') + 'T' + (b.time || '00:00')));
     allPts.forEach(p => push(p.city, p.date));
     const pts = stops.length ? stops : [{ city: 'A definir', date: trip.startDate }];
     const n = pts.length;
@@ -2628,15 +2653,24 @@ function GalleryTab({ t, trip, update, toast }) {
     useEffect(() => {
         const persisted = trip.albums || [];
         const locs = tripLocations(trip);
-        const missing = locs.filter(c => !persisted.some(a => a.id === c));
-        const galNeedsFix = (trip.gallery || []).some(g => !g.id || !g.album);
-        if (!trip.albums || missing.length || galNeedsFix) {
-            const albs = [...persisted, ...missing.map(c => ({ id: c, name: c }))];
-            const gal = (trip.gallery || []).map(g => (g.id && g.album) ? g : { id: g.id || uid(), album: g.album || g.city || (albs[0] && albs[0].id) || 'viagem', src: g.src });
+        const norm = s => (s || '').trim().toLowerCase();
+        // dedup de álbuns por nome (cada cidade uma vez) + remapeia fotos dos duplicados
+        const byName = new Map(), remap = {};
+        persisted.forEach(a => { const k = norm(a.name || a.id); if (byName.has(k)) remap[a.id] = byName.get(k).id; else byName.set(k, a); });
+        let albs = [...byName.values()];
+        const missing = locs.filter(c => !albs.some(a => norm(a.name || a.id) === norm(c)));
+        albs = [...albs, ...missing.map(c => ({ id: c, name: c }))];
+        const galNeedsFix = (trip.gallery || []).some(g => !g.id || !g.album || remap[g.album]);
+        const hadDup = albs.length !== persisted.length;
+        if (!trip.albums || missing.length || galNeedsFix || hadDup) {
+            const gal = (trip.gallery || []).map(g => { const album = remap[g.album] || g.album || g.city || (albs[0] && albs[0].id) || 'viagem'; return { id: g.id || uid(), album, src: g.src }; });
             update({ ...trip, albums: albs, gallery: gal });
         }
     }, [trip.docs, trip.destinations]);
-    const albums = trip.albums || tripLocations(trip).map(c => ({ id: c, name: c }));
+    // dedup também na exibição (caso o efeito ainda não tenha rodado)
+    const _seenAlb = new Set();
+    const albums = (trip.albums || tripLocations(trip).map(c => ({ id: c, name: c })))
+        .filter(a => { const k = (a.name || a.id || '').trim().toLowerCase(); if (_seenAlb.has(k)) return false; _seenAlb.add(k); return true; });
     const gallery = (trip.gallery || []).map((g, i) => ({ id: g.id || ('i' + i), album: g.album || g.city, src: g.src }));
     const imgsOf = id => gallery.filter(g => g.album === id);
     const setAlbums = a => update({ ...trip, albums: a });

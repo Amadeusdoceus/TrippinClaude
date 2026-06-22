@@ -392,3 +392,84 @@ test.describe('Roteiro → cronograma com datas nulas (sem tela branca)', () => 
     expect(errors.filter(e => !isKnownError(e)), 'erro de runtime ao montar o cronograma').toHaveLength(0);
   });
 });
+
+// ── ESCALA vs DESTINO, ordem cronológica e dedup ─────────────────────────────
+const COMPLEX_TRIP = {
+  id: 'tc', name: 'OrdemTrip', startDate: '2026-06-30', endDate: '2026-07-20', status: 'active',
+  // destino duplicado de propósito (testa dedup) + um destino datado 03/07
+  destinations: [
+    { name: 'Porto Alegre, Brasil', date: '2026-06-30' },
+    { name: 'Porto Alegre, Brasil', date: '2026-06-30' },
+    { name: 'Luxemburgo, Luxemburgo', date: '2026-07-03' },
+  ],
+  members: [{ id: 'me', name: 'Você', isAdmin: true, joinVia: 'creator', joinedAt: '2026-05-01' }],
+  activities: [],
+  docs: [
+    { id: 'da', cat: 'tickets', sub: 'Avião', name: 'azul', file: 'azul.jpg', itin: { legs: [
+      { flight: '2863', from: { iata: 'POA', city: 'Porto Alegre', airport: 'Salgado Filho' }, to: { iata: 'GRU', city: 'São Paulo', airport: 'Guarulhos' }, depDate: '2026-06-30', depTime: '14:30', arrDate: '2026-06-30', arrTime: '16:15', duration: null },
+    ], stages: [] } },
+    { id: 'dk', cat: 'tickets', sub: 'Avião', name: 'klm', file: 'klm.jpg', itin: { legs: [
+      { flight: '1714', from: { iata: 'LUX', city: 'Luxemburgo', airport: 'Findel' }, to: { iata: 'AMS', city: 'Amsterdã', airport: 'Schiphol' }, depDate: '2026-07-03', depTime: '18:25', arrDate: '2026-07-03', arrTime: '19:35', duration: null },
+      { flight: '1981', from: { iata: 'AMS', city: 'Amsterdã', airport: 'Schiphol' }, to: { iata: 'DBV', city: 'Dubrovnik', airport: 'Boskovic' }, depDate: '2026-07-03', depTime: '21:00', arrDate: '2026-07-03', arrTime: '23:25', duration: null },
+    ], stages: [] } },
+  ],
+  // dois álbuns "Porto Alegre" (testa dedup da galeria)
+  albums: [{ id: 'a1', name: 'Porto Alegre' }, { id: 'a2', name: 'Porto Alegre' }, { id: 'a3', name: 'São Paulo' }],
+  gallery: [], expenses: [],
+};
+
+test.describe('Local: escala não é destino; ordem e dedup', () => {
+  test('locationAnchors ignora escala; locationForDay = destino final e nulo após o fim; sem dups', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => !!window._trippinLoc);
+    const r = await page.evaluate((trip) => {
+      const L = window._trippinLoc;
+      return {
+        anchors: L.locationAnchors(trip).map(a => a.city),
+        locFinal: L.locationForDay(trip, '2026-07-03'),
+        locAfterEnd: L.locationForDay(trip, '2026-07-10'),
+        locs: L.tripLocations(trip),
+      };
+    }, COMPLEX_TRIP);
+    expect(r.anchors, 'escala (Amsterdã) não deve ser "onde você fica"').not.toContain('Amsterdã');
+    expect(r.locFinal, 'local do dia 03/07 deve ser o destino final, não a escala').toBe('Dubrovnik');
+    expect(r.locAfterEnd, 'após a última data: sem local (dia apagado)').toBeNull();
+    expect(r.locs, 'a escala aparece no mapa/galeria como lugar visitado').toContain('Amsterdã');
+    expect(new Set(r.locs).size, 'tripLocations não deve ter cidades repetidas').toBe(r.locs.length);
+  });
+
+  test('mapa em ordem cronológica, galeria sem repetição e navegação entre meses', async ({ page }) => {
+    await page.addInitScript((trip) => {
+      localStorage.setItem('trippin_v1', JSON.stringify({ lang: 'pt-BR', user: { firstName: 'V', name: 'V' }, trips: [trip], settings: { notifications: true, theme: 'light', shareLocation: false }, notifs: [] }));
+    }, COMPLEX_TRIP);
+    await page.goto('/');
+    await page.waitForFunction(() => document.body.innerText.includes('OrdemTrip'));
+    await page.locator('text=OrdemTrip').first().click();
+    await page.waitForTimeout(300);
+
+    // MAPA: ordem por data (origem 30/06 primeiro, destino datado 03/07 no meio)
+    await clickButton(page, 'Mapa');
+    await page.waitForTimeout(400);
+    const mapCities = await page.evaluate(() => Array.from(document.querySelectorAll('.mapcity')).map(e => e.textContent));
+    expect(mapCities, 'mapa em ordem cronológica de chegada').toEqual(['Porto Alegre', 'São Paulo', 'Luxemburgo', 'Amsterdã', 'Dubrovnik']);
+
+    // GALERIA: cada cidade uma vez
+    await clickButton(page, 'Galeria');
+    await page.waitForTimeout(400);
+    const gal = await page.evaluate(() => Array.from(document.querySelectorAll('.albuminfo b')).map(e => e.textContent));
+    expect(new Set(gal).size, 'galeria não deve repetir cidade').toBe(gal.length);
+    expect(gal.filter(c => c === 'Porto Alegre').length, 'Porto Alegre só uma vez').toBe(1);
+
+    // CRONOGRAMA mês: navegação entre meses
+    await clickButton(page, 'Cronograma');
+    await page.waitForTimeout(200);
+    await page.evaluate(() => { const x = Array.from(document.querySelectorAll('.segbtns button')).find(e => /Mês/.test(e.textContent)); x && x.click(); });
+    await page.waitForTimeout(200);
+    const monthBefore = await page.evaluate(() => (document.body.innerText.match(/(Junho|Julho|Agosto) De 2026/i) || [])[0]);
+    await page.evaluate(() => { const ar = Array.from(document.querySelectorAll('.navarrow')); ar[1] && ar[1].click(); });
+    await page.waitForTimeout(200);
+    const monthAfter = await page.evaluate(() => (document.body.innerText.match(/(Junho|Julho|Agosto) De 2026/i) || [])[0]);
+    expect(monthBefore, 'mês inicial').toMatch(/Junho/i);
+    expect(monthAfter, 'após › deve avançar de mês').toMatch(/Julho/i);
+  });
+});
