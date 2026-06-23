@@ -2,7 +2,7 @@
   "expo": {
     "name": "Trippin",
     "slug": "trippin",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.amadeusdoceu.trippin",
-      "buildNumber": "2"
+      "buildNumber": "3"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,7 +26,7 @@
         "backgroundColor": "#14213D"
       },
       "package": "com.amadeusdoceu.trippin",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",

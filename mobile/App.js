@@ -5,6 +5,9 @@ import { WebView } from 'react-native-webview';
 import { useState, useRef } from 'react';
 
 const APP_URL = 'https://amadeusdoceus.github.io/TrippinClaude';
+// Cache-busting: querystring única por inicialização do app. Força a WebView a
+// buscar a versão mais nova publicada no GitHub Pages, sem servir do cache.
+const SESSION_URL = `${APP_URL}/?t=${Date.now()}`;
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -33,11 +36,12 @@ export default function App() {
         ) : (
           <WebView
             ref={webviewRef}
-            source={{ uri: APP_URL }}
+            source={{ uri: SESSION_URL }}
             style={[styles.webview, loading && styles.hidden]}
             onLoadEnd={() => setLoading(false)}
             onError={() => { setLoading(false); setError(true); }}
             onHttpError={() => { setLoading(false); setError(true); }}
+            cacheEnabled={false}
             javaScriptEnabled
             domStorageEnabled
             allowsInlineMediaPlayback
