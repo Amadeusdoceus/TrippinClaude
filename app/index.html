@@ -248,6 +248,36 @@
   .expense .el b{font-size:14px;display:block}
   .expense .el span{font-size:12px;color:var(--muted)}
   .expense .ev{font-family:'JetBrains Mono';font-weight:600;color:var(--ink)}
+  .pchip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:#fff;border-radius:18px;
+    padding:5px 11px;font-size:12.5px;cursor:pointer;color:var(--muted);user-select:none}
+  .pchip.on{background:var(--lagoon);border-color:var(--lagoon);color:#fff}
+  .pchip .pp{font-size:11px;font-family:'JetBrains Mono';opacity:.95}
+  .settle{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--line);
+    border-radius:11px;padding:11px 13px;margin-bottom:8px;font-size:13.5px}
+  .settle .amt{font-family:'JetBrains Mono';font-weight:700;color:var(--coral)}
+  .balrow{display:flex;align-items:center;justify-content:space-between;padding:8px 2px;font-size:13.5px;border-bottom:1px solid var(--line)}
+  .balrow:last-child{border-bottom:none}
+  .balrow .pos{color:#1d8e7d;font-weight:700;font-family:'JetBrains Mono'}
+  .balrow .neg{color:var(--danger);font-weight:700;font-family:'JetBrains Mono'}
+  .balrow .zero{color:var(--muted);font-family:'JetBrains Mono'}
+  /* rotas / co-localização */
+  .viewsel{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .viewsel select{flex:1;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;background:#fff;font-weight:600;font-size:14px;color:var(--ink)}
+  .tl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff;padding:10px;-webkit-overflow-scrolling:touch}
+  .tl-row{display:flex;align-items:center;margin-bottom:5px}
+  .tl-row:last-child{margin-bottom:0}
+  .tl-name{flex:0 0 72px;font-size:11.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
+  .tl-cells{display:flex;gap:2px}
+  .tl-cell{width:22px;height:26px;border-radius:5px;flex:0 0 auto;position:relative}
+  .tl-cell.meet{box-shadow:0 0 0 2px var(--gold)}
+  .tl-cell .mk{position:absolute;top:-4px;right:-2px;font-size:9px}
+  .tl-head .tl-cell{height:auto;background:none !important;font-size:9.5px;text-align:center;color:var(--muted);font-weight:700;box-shadow:none}
+  .meetcard{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+  .meetcard .av{width:34px;height:34px;border-radius:50%;background:var(--lagoon);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+  .meetcard .mm{min-width:0}
+  .meetcard .mm b{font-size:13.5px;display:block}
+  .meetcard .mm span{font-size:11.5px;color:var(--muted)}
+  .meetcard .cnt{margin-left:auto;text-align:right;font-family:'JetBrains Mono';font-weight:700;color:var(--coral);font-size:12.5px;flex-shrink:0;white-space:nowrap}
 
   /* chips */
   .chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);
@@ -557,6 +587,17 @@ const I18N = {
         tripDeleted: 'Viagem excluída', onlyAdmin: 'Apenas o administrador pode excluir', galByLocation: 'Registros por local da viagem',
         finalize: 'Finalizar viagem', finalized: 'Viagem finalizada', activityTitle: 'Nome da atividade',
         time: 'Horário', save: 'Salvar', desc: 'Descrição', amount: 'Valor', paidBy: 'Pago por', expAdded: 'Despesa adicionada',
+        costs: 'Custos', newExpense: 'Nova despesa', editExpense: 'Editar despesa', expenseSaved: 'Despesa salva ✓',
+        expenseRemoved: 'Despesa excluída', deleteExpenseQ: 'Excluir despesa?', deleteExpenseSub: 'Esta despesa será removida do rateio.',
+        splitEqually: 'Divisão igualitária', participants: 'Participantes', readReceipt: 'Ler comprovante',
+        readingReceipt: 'Lendo o comprovante…', couldNotReadReceipt: 'Não consegui ler o comprovante. Preencha manualmente.',
+        whoPaid: 'Quem pagou', markPaid: 'Pago', paid: 'Pago', pending: 'Pendente', balanceSummary: 'Resumo de saldos',
+        simplify: 'Simplificar despesas', settleUp: 'Acerto de contas', allSettled: 'Tudo certo — ninguém deve nada 🎉',
+        pays: 'paga', toReceive: 'a receber', toPay: 'a pagar', noExpenses: 'Nenhuma despesa ainda',
+        noExpensesSub: 'Adicione a primeira despesa ou leia um comprovante.', perPerson: 'cada', customShares: 'Ajustar por pessoa', total: 'Total', edit: 'Editar',
+        myJourney: 'Minha jornada', groupView: 'Grupo (todos)', viewLabel: 'Visão', meetings: 'Encontros', daysTogether: 'dias juntos',
+        dayTogether: 'dia junto', noMeetings: 'Sem encontros com os demais nesta visão.', meetingCities: 'Cidades de encontro', timeline: 'Linha do tempo',
+        groupRoutes: 'Rotas do grupo', whoTravels: 'Quem vai a cada destino', everyone: 'Todos', meetsHere: 'encontro (mesma cidade, mesmo dia)', noRouteYet: 'Sem rota para esta visão ainda.',
         appsHint: 'Abrir apps parceiros',
         date: 'Data', editProfile: 'Editar perfil', profileSaved: 'Perfil atualizado!', changePhoto: 'Toque para alterar a foto',
         eventType: 'Tipo do evento', descOpt: 'Descrição (opcional)', editActivity: 'Editar atividade',
@@ -625,6 +666,17 @@ const I18N = {
         tripDeleted: 'Trip deleted', onlyAdmin: 'Only the admin can delete', galByLocation: 'Records by trip location',
         finalize: 'Finalize trip', finalized: 'Trip finalized', activityTitle: 'Activity name',
         time: 'Time', save: 'Save', desc: 'Description', amount: 'Amount', paidBy: 'Paid by', expAdded: 'Expense added',
+        costs: 'Costs', newExpense: 'New expense', editExpense: 'Edit expense', expenseSaved: 'Expense saved ✓',
+        expenseRemoved: 'Expense deleted', deleteExpenseQ: 'Delete expense?', deleteExpenseSub: 'This expense will be removed from the split.',
+        splitEqually: 'Split equally', participants: 'Participants', readReceipt: 'Read receipt',
+        readingReceipt: 'Reading receipt…', couldNotReadReceipt: 'Could not read the receipt. Fill it in manually.',
+        whoPaid: 'Who paid', markPaid: 'Paid', paid: 'Paid', pending: 'Pending', balanceSummary: 'Balance summary',
+        simplify: 'Simplify expenses', settleUp: 'Settle up', allSettled: 'All settled — nobody owes anything 🎉',
+        pays: 'pays', toReceive: 'to receive', toPay: 'to pay', noExpenses: 'No expenses yet',
+        noExpensesSub: 'Add the first expense or read a receipt.', perPerson: 'each', customShares: 'Adjust per person', total: 'Total', edit: 'Edit',
+        myJourney: 'My journey', groupView: 'Group (everyone)', viewLabel: 'View', meetings: 'Meetups', daysTogether: 'days together',
+        dayTogether: 'day together', noMeetings: 'No meetups with others in this view.', meetingCities: 'Meetup cities', timeline: 'Timeline',
+        groupRoutes: 'Group routes', whoTravels: 'Who goes to each destination', everyone: 'Everyone', meetsHere: 'meetup (same city, same day)', noRouteYet: 'No route for this view yet.',
         appsHint: 'Open partner apps',
         date: 'Date', editProfile: 'Edit profile', profileSaved: 'Profile updated!', changePhoto: 'Tap to change photo',
         eventType: 'Event type', descOpt: 'Description (optional)', editActivity: 'Edit activity',
@@ -1070,7 +1122,7 @@ function TripScreen({ lang, trip, update, onBack, toast }) {
     const t = dict(lang);
     const [tab, setTab] = useState('schedule');
     const tabs = [['schedule', t.schedule, '📅'], ['map', t.map, '🗺️'], ['docs', t.docs, '📄'],
-        ['gallery', t.gallery, '🖼️'], ['members', t.members, '👥'], ['suggestions', t.suggestions, '✨']];
+        ['gallery', t.gallery, '🖼️'], ['costs', t.costs, '💰'], ['members', t.members, '👥'], ['suggestions', t.suggestions, '✨']];
     return (React.createElement("div", { className: "screen" },
         React.createElement("div", { className: "appbar" },
             React.createElement("button", { className: "iconbtn", onClick: onBack }, "\u2190"),
@@ -1085,6 +1137,7 @@ function TripScreen({ lang, trip, update, onBack, toast }) {
             tab === 'map' && React.createElement(MapTab, { t: t, trip: trip, update: update, toast: toast, goTab: setTab }),
             tab === 'docs' && React.createElement(DocsTab, { t: t, trip: trip, update: update, toast: toast, goTab: setTab }),
             tab === 'gallery' && React.createElement(GalleryTab, { t: t, trip: trip, update: update, toast: toast }),
+            tab === 'costs' && React.createElement(ExpensesTab, { t: t, trip: trip, update: update, toast: toast }),
             tab === 'suggestions' && React.createElement(SuggestTab, { t: t, trip: trip, update: update, toast: toast }),
             tab === 'members' && React.createElement(MembersTab, { t: t, trip: trip, update: update, toast: toast }))));
 }
@@ -1135,12 +1188,20 @@ const addMin = (hhmm, min) => {
     m = Math.max(0, Math.min(m, 1439));
     return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
 };
-// âncoras ordenadas por data: destinos definidos na criação + chegadas lidas das passagens
-function locationAnchors(trip) {
+// Um elemento de rota (destino/doc) pertence ao membro quando não tem dono (who vazio = todos)
+// ou quando o membro está na lista `who`. Sem memberId, considera tudo (rota da viagem inteira).
+function belongsToMember(el, memberId) {
+    if (!memberId) return true;
+    return !el || !el.who || !el.who.length || el.who.indexOf(memberId) >= 0;
+}
+// âncoras ordenadas por data: destinos definidos na criação + chegadas lidas das passagens.
+// `memberId` opcional filtra a rota daquele integrante (campo `who` em destinos/docs).
+function locationAnchors(trip, memberId) {
     const a = [];
-    (trip.destinations || []).forEach(d => { if (d.date && d.name && d.name !== 'A definir')
+    (trip.destinations || []).forEach(d => { if (d.date && d.name && d.name !== 'A definir' && belongsToMember(d, memberId))
         a.push({ date: d.date, city: cityOf(d.name) }); });
     (trip.docs || []).forEach(doc => {
+        if (!belongsToMember(doc, memberId)) return;
         if (doc.itin && doc.itin.legs && doc.itin.legs.length) {
             // SÓ o destino final da passagem (a última perna). Escalas não são "onde você fica".
             const last = doc.itin.legs[doc.itin.legs.length - 1];
@@ -1159,12 +1220,61 @@ function locationAnchors(trip) {
     return a.sort((x, y) => x.date === y.date ? ((x.doc ? 1 : 0) - (y.doc ? 1 : 0)) : x.date.localeCompare(y.date));
 }
 // local do dia: vale do destino até o próximo; após a ÚLTIMA data/destino (fim da viagem) volta a ser nulo
-function locationForDay(trip, day) {
-    const a = locationAnchors(trip);
+function locationForDay(trip, day, memberId) {
+    const a = locationAnchors(trip, memberId);
     if (!a.length) return null;
     if (day > a[a.length - 1].date) return null; // depois do último destino: sem local (dia "apagado")
     const past = a.filter(x => x.date <= day);
     return past.length ? past[past.length - 1].city : null;
+}
+// dias da viagem (YYYY-MM-DD) cobrindo do início ao fim, estendendo para abranger todas as âncoras
+function tripDays(trip) {
+    const all = locationAnchors(trip).map(x => x.date);
+    const lo = [trip.startDate].concat(all).filter(Boolean).sort()[0];
+    const hi = [trip.endDate].concat(all).filter(Boolean).sort().slice(-1)[0];
+    if (!lo || !hi) return [];
+    const out = [];
+    let d = new Date(lo + 'T00:00:00'), e = new Date(hi + 'T00:00:00');
+    let guard = 0;
+    while (d <= e && guard++ < 800) { out.push(d.toISOString().slice(0, 10)); d.setDate(d.getDate() + 1); }
+    return out;
+}
+// mapa dia→cidade do integrante. Diferente de locationForDay (que apaga o dia após a
+// ÚLTIMA âncora, p/ o cronograma), aqui a pessoa PERMANECE na última cidade até o fim da
+// viagem — é o que importa para saber com quem ela está em cada dia.
+function cityByDay(trip, memberId) {
+    const anchors = locationAnchors(trip, memberId);
+    const out = {};
+    tripDays(trip).forEach(day => {
+        const past = anchors.filter(x => x.date <= day);
+        out[day] = past.length ? past[past.length - 1].city : null;
+    });
+    return out;
+}
+const _normCity = c => (c || '').toString().trim().toLowerCase();
+// dias em que A e B estão na MESMA cidade; agrupa em trechos contíguos
+function sharedDaysBetween(trip, a, b) {
+    const days = tripDays(trip);
+    const ca = cityByDay(trip, a), cb = cityByDay(trip, b);
+    const segments = [];
+    let count = 0, cur = null;
+    days.forEach(day => {
+        const x = ca[day], y = cb[day];
+        const together = x && y && _normCity(x) === _normCity(y);
+        if (together) {
+            count++;
+            if (cur && _normCity(cur.city) === _normCity(x)) cur.to = day;
+            else { cur = { from: day, to: day, city: x }; segments.push(cur); }
+        } else { cur = null; }
+    });
+    return { count, segments };
+}
+// para o integrante `meId`: cada outro membro com dias/trechos em conjunto, ordenado por mais dias juntos
+function meetingsFor(trip, meId) {
+    return (trip.members || [])
+        .filter(m => m.id !== meId)
+        .map(m => { const s = sharedDaysBetween(trip, meId, m.id); return { id: m.id, member: m, count: s.count, segments: s.segments }; })
+        .sort((x, y) => y.count - x.count);
 }
 // hospedagens ativas num dia (check-in <= dia <= check-out), já adicionadas ao cronograma
 function lodgingForDay(trip, day) {
@@ -1384,8 +1494,9 @@ function parseAirTicketLoose(text) {
     return { legs, stages: legsToStages(legs) };
 }
 if (typeof window !== 'undefined') {
-    window._trippinParse = { parseAirTicket, parseAirTicketLoose };
-    window._trippinLoc = { locationAnchors, locationForDay, tripLocations };
+    window._trippinParse = { parseAirTicket, parseAirTicketLoose, parseExpense };
+    window._trippinLoc = { locationAnchors, locationForDay, tripLocations, tripDays, cityByDay, sharedDaysBetween, meetingsFor };
+    window._trippinCost = { normExpense, shareOf, balances, simplifyDebts };
 }
 const _scriptCache = {};
 function loadScriptOnce(src) { return _scriptCache[src] || (_scriptCache[src] = new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = () => res(); el.onerror = () => rej(new Error('falha ao carregar ' + src)); document.head.appendChild(el); })); }
@@ -1609,6 +1720,103 @@ function parseLodging(text) {
         address = (lines[ai].replace(/^.*?(endere[çc]o|address)\s*:?/i, '').trim() || lines[ai + 1] || '').trim();
     return { name: name || null, city: city || null, address: address || null, host: host || null, price: price || null,
         ciDate: ci, ciTime: ciT, coDate: co, coTime: coT, nights, guests: guestsM ? +guestsM[1] : null, code: code || null };
+}
+/* ===== Custos: divisão e simplificação de dívidas (funções puras, testáveis) ===== */
+// Normaliza uma despesa, com retrocompat dos itens antigos {id,desc,amount,paidBy}.
+function normExpense(e, members) {
+    const ids = (members || []).map(m => m.id);
+    const has = id => ids.length === 0 || ids.includes(id);
+    const participants = (e.participants && e.participants.length)
+        ? e.participants.filter(has)
+        : ids.slice();
+    return {
+        id: e.id, desc: e.desc || '', amount: +e.amount || 0,
+        currency: e.currency || 'BRL', date: e.date || null,
+        paidBy: (e.paidBy && has(e.paidBy)) ? e.paidBy : (has('me') ? 'me' : (ids[0] || 'me')),
+        participants: participants.length ? participants : (ids.length ? ids.slice() : ['me']),
+        equalSplit: e.equalSplit !== false, // padrão: divisão igualitária
+        shares: e.shares || {},             // cotas custom (valor absoluto) quando equalSplit=false
+        settled: e.settled || {},           // parcelas já pagas: ficam fora da simplificação
+        source: e.source || 'manual', note: e.note || ''
+    };
+}
+// Quanto `memberId` deve nesta despesa (0 se não participa).
+function shareOf(e, memberId, members) {
+    const x = normExpense(e, members);
+    if (!x.participants.includes(memberId)) return 0;
+    if (x.equalSplit) return x.amount / x.participants.length;
+    // custom: trata shares como VALOR; normaliza proporcionalmente ao total (cobre valor e %)
+    const sum = x.participants.reduce((acc, id) => acc + (+x.shares[id] || 0), 0);
+    if (sum <= 0) return x.amount / x.participants.length; // sem cotas válidas: cai no igualitário
+    return x.amount * ((+x.shares[memberId] || 0) / sum);
+}
+// Saldo líquido por membro: positivo = tem a receber; negativo = deve. Ignora parcelas `settled`.
+function balances(expenses, members) {
+    const bal = {};
+    (members || []).forEach(m => { bal[m.id] = 0; });
+    (expenses || []).forEach(e => {
+        const x = normExpense(e, members);
+        if (bal[x.paidBy] == null) bal[x.paidBy] = 0;
+        x.participants.forEach(id => {
+            if (x.settled[id]) return; // parcela já acertada: fora da conta
+            if (bal[id] == null) bal[id] = 0;
+            const owe = shareOf(x, id, members);
+            bal[id] -= owe;          // deve a sua parte
+            bal[x.paidBy] += owe;    // quem pagou tem a receber essa parte
+        });
+    });
+    Object.keys(bal).forEach(k => { bal[k] = Math.round(bal[k] * 100) / 100; });
+    return bal;
+}
+// Transferências mínimas para zerar os saldos (guloso: maior credor ↔ maior devedor).
+function simplifyDebts(expenses, members) {
+    const bal = balances(expenses, members);
+    const creditors = [], debtors = [];
+    Object.keys(bal).forEach(id => {
+        const v = bal[id];
+        if (v > 0.005) creditors.push({ id, amt: v });
+        else if (v < -0.005) debtors.push({ id, amt: -v });
+    });
+    creditors.sort((a, b) => b.amt - a.amt);
+    debtors.sort((a, b) => b.amt - a.amt);
+    const out = [];
+    let ci = 0, di = 0;
+    while (ci < creditors.length && di < debtors.length) {
+        const c = creditors[ci], d = debtors[di];
+        const pay = Math.round(Math.min(c.amt, d.amt) * 100) / 100;
+        if (pay > 0) out.push({ from: d.id, to: c.id, amount: pay });
+        c.amt -= pay; d.amt -= pay;
+        if (c.amt < 0.005) ci++;
+        if (d.amt < 0.005) di++;
+    }
+    return out;
+}
+// Interpreta um comprovante (imagem/PDF já convertido em texto) → valor, descrição e data.
+function parseExpense(text) {
+    const s = (text || '').replace(/ /g, ' ').replace(/\(cid:\d+\)/g, '');
+    // valor: prioriza linha com "total"; senão o maior valor monetário do texto
+    const moneyRe = /(?:R\$|US\$|\$|€|EUR|BRL|USD)?\s*([\d]{1,3}(?:[.\s]\d{3})*,\d{2}|\d+,\d{2}|\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2})/g;
+    const toNum = raw => {
+        let v = raw.trim();
+        if (/,\d{2}$/.test(v)) v = v.replace(/[.\s]/g, '').replace(',', '.'); // pt-BR: 1.234,56
+        else v = v.replace(/,/g, ''); // en: 1,234.56
+        return parseFloat(v);
+    };
+    let amount = null;
+    const totalLine = s.split(/\r?\n/).find(l => /total|valor|amount|montante/i.test(l) && moneyRe.test(l));
+    if (totalLine) { moneyRe.lastIndex = 0; const m = totalLine.match(moneyRe); if (m) amount = toNum(m[m.length - 1].replace(/[^\d.,\s]/g, '')); }
+    if (amount == null) {
+        moneyRe.lastIndex = 0; let m, vals = [];
+        while ((m = moneyRe.exec(s))) vals.push(toNum(m[1]));
+        vals = vals.filter(v => !isNaN(v) && v > 0);
+        if (vals.length) amount = Math.max.apply(null, vals);
+    }
+    const date = (lFindDates(s)[0] || {}).iso || null;
+    // descrição: 1ª linha "limpa" (sem ser só números/valores) ou o estabelecimento
+    const lines = s.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    let desc = lines.find(l => l.length >= 3 && /[A-Za-zÀ-ÿ]/.test(l) && !/^(total|valor|amount|cnpj|cpf|data|date)\b/i.test(l)) || null;
+    if (desc) desc = desc.replace(/\s{2,}/g, ' ').slice(0, 60);
+    return { amount: amount != null && !isNaN(amount) ? amount : null, desc: desc || null, date };
 }
 // OCR de imagem via Tesseract.js — carregado SOB DEMANDA (não bloqueia o app).
 // Worker persistente + idioma único ('por'): evita reinicializar e baixar o
@@ -1987,6 +2195,48 @@ function DestPinMap({ pts, segs, t, goGallery }) {
         React.createElement('div', { className: 'mapcanvas' },
             React.createElement('div', { className: 'maprow' }, children)));
 }
+// Linha do tempo de co-localização: uma faixa por integrante, células por dia; encontros (mesma cidade, mesmo dia) destacados.
+function CoLocationTimeline({ t, trip, members }) {
+    const days = tripDays(trip);
+    if (!days.length || !members.length)
+        return React.createElement("div", { className: "card sub", style: { textAlign: 'center', fontSize: 13 } }, t.noRouteYet);
+    const byMember = members.map(m => ({ m, cities: cityByDay(trip, m.id) }));
+    const meetCityByDay = {};
+    days.forEach(day => {
+        const counts = {};
+        byMember.forEach(x => { const c = x.cities[day]; if (c) counts[_normCity(c)] = (counts[_normCity(c)] || 0) + 1; });
+        meetCityByDay[day] = counts;
+    });
+    const dayNum = d => d.slice(8, 10);
+    return React.createElement("div", { className: "tl" },
+        React.createElement("div", { className: "tl-row tl-head" },
+            React.createElement("div", { className: "tl-name" }, ""),
+            React.createElement("div", { className: "tl-cells" }, days.map(d =>
+                React.createElement("div", { className: "tl-cell", key: d, title: brDateT(d) }, dayNum(d))))),
+        byMember.map(x => React.createElement("div", { className: "tl-row", key: x.m.id },
+            React.createElement("div", { className: "tl-name", title: memberName(members, x.m.id) }, memberName(members, x.m.id)),
+            React.createElement("div", { className: "tl-cells" }, days.map(d => {
+                const c = x.cities[d];
+                const meet = c && meetCityByDay[d][_normCity(c)] > 1;
+                return React.createElement("div", { key: d, className: "tl-cell" + (meet ? " meet" : ""),
+                    title: (c || '—') + ' · ' + brDateT(d), style: { background: c ? cityColor(c) : '#ededed' } },
+                    meet ? React.createElement("span", { className: "mk" }, "✦") : null);
+            })))));
+}
+// Rotas do grupo: uma faixa de pins por integrante (reusa o DestPinMap), rotuladas pelo nome.
+function GroupRouteMap({ t, trip, members, segs }) {
+    const rows = members.map(m => {
+        const anchors = locationAnchors(trip, m.id);
+        const pts = [];
+        anchors.forEach(an => { if (!pts.some(p => _normCity(p.city) === _normCity(an.city))) pts.push({ city: an.city, date: an.date }); });
+        if (!pts.length) return null;
+        return React.createElement("div", { key: m.id, style: { marginBottom: 12 } },
+            React.createElement("div", { style: { fontSize: 12.5, fontWeight: 700, margin: '0 0 6px', color: 'var(--ink)' } }, "🧍 " + memberName(members, m.id)),
+            React.createElement(DestPinMap, { pts: pts, segs: segs, t: t }));
+    }).filter(Boolean);
+    if (!rows.length) return React.createElement("div", { className: "card sub", style: { textAlign: 'center', fontSize: 13 } }, t.noRouteYet);
+    return React.createElement("div", null, rows);
+}
 /* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
 function MapTab({ t, trip, update, toast, goTab }) {
     const ov = trip.cityOverrides || { renames: {}, hidden: [] };
@@ -1996,6 +2246,22 @@ function MapTab({ t, trip, update, toast, goTab }) {
     const [delCity, setDelCity] = useState(null);
     const [myLoc, setMyLoc] = useState(null);
     const [locating, setLocating] = useState(false);
+    // visões por usuário: 'me' (minha jornada), 'group' (todos), ou um id de integrante
+    const [view, setView] = useState('me');
+    const members = trip.members || [];
+    const isGroup = view === 'group';
+    const routeMid = isGroup ? null : view; // null = rota da viagem inteira (todos)
+    // atribui quais integrantes vão a um destino (campo who; vazio/ausente = todos)
+    const toggleWho = (destIdx, mid) => {
+        const dests = (trip.destinations || []).slice();
+        const d = Object.assign({}, dests[destIdx]);
+        let who = (d.who && d.who.length) ? d.who.slice() : members.map(x => x.id);
+        if (who.indexOf(mid) >= 0) who = who.filter(x => x !== mid); else who.push(mid);
+        if (!who.length) return; // um destino não pode ficar sem ninguém
+        d.who = (who.length >= members.length) ? undefined : who; // todos marcados = sem dono (retrocompat)
+        dests[destIdx] = d;
+        update({ ...trip, destinations: dests });
+    };
     // mapa renderizado pelo DestPinMap (faixa de pins horizontal)
     const locateMe = () => {
         if (!navigator.geolocation) {
@@ -2019,8 +2285,9 @@ function MapTab({ t, trip, update, toast, goTab }) {
     } setEditCity(null); };
     const doDelCity = (orig) => { update({ ...trip, cityOverrides: { renames: ov.renames || {}, hidden: [...(ov.hidden || []), orig] } }); setDelCity(null); toast(t.cityRemoved); };
     // trechos: usa o roteiro interpretado (com escalas) quando houver; senão o seg manual
+    // (filtrados pela visão atual: rota do integrante selecionado ou de todos)
     const segs = [];
-    (trip.docs || []).forEach(d => {
+    (trip.docs || []).filter(d => belongsToMember(d, routeMid)).forEach(d => {
         if (d.itin && d.itin.legs)
             d.itin.legs.forEach(lg => segs.push({ fromCity: lg.from.city, toCity: lg.to.city, depDate: lg.depDate, depTime: lg.depTime, arrDate: lg.arrDate, arrTime: lg.arrTime, iata: lg.from.iata + '→' + lg.to.iata, mode: d.sub }));
         else if (d.seg)
@@ -2038,9 +2305,9 @@ function MapTab({ t, trip, update, toast, goTab }) {
             stops.push({ city, date });
     };
     const allPts = [];
-    (trip.destinations || []).filter(d => d.name && d.name !== 'A definir').forEach(d => allPts.push({ city: cityOf(d.name), date: d.date || trip.startDate, time: '00:00' }));
+    (trip.destinations || []).filter(d => d.name && d.name !== 'A definir' && belongsToMember(d, routeMid)).forEach(d => allPts.push({ city: cityOf(d.name), date: d.date || trip.startDate, time: '00:00' }));
     // por passagem: datas nulas (OCR não leu) herdam a 1a data conhecida do doc -> a cidade não "pula" para o início
-    (trip.docs || []).forEach(d => {
+    (trip.docs || []).filter(d => belongsToMember(d, routeMid)).forEach(d => {
         const legs = (d.itin && d.itin.legs) ? d.itin.legs
             : (d.seg ? [{ from: { city: d.seg.fromCity }, to: { city: d.seg.toCity }, depDate: d.seg.depDate, depTime: d.seg.depTime, arrDate: d.seg.arrDate, arrTime: d.seg.arrTime }] : []);
         const fb = legs.map(l => l.depDate || l.arrDate).find(Boolean) || trip.startDate;
@@ -2057,6 +2324,40 @@ function MapTab({ t, trip, update, toast, goTab }) {
     const ys = i => 55 + (i % 2 === 0 ? -15 : 15);
     const citiesOrdered = pts.map(p => dn(p.city)).filter(c => c && c !== 'A definir');
     return (React.createElement("div", null,
+        React.createElement("div", { className: "viewsel" },
+            React.createElement("span", { style: { fontSize: 13, fontWeight: 700 } }, t.viewLabel + ':'),
+            React.createElement("select", { value: view, onChange: e => setView(e.target.value) },
+                React.createElement("option", { value: "me" }, t.myJourney),
+                React.createElement("option", { value: "group" }, t.groupView),
+                members.filter(m => m.id !== 'me').map(m => React.createElement("option", { key: m.id, value: m.id }, memberName(members, m.id))))),
+        isGroup
+            ? React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "sectiontitle", style: { marginTop: 0 } }, "🗓️ " + t.timeline),
+                React.createElement(CoLocationTimeline, { t: t, trip: trip, members: members }),
+                React.createElement("div", { className: "card sub", style: { fontSize: 11.5, marginTop: 8 } }, "✦ " + t.meetsHere),
+                React.createElement("div", { className: "sectiontitle" }, "🤝 " + t.meetings),
+                (() => {
+                    const ms = meetingsFor(trip, 'me').filter(x => x.count > 0);
+                    if (!ms.length) return React.createElement("div", { className: "card sub", style: { fontSize: 13 } }, t.noMeetings);
+                    return ms.map(mt => React.createElement("div", { className: "meetcard", key: mt.id },
+                        React.createElement("div", { className: "av" }, (memberName(members, mt.id)[0] || '?').toUpperCase()),
+                        React.createElement("div", { className: "mm" },
+                            React.createElement("b", null, memberName(members, mt.id)),
+                            React.createElement("span", null, mt.segments.map(s => dn(s.city) + ' (' + brDateT(s.from) + '–' + brDateT(s.to) + ')').join(' · '))),
+                        React.createElement("div", { className: "cnt" }, mt.count + ' ' + (mt.count === 1 ? t.dayTogether : t.daysTogether))));
+                })(),
+                React.createElement("div", { className: "sectiontitle" }, "🧍 " + t.whoTravels),
+                (trip.destinations || []).filter(d => d.name && d.name !== 'A definir').map((d) => {
+                    const realIdx = (trip.destinations || []).indexOf(d);
+                    const who = (d.who && d.who.length) ? d.who : members.map(x => x.id);
+                    return React.createElement("div", { className: "card", key: realIdx, style: { padding: 11 } },
+                        React.createElement("b", { style: { fontSize: 13.5 } }, cityOf(d.name) + (d.date ? ' · ' + brDateT(d.date) : '')),
+                        React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 } },
+                            members.map(m => React.createElement("span", { key: m.id, className: "pchip" + (who.indexOf(m.id) >= 0 ? " on" : ""), onClick: () => toggleWho(realIdx, m.id) }, memberName(members, m.id)))));
+                }),
+                React.createElement("div", { className: "sectiontitle" }, "🗺️ " + t.groupRoutes),
+                React.createElement(GroupRouteMap, { t: t, trip: trip, members: members, segs: segs }))
+            : React.createElement(React.Fragment, null,
         React.createElement(DestPinMap, { pts: pts, segs: segs, t: t, goGallery: goTab }),
         React.createElement("div", { style: { display: 'flex', gap: 8, marginTop: 10 } },
             React.createElement("button", { className: "btn btn-dark", style: { flex: 1 }, onClick: locateMe, disabled: locating }, locating ? '⏳ ' + t.locating : '📍 ' + t.useMyLoc)),
@@ -2111,7 +2412,7 @@ function MapTab({ t, trip, update, toast, goTab }) {
         (ov.hidden && ov.hidden.length > 0) && React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: () => { update({ ...trip, cityOverrides: { renames: ov.renames || {}, hidden: [] } }); toast(t.saved || '✓'); } },
             "\u21A9 ",
             t.restoreCities),
-        React.createElement("div", { className: "card sub", style: { textAlign: 'center', fontSize: 12 } }, "\uD83D\uDFE0 Origem \u00B7 \u26AA Escala \u00B7 \uD83D\uDD35 Destino final \u00B7 Toque \u270F\uFE0F para renomear ou \uD83D\uDDD1\uFE0F para ocultar uma cidade"),
+        React.createElement("div", { className: "card sub", style: { textAlign: 'center', fontSize: 12 } }, "\uD83D\uDFE0 Origem \u00B7 \u26AA Escala \u00B7 \uD83D\uDD35 Destino final \u00B7 Toque \u270F\uFE0F para renomear ou \uD83D\uDDD1\uFE0F para ocultar uma cidade")),
         delCity && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1\uFE0F", title: t.deleteCityQ, msg: '"' + dn(delCity) + '" ' + t.deleteCitySub, confirmLabel: t.yesDelete, cancelLabel: t.cancel, danger: true, onConfirm: () => doDelCity(delCity), onCancel: () => setDelCity(null) })));
 }
 /* --- Câmera real do dispositivo via getUserMedia (foto salva no app) --- */
@@ -2831,7 +3132,6 @@ function SuggestTab({ t, trip, update, toast }) {
 function MembersTab({ t, trip, update, toast }) {
     const [openId, setOpenId] = useState(null);
     const [email, setEmail] = useState('');
-    const [exp, setExp] = useState(false);
     const meIsAdmin = (trip.members || []).some(m => m.id === 'me' && m.isAdmin);
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     const today = () => new Date().toISOString().slice(0, 10);
@@ -2897,7 +3197,6 @@ function MembersTab({ t, trip, update, toast }) {
     };
     const toggleAdmin = id => update({ ...trip, members: trip.members.map(m => m.id === id ? { ...m, isAdmin: !m.isAdmin } : m) });
     const remove = id => { update({ ...trip, members: trip.members.filter(m => m.id !== id) }); setOpenId(null); };
-    const addExpense = (d, a) => { update({ ...trip, expenses: [...trip.expenses, { id: uid(), desc: d, amount: a, paidBy: 'Você' }] }); toast(t.expAdded); };
     const ageOf = b => {
         if (!b)
             return null;
@@ -3020,38 +3319,165 @@ function MembersTab({ t, trip, update, toast }) {
                 email && !emailOk && React.createElement("div", { className: "errmsg" }, t.invalidEmail)),
             React.createElement("button", { className: "btn btn-primary", disabled: !emailOk, onClick: invite },
                 "\uD83D\uDCE7 ",
-                t.sendInvite)),
-        React.createElement("div", { className: "sectiontitle" },
-            "\uD83D\uDCB0 ",
-            t.expenses),
-        trip.expenses.map(e => (React.createElement("div", { className: "expense", key: e.id },
-            React.createElement("div", { className: "el" },
-                React.createElement("b", null, e.desc),
-                React.createElement("span", null,
-                    t.paidBy,
-                    ": ",
-                    e.paidBy)),
-            React.createElement("div", { className: "ev" },
-                "\u20AC ",
-                e.amount)))),
-        exp ? React.createElement(ExpenseForm, { t: t, onSave: (d, a) => { addExpense(d, a); setExp(false); }, onCancel: () => setExp(false) })
-            : React.createElement("button", { className: "btn btn-ghost", onClick: () => setExp(true) },
-                "+ ",
-                t.addExpense)));
+                t.sendInvite))));
 }
-function ExpenseForm({ t, onSave, onCancel }) {
-    const [d, setD] = useState('');
-    const [a, setA] = useState('');
-    return (React.createElement("div", { className: "card" },
-        React.createElement("div", { className: "field" },
-            React.createElement("label", null, t.desc),
-            React.createElement("input", { className: "inp", value: d, onChange: e => setD(e.target.value) })),
-        React.createElement("div", { className: "field" },
-            React.createElement("label", null,
-                t.amount,
-                " (\u20AC)"),
-            React.createElement("input", { type: "number", className: "inp", value: a, onChange: e => setA(e.target.value) })),
-        React.createElement("button", { className: "btn btn-primary", disabled: !d || !a, onClick: () => onSave(d, Number(a)) }, t.save)));
+// formata moeda com fallback robusto (n\u00E3o depende de Intl quebrar no celular)
+function fmtCur(v, cur) {
+    const n = Math.round((+v || 0) * 100) / 100;
+    try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: cur || 'BRL', maximumFractionDigits: 2 }).format(n); }
+    catch (e) { return (cur === 'EUR' ? '\u20AC ' : cur === 'USD' ? '$ ' : 'R$ ') + n.toFixed(2).replace('.', ','); }
+}
+function memberName(members, id) {
+    const m = (members || []).find(x => x.id === id);
+    if (m) return m.firstName || m.name || (id === 'me' ? 'Voc\u00EA' : id);
+    return id === 'me' ? 'Voc\u00EA' : id;
+}
+/* ===== Aba de Custos: despesas com divis\u00E3o, flag de pago e simplifica\u00E7\u00E3o ===== */
+function ExpensesTab({ t, trip, update, toast }) {
+    const members = trip.members || [];
+    const expenses = trip.expenses || [];
+    const cur = (expenses.find(e => e.currency) || {}).currency || 'BRL';
+    const [editing, setEditing] = useState(null); // id de despesa, 'new', ou null
+    const [del, setDel] = useState(null);
+    const [showSettle, setShowSettle] = useState(false);
+    const saveExpense = (exp) => {
+        const exists = expenses.some(e => e.id === exp.id);
+        update({ ...trip, expenses: exists ? expenses.map(e => e.id === exp.id ? exp : e) : [...expenses, exp] });
+        setEditing(null);
+        toast(t.expenseSaved);
+    };
+    const removeExpense = (id) => { update({ ...trip, expenses: expenses.filter(e => e.id !== id) }); setDel(null); toast(t.expenseRemoved); };
+    const togglePaid = (exp, mid) => {
+        const settled = { ...(exp.settled || {}) };
+        if (settled[mid]) delete settled[mid]; else settled[mid] = true;
+        update({ ...trip, expenses: expenses.map(e => e.id === exp.id ? { ...e, settled } : e) });
+    };
+    if (editing) {
+        const base = editing === 'new' ? null : expenses.find(e => e.id === editing);
+        return React.createElement(ExpenseEditor, { t: t, members: members, cur: cur, expense: base, onSave: saveExpense, onCancel: () => setEditing(null), toast: toast });
+    }
+    const bal = balances(expenses, members);
+    const settle = simplifyDebts(expenses, members);
+    return React.createElement("div", null,
+        React.createElement("button", { className: "btn btn-primary", onClick: () => setEditing('new') }, "+ " + t.newExpense),
+        expenses.length === 0
+            ? React.createElement("div", { className: "empty", style: { padding: '34px 16px', textAlign: 'center' } },
+                React.createElement("div", { style: { fontSize: 40 } }, "\uD83D\uDCB0"),
+                React.createElement("div", { style: { fontWeight: 700, marginTop: 8, color: 'var(--ink)' } }, t.noExpenses),
+                React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)', marginTop: 4 } }, t.noExpensesSub))
+            : React.createElement("div", { style: { marginTop: 14 } }, expenses.map(e => {
+                const x = normExpense(e, members);
+                return React.createElement("div", { className: "card", key: e.id, style: { padding: 13, marginBottom: 10 } },
+                    React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 } },
+                        React.createElement("div", { style: { minWidth: 0 } },
+                            React.createElement("b", { style: { fontSize: 14.5, fontFamily: 'Sora' } }, x.desc || t.newExpense),
+                            React.createElement("div", { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } },
+                                t.paidBy + ': ' + memberName(members, x.paidBy) + (x.date ? ' \u00B7 ' + brDateT(x.date) : ''))),
+                        React.createElement("div", { style: { textAlign: 'right', flexShrink: 0 } },
+                            React.createElement("div", { style: { fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 15 } }, fmtCur(x.amount, x.currency)),
+                            React.createElement("div", { style: { fontSize: 10.5, color: 'var(--muted)' } }, x.equalSplit ? t.splitEqually : t.customShares))),
+                    React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 } },
+                        x.participants.map(pid => React.createElement("span", { key: pid, className: "pchip on", onClick: () => togglePaid(e, pid),
+                            title: x.settled[pid] ? t.paid : t.pending, style: x.settled[pid] ? { opacity: .5, textDecoration: 'line-through' } : {} },
+                            React.createElement("span", null, memberName(members, pid)),
+                            React.createElement("span", { className: "pp" }, fmtCur(shareOf(x, pid, members), x.currency))))),
+                    React.createElement("div", { style: { display: 'flex', gap: 8, marginTop: 10 } },
+                        React.createElement("button", { className: "btn btn-ghost", style: { flex: 1, padding: '8px' }, onClick: () => setEditing(e.id) }, "\u270F\uFE0F " + t.edit),
+                        React.createElement("button", { className: "btn btn-ghost", style: { width: 'auto', padding: '8px 13px', color: 'var(--danger)' }, onClick: () => setDel(e) }, "\uD83D\uDDD1")));
+            })),
+        expenses.length > 0 && React.createElement("div", { className: "card", style: { marginTop: 14 } },
+            React.createElement("div", { className: "sectiontitle", style: { margin: '0 0 8px' } }, "\uD83D\uDCCA " + t.balanceSummary),
+            members.map(m => {
+                const v = bal[m.id] || 0;
+                const cls = v > 0.005 ? 'pos' : v < -0.005 ? 'neg' : 'zero';
+                const lbl = v > 0.005 ? ('+' + fmtCur(v, cur) + ' \u00B7 ' + t.toReceive) : v < -0.005 ? (fmtCur(v, cur) + ' \u00B7 ' + t.toPay) : fmtCur(0, cur);
+                return React.createElement("div", { className: "balrow", key: m.id },
+                    React.createElement("span", null, memberName(members, m.id)),
+                    React.createElement("span", { className: cls }, lbl));
+            }),
+            React.createElement("button", { className: "btn btn-dark", style: { marginTop: 12 }, onClick: () => setShowSettle(s => !s) }, "\uD83E\uDD1D " + t.simplify),
+            showSettle && React.createElement("div", { style: { marginTop: 12 } },
+                settle.length === 0
+                    ? React.createElement("div", { style: { textAlign: 'center', color: 'var(--muted)', fontSize: 13.5, padding: 10 } }, t.allSettled)
+                    : settle.map((s, i) => React.createElement("div", { className: "settle", key: i },
+                        React.createElement("span", null, memberName(members, s.from) + " " + t.pays + " " + memberName(members, s.to)),
+                        React.createElement("span", { className: "amt" }, fmtCur(s.amount, cur)))))),
+        del && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1", title: t.deleteExpenseQ, msg: t.deleteExpenseSub,
+            confirmLabel: t.yesDelete, cancelLabel: t.back, danger: true,
+            onConfirm: () => removeExpense(del.id), onCancel: () => setDel(null) }));
+}
+function ExpenseEditor({ t, members, cur, expense, onSave, onCancel, toast }) {
+    const base = expense ? normExpense(expense, members) : null;
+    const [desc, setDesc] = useState(base ? base.desc : '');
+    const [amount, setAmount] = useState(base ? String(base.amount) : '');
+    const [date, setDate] = useState(base ? (base.date || '') : '');
+    const [paidBy, setPaidBy] = useState(base ? base.paidBy : (members.some(m => m.id === 'me') ? 'me' : ((members[0] || {}).id || 'me')));
+    const [parts, setParts] = useState(base ? base.participants.slice() : members.map(m => m.id));
+    const [equal, setEqual] = useState(base ? base.equalSplit : true);
+    const [shares, setShares] = useState(base ? { ...base.shares } : {});
+    const [reading, setReading] = useState(false);
+    const fileRef = useRef(null);
+    const id = base ? base.id : uid();
+    const togglePart = (mid) => setParts(p => p.includes(mid) ? p.filter(x => x !== mid) : [...p, mid]);
+    const onFile = async (file) => {
+        if (!file) return;
+        setReading(true);
+        try {
+            let text = '';
+            if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') { const buf = await file.arrayBuffer(); text = await pdfToText(buf); }
+            else { text = await imageToText(file); }
+            const r = parseExpense(text);
+            if (r.amount != null) setAmount(String(r.amount));
+            if (r.desc) setDesc(r.desc);
+            if (r.date) setDate(r.date);
+            if (r.amount == null && !r.desc) toast(t.couldNotReadReceipt);
+        } catch (e) { toast(t.couldNotReadReceipt); }
+        setReading(false);
+    };
+    const save = () => onSave({
+        id: id, desc: desc.trim(), amount: Number(amount) || 0, currency: cur, date: date || null,
+        paidBy: paidBy, participants: parts.length ? parts : members.map(m => m.id),
+        equalSplit: equal, shares: equal ? {} : shares,
+        settled: base ? (expense.settled || {}) : {},
+        source: (base && expense.source === 'doc') ? 'doc' : 'manual'
+    });
+    return React.createElement("div", null,
+        React.createElement("button", { className: "blkbtn", onClick: onCancel, title: t.back }, "\u2190"),
+        React.createElement("div", { className: "card", style: { marginTop: 10 } },
+            React.createElement("div", { className: "sectiontitle", style: { margin: '0 0 12px' } }, base ? t.editExpense : t.newExpense),
+            React.createElement("button", { className: "btn btn-ghost", disabled: reading, onClick: () => fileRef.current && fileRef.current.click() },
+                reading ? ("\u23F3 " + t.readingReceipt) : ("\uD83D\uDCF7 " + t.readReceipt)),
+            React.createElement("input", { ref: fileRef, type: "file", accept: "image/*,application/pdf", style: { display: 'none' },
+                onChange: e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; onFile(f); } }),
+            React.createElement("div", { className: "field", style: { marginTop: 12 } },
+                React.createElement("label", null, t.desc),
+                React.createElement("input", { className: "inp", value: desc, onChange: e => setDesc(e.target.value) })),
+            React.createElement("div", { className: "row" },
+                React.createElement("div", { className: "field" },
+                    React.createElement("label", null, t.amount + ' (' + cur + ')'),
+                    React.createElement("input", { type: "number", className: "inp", value: amount, onChange: e => setAmount(e.target.value) })),
+                React.createElement("div", { className: "field" },
+                    React.createElement("label", null, t.date),
+                    React.createElement("input", { type: "date", className: "inp", value: date, onChange: e => setDate(e.target.value) }))),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.whoPaid),
+                React.createElement("select", { className: "inp", value: paidBy, onChange: e => setPaidBy(e.target.value) },
+                    members.map(m => React.createElement("option", { key: m.id, value: m.id }, memberName(members, m.id))))),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.participants),
+                React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+                    members.map(m => React.createElement("span", { key: m.id, className: "pchip" + (parts.includes(m.id) ? " on" : ""), onClick: () => togglePart(m.id) },
+                        memberName(members, m.id))))),
+            React.createElement("label", { style: { display: 'flex', alignItems: 'center', gap: 8, margin: '2px 0 10px', fontSize: 13.5, fontWeight: 600 } },
+                React.createElement("input", { type: "checkbox", checked: equal, onChange: e => setEqual(e.target.checked) }),
+                t.splitEqually),
+            !equal && React.createElement("div", { style: { marginBottom: 8 } }, parts.map(pid =>
+                React.createElement("div", { key: pid, style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 } },
+                    React.createElement("span", { style: { flex: 1, fontSize: 13 } }, memberName(members, pid)),
+                    React.createElement("input", { type: "number", className: "inp", style: { width: 120 }, placeholder: "0",
+                        value: shares[pid] != null ? shares[pid] : '', onChange: e => setShares(s => Object.assign({}, s, { [pid]: e.target.value })) })))),
+            React.createElement("button", { className: "btn btn-primary", style: { marginTop: 6 },
+                disabled: !desc.trim() || !(Number(amount) > 0) || parts.length === 0, onClick: save }, t.save)));
 }
 /* ---------------- Menu (full-screen, de baixo para cima) ---------------- */
 function MenuSheet({ t, user, onClose, onNav, onLogout }) {
@@ -3235,12 +3661,14 @@ function NotifPanel({ t, notifs, onClose, onAct, onDismiss }) {
 /* ---------------- ROOT APP ---------------- */
 function App() {
     const persisted = load();
+    // deep-link from buscar-hospedagem: open a specific trip on the schedule tab
+    const _pendingTrip = sessionStorage.getItem('trippin_open_trip') || null;
     const [lang, setLang] = useState(persisted.lang || null);
     const [user, setUser] = useState(persisted.user || null);
     const [trips, setTrips] = useState(persisted.trips || null);
-    const [screen, setScreen] = useState(persisted.user ? 'home' : 'lang');
+    const [screen, setScreen] = useState(_pendingTrip && persisted.user ? 'trip' : (persisted.user ? 'home' : 'lang'));
     const [locked, setLocked] = useState(() => !!(persisted.user && persisted.user.passwordHash && !sessionStorage.getItem('trippin_unlocked')));
-    const [activeTrip, setActiveTrip] = useState(null);
+    const [activeTrip, setActiveTrip] = useState(_pendingTrip);
     const [toastMsg, setToastMsg] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
@@ -3253,6 +3681,8 @@ function App() {
     useEffect(() => { if (lang || user || trips)
         save({ lang, user, trips, notifs, settings }); }, [lang, user, trips, notifs, settings]);
     useEffect(() => { window._trippinUser = user; }, [user]);
+    // clear deep-link flag once consumed
+    useEffect(() => { if (_pendingTrip) { sessionStorage.removeItem('trippin_open_trip'); sessionStorage.removeItem('trippin_open_tab'); } }, []);
     // start with empty trips list on first profile creation
     useEffect(() => { if (user && trips === null) {
         setTrips([]);

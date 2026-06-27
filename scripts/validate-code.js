@@ -143,6 +143,25 @@ inline.forEach((b, idx) => {
   }
 });
 
+// 1b. buscar-hospedagem.html — mesma blindagem de "tela branca" da tela de busca
+const staysPath = path.join(APP, 'buscar-hospedagem.html');
+if (fs.existsSync(staysPath)) {
+  const staysInline = extractInlineScripts(fs.readFileSync(staysPath, 'utf8'));
+  if (!staysInline.length) bad('buscar-hospedagem.html — nenhum <script> inline encontrado');
+  staysInline.forEach((b, idx) => {
+    const label = `buscar-hospedagem.html · script inline #${idx + 1} (começa na linha ${b.startLine})`;
+    const chk = nodeCheck(b.code);
+    if (chk.ok) {
+      ok(label + ' — sintaxe OK');
+    } else {
+      const realLine = chk.line ? b.startLine + chk.line - 1 : '?';
+      bad(`${label} — ${chk.message}  →  buscar-hospedagem.html linha ~${realLine}`);
+      const bal = balance(b.code);
+      if (!bal.ok) console.log('      dica de balanceamento: ' + bal.message.replace(/linha (\d+)/g, (_, l) => 'linha ' + (b.startLine + parseInt(l, 10) - 1)));
+    }
+  });
+}
+
 // 2. JS externos
 [['config.js', path.join(APP, 'config.js')], ['src/trippin-api.js', path.join(APP, 'src', 'trippin-api.js')]].forEach(([name, p]) => {
   if (!fs.existsSync(p)) { bad(`${name} — arquivo não encontrado`); return; }

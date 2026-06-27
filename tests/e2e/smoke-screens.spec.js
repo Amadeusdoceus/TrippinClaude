@@ -48,7 +48,7 @@ test.describe('Smoke · todas as telas renderizam sem quebrar', () => {
 
     // ── Viagem + todas as abas ──────────────────────────────────
     await createTrip(page, { name: 'Revisão Visual' });
-    const tabs = ['Cronograma', 'Mapa', 'Docs', 'Galeria', 'Usuários', 'Sugestões'];
+    const tabs = ['Cronograma', 'Mapa', 'Docs', 'Galeria', 'Custos', 'Usuários', 'Sugestões'];
     for (const label of tabs) {
       await clickButton(page, label);
       await page.waitForTimeout(150); // deixa a aba montar
