@@ -262,7 +262,8 @@
   .balrow .zero{color:var(--muted);font-family:'JetBrains Mono'}
   /* rotas / co-localização */
   .viewsel{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-  .viewsel select{flex:1;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;background:#fff;font-weight:600;font-size:14px;color:var(--ink)}
+  .viewsel select{flex:1;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;background:var(--card);font-weight:600;font-size:14px;color:var(--ink)}
+  .viewsel select option{background:var(--card);color:var(--ink)}
   .tl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff;padding:10px;-webkit-overflow-scrolling:touch}
   .tl-row{display:flex;align-items:center;margin-bottom:5px}
   .tl-row:last-child{margin-bottom:0}
@@ -278,6 +279,12 @@
   .meetcard .mm b{font-size:13.5px;display:block}
   .meetcard .mm span{font-size:11.5px;color:var(--muted)}
   .meetcard .cnt{margin-left:auto;text-align:right;font-family:'JetBrains Mono';font-weight:700;color:var(--coral);font-size:12.5px;flex-shrink:0;white-space:nowrap}
+  /* check-in da passagem (card do documento) */
+  .checkin{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}
+  .ci-row{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .ci-row .mono{color:var(--ink);font-weight:700;font-family:'JetBrains Mono'}
+  .copybtn{border:1px solid var(--line);background:var(--card);border-radius:7px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--ink)}
+  .copybtn:active{transform:scale(.94)}
 
   /* chips */
   .chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);
@@ -598,6 +605,7 @@ const I18N = {
         myJourney: 'Minha jornada', groupView: 'Grupo (todos)', viewLabel: 'Visão', meetings: 'Encontros', daysTogether: 'dias juntos',
         dayTogether: 'dia junto', noMeetings: 'Sem encontros com os demais nesta visão.', meetingCities: 'Cidades de encontro', timeline: 'Linha do tempo',
         groupRoutes: 'Rotas do grupo', whoTravels: 'Quem vai a cada destino', everyone: 'Todos', meetsHere: 'encontro (mesma cidade, mesmo dia)', noRouteYet: 'Sem rota para esta visão ainda.',
+        checkinBtn: 'Check-in', checkinOpens: 'Check-in abre', checkinEst: 'estimado', bookingCode: 'Código da reserva', copyCode: 'Copiar código', copied: 'Copiado!',
         appsHint: 'Abrir apps parceiros',
         date: 'Data', editProfile: 'Editar perfil', profileSaved: 'Perfil atualizado!', changePhoto: 'Toque para alterar a foto',
         eventType: 'Tipo do evento', descOpt: 'Descrição (opcional)', editActivity: 'Editar atividade',
@@ -677,6 +685,7 @@ const I18N = {
         myJourney: 'My journey', groupView: 'Group (everyone)', viewLabel: 'View', meetings: 'Meetups', daysTogether: 'days together',
         dayTogether: 'day together', noMeetings: 'No meetups with others in this view.', meetingCities: 'Meetup cities', timeline: 'Timeline',
         groupRoutes: 'Group routes', whoTravels: 'Who goes to each destination', everyone: 'Everyone', meetsHere: 'meetup (same city, same day)', noRouteYet: 'No route for this view yet.',
+        checkinBtn: 'Check-in', checkinOpens: 'Check-in opens', checkinEst: 'estimated', bookingCode: 'Booking code', copyCode: 'Copy code', copied: 'Copied!',
         appsHint: 'Open partner apps',
         date: 'Date', editProfile: 'Edit profile', profileSaved: 'Profile updated!', changePhoto: 'Tap to change photo',
         eventType: 'Event type', descOpt: 'Description (optional)', editActivity: 'Edit activity',
@@ -1329,6 +1338,7 @@ const AIRPORTS = [
     [/BARCELONA/i, { iata: 'BCN', city: 'Barcelona' }], [/PARIS|CHARLES DE GAULLE/i, { iata: 'CDG', city: 'Paris' }],
     [/LONDON|HEATHROW/i, { iata: 'LHR', city: 'Londres' }], [/FRANKFURT/i, { iata: 'FRA', city: 'Frankfurt' }],
     [/ROME|ROMA|FIUMICINO/i, { iata: 'FCO', city: 'Roma' }], [/AMSTERDAM|SCHIPHOL/i, { iata: 'AMS', city: 'Amsterdã' }],
+    [/SPLIT/i, { iata: 'SPU', city: 'Split' }], [/DUBROVNIK/i, { iata: 'DBV', city: 'Dubrovnik' }],
 ];
 const MONTHS_T = { jan: 0, feb: 1, fev: 1, mar: 2, apr: 3, abr: 3, may: 4, mai: 4, jun: 5, jul: 6, aug: 7, ago: 7, sep: 8, set: 8, oct: 9, out: 9, nov: 10, dec: 11, dez: 11 };
 const titleCase = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()).replace(/\s+/g, ' ').trim();
@@ -1440,7 +1450,7 @@ function legsToStages(legs) {
         "Nome (IATA)" em sequência (estilo KLM/esky). Horários e datas são
         atribuídos ao endpoint mais próximo no texto (ignora relógio da status bar). */
 const IATA_CITY = (() => { const m = {}; AIRPORTS.forEach(([re, info]) => { m[info.iata] = info.city; });
-    Object.assign(m, { DBV: 'Dubrovnik', POA: 'Porto Alegre', SDU: 'Rio de Janeiro', BSB: 'Brasília', CNF: 'Belo Horizonte', SSA: 'Salvador', REC: 'Recife', FOR: 'Fortaleza', CWB: 'Curitiba', FLN: 'Florianópolis', BRU: 'Bruxelas', MUC: 'Munique', ZRH: 'Zurique', GVA: 'Genebra', DUB: 'Dublin', VIE: 'Viena', JFK: 'Nova York', EWR: 'Nova York', MIA: 'Miami', MCO: 'Orlando', LAX: 'Los Angeles' });
+    Object.assign(m, { DBV: 'Dubrovnik', SPU: 'Split', POA: 'Porto Alegre', SDU: 'Rio de Janeiro', BSB: 'Brasília', CNF: 'Belo Horizonte', SSA: 'Salvador', REC: 'Recife', FOR: 'Fortaleza', CWB: 'Curitiba', FLN: 'Florianópolis', BRU: 'Bruxelas', MUC: 'Munique', ZRH: 'Zurique', GVA: 'Genebra', DUB: 'Dublin', VIE: 'Viena', JFK: 'Nova York', EWR: 'Nova York', MIA: 'Miami', MCO: 'Orlando', LAX: 'Los Angeles' });
     return m; })();
 const pad2 = n => String(n).padStart(2, '0');
 const cleanName = s => (s || '').replace(/\d{1,2}:\d{2}/g, '').replace(/\b\d{1,2}\s+[A-Za-zçãéêíóôúÀ-ÿ]{3,9}\.?/g, '').replace(/\s{2,}/g, ' ').trim();
@@ -1455,11 +1465,21 @@ function parseAirTicketLoose(text) {
     const flights = [];
     const fRe = /(?:n[uú]mero do voo|flight\s*(?:n[ºo]\.?|number)?|voo)\s*[:#]?\s*([A-Z]{0,3}\s?\d{2,4})/gi;
     let fm; while ((fm = fRe.exec(T))) flights.push(fm[1].replace(/\s+/g, ''));
+    // fallback p/ companhias que mostram só o código solto "AA999"/"AA 999" (ex.: TAP "TP 88")
+    const flightCodes = []; const fcRe = /\b([A-Z]{2})\s?(\d{2,4})\b/g; let fc;
+    while ((fc = fcRe.exec(T))) flightCodes.push(fc[1] + fc[2]);
     // 1) endpoints: primeiro por "Nome (IATA)"; se não houver, por código IATA
     //    conhecido isolado (ex.: "POA", "GRU" — estilo Azul, sem parênteses).
     let eps = []; let em;
     const epRe = /([^\n(]*)\(([A-Z]{3})\)/g;
     while ((em = epRe.exec(T))) eps.push({ iata: em[2], name: em[1], idx: em.index });
+    // formato "IATA — Cidade" (ex.: TAP "GRU — Guarulhos"): usa só esses endpoints,
+    // ignorando os IATAs avulsos do cabeçalho-resumo (ex.: "GRU → LUX").
+    if (eps.length < 2) {
+        eps = []; let m; const dRe = /\b([A-Z]{3})\s*[—–\-]\s*[A-ZÀ-Ý]/g;
+        while ((m = dRe.exec(T))) if (IATA_CITY[m[1]]) eps.push({ iata: m[1], name: '', idx: m.index });
+    }
+    // IATA conhecido isolado (ex.: Azul "POA → GRU", Vueling "Split SPU … Barcelona BCN")
     if (eps.length < 2) {
         eps = []; let m; const re = /\b([A-Z]{3})\b/g;
         while ((m = re.exec(T))) if (IATA_CITY[m[1]]) eps.push({ iata: m[1], name: '', idx: m.index });
@@ -1488,13 +1508,56 @@ function parseAirTicketLoose(text) {
     const legs = [];
     for (let k = 0; 2 * k + 1 < eps.length; k++) {
         const a = eps[2 * k], b = eps[2 * k + 1];
-        legs.push({ flight: flights[k] || null, from: resolveIata(a.iata, a.name), to: resolveIata(b.iata, b.name),
-            depTime: a.time, arrTime: b.time, depDate: a.date, arrDate: b.date, duration: null });
+        legs.push({ flight: flights[k] || flightCodes[k] || null, from: resolveIata(a.iata, a.name), to: resolveIata(b.iata, b.name),
+            depTime: a.time, arrTime: b.time, depDate: a.date || b.date, arrDate: b.date || a.date, duration: null });
     }
+    // chegada na madrugada do dia seguinte (ex.: Vueling 23:35 → 01:50 "+1 dia")
+    legs.forEach(l => {
+        if (l.depDate && l.arrDate && l.depDate === l.arrDate && l.depTime && l.arrTime && l.arrTime < l.depTime) {
+            const d = new Date(l.arrDate + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); l.arrDate = d.toISOString().slice(0, 10);
+        }
+    });
     return { legs, stages: legsToStages(legs) };
 }
+/* ===== Metadados da passagem: companhia (p/ link de check-in) + código de reserva (PNR) ===== */
+// offset = horas TÍPICAS de antecedência em que o check-in online abre (estimativa, confirmar no site).
+const AIRLINES = [
+    { re: /TAP\b|FLYTAP|\bTP\s?\d{2,4}\b/i, name: 'TAP Air Portugal', checkin: 'https://www.flytap.com/check-in', offset: 36 },
+    { re: /\bKLM\b|\bKL\s?\d{2,4}\b/i, name: 'KLM', checkin: 'https://www.klm.com/check-in', offset: 30 },
+    { re: /VUELING|\bVY\s?\d{2,4}\b/i, name: 'Vueling', checkin: 'https://www.vueling.com/en/manage-your-booking', offset: 48 },
+    { re: /\bAZUL\b|\bAD\s?\d{2,4}\b/i, name: 'Azul', checkin: 'https://www.voeazul.com.br/br/en/home/check-in', offset: 48 },
+    { re: /LATAM|\bLA\s?\d{2,4}\b/i, name: 'LATAM', checkin: 'https://www.latamairlines.com', offset: 48 },
+    { re: /\bGOL\b|\bG3\s?\d{2,4}\b/i, name: 'GOL', checkin: 'https://www.voegol.com.br', offset: 48 },
+    { re: /LUFTHANSA|\bLH\s?\d{2,4}\b/i, name: 'Lufthansa', checkin: 'https://www.lufthansa.com', offset: 23 },
+    { re: /AIR\s?FRANCE|\bAF\s?\d{2,4}\b/i, name: 'Air France', checkin: 'https://www.airfrance.com', offset: 30 },
+    { re: /IBERIA|\bIB\s?\d{2,4}\b/i, name: 'Iberia', checkin: 'https://www.iberia.com', offset: 48 },
+];
+function parseTicketMeta(text) {
+    const s = (text || '').replace(/ /g, ' ');
+    let airline = null;
+    for (const a of AIRLINES) { if (a.re.test(s)) { airline = a; break; } }
+    let code = null;
+    const lab = s.match(/(?:c[oó]digo de reserva(?:\s*de voo)?|localizador|n[uú]mero da reserva|booking\s*(?:code|reference|number)|reserva(?:tion)?|\bPNR\b|c[oó]digo de con(?:fi)?\s*rma[çc][aã]o)\s*[:#]?\s*([A-Z0-9]{5,10})\b/i);
+    if (lab) code = lab[1].toUpperCase();
+    if (!code) {
+        // localizador solto (6 chars alfanuméricos com letra E dígito; não é número de voo "AA999")
+        const toks = s.match(/\b[A-Z0-9]{6}\b/g) || [];
+        code = toks.find(tk => /[A-Z]/.test(tk) && /\d/.test(tk) && !/^[A-Z]{2}\d{2,4}$/.test(tk)) || null;
+    }
+    return { code: code, airline: airline ? airline.name : null,
+        checkin: airline ? airline.checkin : null, offset: airline ? airline.offset : 48 };
+}
+// momento típico de abertura do check-in = partida menos `offsetH` horas (hora local).
+function checkinOpening(depDate, depTime, offsetH) {
+    if (!depDate) return null;
+    const dt = new Date(depDate + 'T' + (depTime || '00:00') + ':00');
+    if (isNaN(dt.getTime())) return null;
+    dt.setHours(dt.getHours() - (offsetH || 48));
+    return { date: dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate()),
+        time: depTime ? pad2(dt.getHours()) + ':' + pad2(dt.getMinutes()) : null };
+}
 if (typeof window !== 'undefined') {
-    window._trippinParse = { parseAirTicket, parseAirTicketLoose, parseExpense };
+    window._trippinParse = { parseAirTicket, parseAirTicketLoose, parseExpense, parseTicketMeta };
     window._trippinLoc = { locationAnchors, locationForDay, tripLocations, tripDays, cityByDay, sharedDaysBetween, meetingsFor };
     window._trippinCost = { normExpense, shareOf, balances, simplifyDebts };
 }
@@ -2473,6 +2536,34 @@ function CameraModal({ t, onCapture, onClose }) {
                     "\uD83D\uDCF8 ",
                     t.capture)))));
 }
+/* --- Bloco de check-in no card da passagem: botão p/ a companhia, abertura do
+       check-in (estimada) e código da reserva copiável --- */
+function TicketCheckin({ t, doc }) {
+    const [copied, setCopied] = useState(false);
+    const b = doc.booking || {};
+    const first = doc.itin ? doc.itin.stages[0]
+        : (doc.seg ? { depDate: doc.seg.depDate, depTime: doc.seg.depTime, city: doc.seg.fromCity } : null);
+    const open = first ? checkinOpening(first.depDate, first.depTime, b.offset || 48) : null;
+    const url = b.checkin
+        || ('https://www.google.com/search?q=' + encodeURIComponent('check-in online ' + (b.airline || (first && first.city) || 'voo')));
+    const copy = () => {
+        if (!b.code) return;
+        const done = () => { setCopied(true); setTimeout(() => setCopied(false), 1500); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(b.code).then(done).catch(done);
+        else { try { const ta = document.createElement('textarea'); ta.value = b.code; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch (e) { } done(); }
+    };
+    return React.createElement("div", { className: "checkin" },
+        React.createElement("a", { className: "joinbtn", href: url, target: "_blank", rel: "noopener", style: { textDecoration: 'none', alignSelf: 'flex-start' } },
+            "🛫 " + t.checkinBtn + (b.airline ? ' · ' + b.airline : '')),
+        open && React.createElement("div", { className: "ci-row" },
+            "🕑 " + t.checkinOpens + ": ",
+            React.createElement("b", { style: { color: 'var(--ink)' } }, brDateT(open.date) + (open.time ? ' · ' + open.time : '')),
+            React.createElement("span", null, "(" + t.checkinEst + ")")),
+        b.code && React.createElement("div", { className: "ci-row" },
+            "🔖 " + t.bookingCode + ": ",
+            React.createElement("b", { className: "mono" }, b.code),
+            React.createElement("button", { className: "copybtn", onClick: copy, title: t.copyCode }, copied ? ('✓ ' + t.copied) : '📋')));
+}
 /* --- Docs (anexo real do dispositivo + remoção; inteligência sob controle do usuário) --- */
 function DocsTab({ t, trip, update, toast, goTab }) {
     const cats = [['tickets', t.tickets, '🎫', ['Avião', 'Trem', 'Ônibus']],
@@ -2532,8 +2623,10 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                     let itin = parseAirTicket(txt);
                     if (!itin.stages.length)
                         itin = parseAirTicketLoose(txt); // fallback p/ prints/imagens
-                    if (itin.stages.length)
+                    if (itin.stages.length) {
                         doc.itin = itin;
+                        doc.booking = parseTicketMeta(txt); // companhia + código de reserva (check-in)
+                    }
                 }
                 catch (err) { /* segue sem interpretação */ }
                 setBusy(false);
@@ -2802,7 +2895,8 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                             (d.itin || d.seg) ? 'Ver roteiro' : 'Ler passagem'),
                         d.cat === 'stays' && React.createElement("button", { className: "joinbtn", onClick: () => { setLodgeEdit(false); setReadId(d.id); } },
                             "\uD83C\uDFE8 ",
-                            d.lodging ? (d.lodging.scheduled ? 'Ver hospedagem' : 'Ver dados') : t.addToSched))),
+                            d.lodging ? (d.lodging.scheduled ? 'Ver hospedagem' : 'Ver dados') : t.addToSched)),
+                    d.cat === 'tickets' && (d.itin || d.seg) && React.createElement(TicketCheckin, { t: t, doc: d })),
                 React.createElement("button", { className: "blkbtn del", onClick: () => removeDoc(d.id) }, "\u2715")))),
         confirmDoc && confirmDoc.itin && (() => {
             const { dates, blocks } = buildStageBlocks(confirmDoc);
