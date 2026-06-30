@@ -499,3 +499,29 @@ test.describe('Datas legíveis (formato humano)', () => {
     expect(body, 'cronograma não deve mostrar ISO no título').not.toMatch(/📅\s*2026-07-01/);
   });
 });
+
+// ── MODO ESCURO COERENTE (body e alerts adaptam) ─────────────────────────────
+test.describe('Modo escuro coerente', () => {
+  test('body/html ficam escuros e alerts não permanecem claros', async ({ page }) => {
+    await page.addInitScript(() => {
+      const trip = { id: 'tk', name: 'DarkTrip', startDate: '2026-06-30', endDate: '2026-07-20', status: 'active',
+        destinations: [{ name: 'Lisboa, Portugal', date: '2026-07-01' }],
+        members: [{ id: 'me', name: 'Você', isAdmin: true, joinVia: 'creator', joinedAt: '2026-05-01' }],
+        activities: [], docs: [], albums: [], gallery: [], expenses: [] };
+      localStorage.setItem('trippin_v1', JSON.stringify({ lang: 'pt-BR', user: { firstName: 'A', name: 'A' }, trips: [trip], settings: { notifications: true, theme: 'dark', shareLocation: false }, notifs: [] }));
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => document.body.innerText.includes('DarkTrip'));
+
+    const sum = rgb => (rgb.match(/\d+/g) || [0, 0, 0]).slice(0, 3).reduce((a, b) => a + (+b), 0);
+    const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(sum(bodyBg), 'body deve ser escuro (não o creme #E9E5DC)').toBeLessThan(150);
+
+    await page.locator('text=DarkTrip').first().click();
+    await page.waitForTimeout(300);
+    await clickButton(page, 'Docs');
+    await page.waitForTimeout(300);
+    const alertBg = await page.evaluate(() => { const a = document.querySelector('.alert'); return a ? getComputedStyle(a).backgroundColor : 'rgb(0,0,0)'; });
+    expect(sum(alertBg), 'o alert do interpretador deve adaptar ao escuro (não azul claro)').toBeLessThan(300);
+  });
+});

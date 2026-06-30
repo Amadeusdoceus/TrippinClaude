@@ -18,6 +18,8 @@
     --ink:#14213D; --deep:#1A2B4A; --coral:#FF6B5C; --coral-d:#E85746;
     --lagoon:#2DB5A3; --sand:#F7F5F0; --amber:#F4A259; --danger:#D9534F;
     --line:#E4E0D6; --muted:#6B7A90; --card:#FFFFFF; --shadow:0 6px 24px rgba(20,33,61,.10);
+    --info-bg:#eef5ff; --info-line:#b9d4ff; --stay-bg:#fff4ec; --stay-line:#ffd9bd;
+    --warn-bg:#fffaf3; --warn-line:#f4c98a; --cor-bg:#fff5f3; --cor-line:#ffc9c1;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
@@ -199,7 +201,7 @@
     border:1px solid var(--lagoon);border-radius:8px;padding:5px 10px;background:#fff}
   .joinbtn.joined{background:var(--lagoon);color:#fff}
 
-  .alert{background:#fffaf3;border:1px solid var(--amber);border-radius:14px;padding:14px;
+  .alert{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:14px;padding:14px;
     margin-bottom:14px;display:flex;gap:12px}
   .alert .ai{font-size:20px}
   .alert b{font-size:14px;display:block;margin-bottom:3px}
@@ -445,7 +447,9 @@
   .cardx:active{background:rgba(0,0,0,.5)}
 
   /* ===== Tema escuro ===== */
-  #root[data-theme="dark"]{--sand:#151d2c;--ink:#E6ECF5;--card:#1c2740;--line:#2c3a55;--muted:#9aabc4;--deep:#0f1726;background:#151d2c;color:#E6ECF5}
+  #root[data-theme="dark"]{--sand:#151d2c;--ink:#E6ECF5;--card:#1c2740;--line:#2c3a55;--muted:#9aabc4;--deep:#0f1726;
+    --info-bg:#16243e;--info-line:#2c4a72;--stay-bg:#2a2113;--stay-line:#5a3e10;--warn-bg:#252010;--warn-line:#5a3e10;--cor-bg:#2a1515;--cor-line:#5a2a2a;
+    background:#151d2c;color:#E6ECF5}
   /* --- Correção raiz: força herança de cor dentro do #root --- */
   #root[data-theme="dark"] .card,#root[data-theme="dark"] .inp,#root[data-theme="dark"] .opt,
   #root[data-theme="dark"] .tab,#root[data-theme="dark"] .subtab,#root[data-theme="dark"] .docitem,
@@ -461,6 +465,7 @@
   #root[data-theme="dark"] .btn-ghost{background:#202c45;color:var(--ink);border-color:#33446a}
   #root[data-theme="dark"] .btn-dark{background:#33446a;color:#fff}
   #root[data-theme="dark"] .btn-primary{color:#fff}
+  #root[data-theme="dark"] .btn-danger{background:var(--card);color:#ff8576;border-color:#5a2a2a}
   #root[data-theme="dark"] .tab.on{background:var(--coral);color:#fff;border-color:var(--coral)}
   #root[data-theme="dark"] .blkbtn{background:#2c3a55;color:var(--ink)}
   #root[data-theme="dark"] .blkbtn.del{background:#3a1f1f;color:#ff8576}
@@ -508,9 +513,9 @@
   #root[data-theme="dark"] .langbtn.on{background:#2a1515;border-color:var(--coral);color:#ff8576}
   /* --- Vários --- */
   #root[data-theme="dark"] .empty,#root[data-theme="dark"] .ph{background:var(--card);color:var(--ink);border-color:var(--line)}
-  #root[data-theme="dark"] .alert{color:#14213D}
-  #root[data-theme="dark"] .alert p{color:#3a4a6b}
-  #root[data-theme="dark"] .alert b{color:#14213D}
+  #root[data-theme="dark"] .alert{color:var(--ink)}
+  #root[data-theme="dark"] .alert p{color:var(--muted)}
+  #root[data-theme="dark"] .alert b{color:var(--ink)}
   #root[data-theme="dark"] .opt .ic,#root[data-theme="dark"] .srcopt .si{background:#253550}
   #root[data-theme="dark"] .opt b,#root[data-theme="dark"] .langbtn .ln,#root[data-theme="dark"] .setrow .st b{color:var(--ink)}
   #root[data-theme="dark"] .srcopt b{color:var(--ink)}
@@ -2762,12 +2767,12 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                     React.createElement("button", { className: "subtab on", onClick: addCustomSub }, "✓"),
                     React.createElement("button", { className: "subtab", onClick: () => { setAddingTab(false); setNewTabName(''); } }, "✕"))
                 : React.createElement("button", { className: "subtab", style: { color: 'var(--coral)', fontWeight: 700 }, onClick: () => setAddingTab(true) }, "+ " + (t.addTab || 'Nova aba'))),
-        cat === 'tickets' && React.createElement("div", { className: "alert", style: { background: '#eef5ff', borderColor: '#b9d4ff' } },
+        cat === 'tickets' && React.createElement("div", { className: "alert", style: { background: 'var(--info-bg)', borderColor: 'var(--info-line)' } },
             React.createElement("span", { className: "ai" }, "\uD83E\uDD16"),
             React.createElement("div", null,
                 React.createElement("b", null, "Interpretador de passagem"),
                 React.createElement("p", null, "Anexe o PDF da passagem: o roteiro \u00E9 lido automaticamente (origem, escalas e destino com hor\u00E1rios) e vira etapas no cronograma. PDF n\u00E3o reconhecido? Voc\u00EA preenche manualmente."))),
-        cat === 'stays' && React.createElement("div", { className: "alert", style: { background: '#fff4ec', borderColor: '#ffd9bd' } },
+        cat === 'stays' && React.createElement("div", { className: "alert", style: { background: 'var(--stay-bg)', borderColor: 'var(--stay-line)' } },
             React.createElement("span", { className: "ai" }, "\uD83C\uDFE8"),
             React.createElement("div", null,
                 React.createElement("b", null, "Interpretador de hospedagem"),
@@ -3213,7 +3218,7 @@ function SuggestTab({ t, trip, update, toast }) {
                 "\u2B50 ",
                 t.trippinRec)),
         React.createElement("div", { className: "subtabs" }, Object.keys(RECS).map(k => React.createElement("button", { key: k, className: "subtab" + (filter === k ? ' on' : ''), style: filter === k ? {} : { opacity: .7 }, onClick: () => setFilter(k) }, k))),
-        sub === 'trippin' && React.createElement("div", { className: "alert", style: { background: '#fff5f3', borderColor: '#ffc9c1' } },
+        sub === 'trippin' && React.createElement("div", { className: "alert", style: { background: 'var(--cor-bg)', borderColor: 'var(--cor-line)' } },
             React.createElement("span", { className: "ai" }, "\u2B50"),
             React.createElement("div", null,
                 React.createElement("b", null, t.trippinRec),
@@ -3788,9 +3793,15 @@ function App() {
     useEffect(() => { if (user && trips === null) {
         setTrips([]);
     } }, [user]);
-    // aplica o tema (claro/escuro)
-    useEffect(() => { const r = document.getElementById('root'); if (r)
-        r.setAttribute('data-theme', settings.theme === 'dark' ? 'dark' : 'light'); }, [settings.theme]);
+    // aplica o tema (claro/escuro) — inclui body/html p/ não vazar fundo claro no overscroll/área segura
+    useEffect(() => {
+        const dark = settings.theme === 'dark';
+        const r = document.getElementById('root');
+        if (r) r.setAttribute('data-theme', dark ? 'dark' : 'light');
+        const bg = dark ? '#151d2c' : '#E9E5DC';
+        document.body.style.backgroundColor = bg;
+        document.documentElement.style.backgroundColor = bg;
+    }, [settings.theme]);
     const t = dict(lang || 'pt-BR');
     UI_LANG = lang || 'pt-BR'; // formato de datas humano segue o idioma
     const toast = m => { setToastMsg(m); setTimeout(() => setToastMsg(''), 2200); };
