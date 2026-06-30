@@ -499,3 +499,37 @@ test.describe('Datas legíveis (formato humano)', () => {
     expect(body, 'cronograma não deve mostrar ISO no título').not.toMatch(/📅\s*2026-07-01/);
   });
 });
+
+// ── HIERARQUIA DE BOTÕES (primário coral, secundário contorno, sem navy) ─────
+test.describe('Hierarquia de botões', () => {
+  test('primário é coral, secundário é contorno e não há botões navy', async ({ page }) => {
+    await page.addInitScript(() => {
+      const trip = { id: 'tb', name: 'BtnTrip', startDate: '2026-06-30', endDate: '2026-07-20', status: 'active',
+        destinations: [{ name: 'Lisboa, Portugal', date: '2026-07-01' }],
+        members: [{ id: 'me', name: 'Você', isAdmin: true, joinVia: 'creator', joinedAt: '2026-05-01' }, { id: 'm2', name: 'Marina', isAdmin: false, joinVia: 'invite', joinedAt: '2026-05-04' }],
+        activities: [], docs: [], albums: [], gallery: [],
+        expenses: [{ id: 'e1', desc: 'Hotel', amount: 420, paidBy: 'Você', note: '' }, { id: 'e2', desc: 'Voos', amount: 980, paidBy: 'Marina', note: '' }] };
+      localStorage.setItem('trippin_v1', JSON.stringify({ lang: 'pt-BR', user: { firstName: 'A', name: 'A' }, trips: [trip], settings: { notifications: true, theme: 'light', shareLocation: false }, notifs: [] }));
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => document.body.innerText.includes('BtnTrip'));
+    await page.locator('text=BtnTrip').first().click();
+    await page.waitForTimeout(300);
+    await clickButton(page, 'Custos');
+    await page.waitForTimeout(300);
+
+    const r = await page.evaluate(() => {
+      const byText = t => Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes(t));
+      const cs = el => el ? getComputedStyle(el) : null;
+      const prim = cs(byText('Nova despesa'));
+      const sec = cs(byText('Simplificar'));
+      const hasTertiaryRule = Array.from(document.styleSheets).some(s => { try { return Array.from(s.cssRules).some(r => r.selectorText === '.btn-tertiary'); } catch (e) { return false; } });
+      return { primBg: prim && prim.backgroundColor, secBg: sec && sec.backgroundColor, secBorder: sec ? parseFloat(sec.borderTopWidth) : 0, hasTertiaryRule, darkBtns: document.querySelectorAll('.btn-dark').length };
+    });
+    expect(r.primBg, 'primário deve ser coral (#FF6B5C)').toBe('rgb(255, 107, 92)');
+    expect(r.secBg, 'secundário não deve ser coral').not.toBe('rgb(255, 107, 92)');
+    expect(r.secBorder, 'secundário deve ter contorno').toBeGreaterThan(0);
+    expect(r.hasTertiaryRule, 'deve existir a classe terciária (fantasma)').toBe(true);
+    expect(r.darkBtns, 'não deve haver botões navy (.btn-dark) na tela').toBe(0);
+  });
+});
