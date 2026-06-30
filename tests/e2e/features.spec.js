@@ -473,3 +473,29 @@ test.describe('Local: escala não é destino; ordem e dedup', () => {
     expect(monthAfter, 'após › deve avançar de mês').toMatch(/Julho/i);
   });
 });
+
+// ── DATAS EM FORMATO HUMANO (não ISO) ────────────────────────────────────────
+test.describe('Datas legíveis (formato humano)', () => {
+  test('home, dia e trechos mostram datas por extenso, não 2026-06-30', async ({ page }) => {
+    await page.addInitScript(() => {
+      const trip = { id: 'td', name: 'DatasTrip', startDate: '2026-06-30', endDate: '2026-07-20', status: 'active',
+        destinations: [{ name: 'Lisboa, Portugal', date: '2026-07-01' }],
+        members: [{ id: 'me', name: 'Você', isAdmin: true, joinVia: 'creator', joinedAt: '2026-05-01' }],
+        activities: [{ id: 'a1', date: '2026-07-01', start: '10:00', end: '12:00', title: 'Torre de Belém', type: 'typeTour', loc: 'Lisboa', source: 'manual', joined: ['me'] }],
+        docs: [], albums: [], gallery: [], expenses: [] };
+      localStorage.setItem('trippin_v1', JSON.stringify({ lang: 'pt-BR', user: { firstName: 'A', name: 'A' }, trips: [trip], settings: { notifications: true, theme: 'light', shareLocation: false }, notifs: [] }));
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => document.body.innerText.includes('DatasTrip'));
+
+    const homeCard = await page.evaluate(() => { const c = document.querySelector('.tripcard'); return c ? c.innerText : ''; });
+    expect(homeCard, 'intervalo legível na home').toMatch(/30 jun\s*–\s*20 jul/i);
+    expect(homeCard, 'home não deve mostrar ISO').not.toMatch(/2026-06-30/);
+
+    await page.locator('text=DatasTrip').first().click();
+    await page.waitForTimeout(400);
+    const body = await page.evaluate(() => document.body.innerText);
+    expect(body, 'título do dia por extenso (ex.: Quarta, 1 de julho)').toMatch(/(segunda|terça|quarta|quinta|sexta|sábado|domingo),\s*1 de julho/i);
+    expect(body, 'cronograma não deve mostrar ISO no título').not.toMatch(/📅\s*2026-07-01/);
+  });
+});

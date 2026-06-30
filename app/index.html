@@ -1015,9 +1015,7 @@ function TripCard({ t, tr, onOpen, canDelete, onDelete }) {
             React.createElement("button", { className: "copybtn", onClick: copy }, cp ? t.copied : t.copyCode)),
         React.createElement("p", { style: { margin: '12px 0 0', fontSize: 13, opacity: .85 } },
             "\uD83D\uDCC5 ",
-            tr.startDate,
-            " \u2192 ",
-            tr.endDate),
+            fmtRange(tr.startDate, tr.endDate)),
         React.createElement("p", { style: { margin: '4px 0 0', fontSize: 13, opacity: .85 } },
             "\uD83D\uDCCD ",
             tr.destinations.map(d => d.name.split(',')[0]).join(' · ')),
@@ -1604,8 +1602,22 @@ async function pdfToText(buf) {
     }
     return rows.join('\n');
 }
-const brDateT = iso => { if (!iso)
-    return '—'; const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; };
+/* ===== Datas em formato humano (pt/en). UI_LANG é setado pelo App. ===== */
+let UI_LANG = 'pt-BR';
+const _MON_ABBR = { pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'], en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] };
+const _MON_FULL = { pt: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'], en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] };
+const _DOW_ABBR = { pt: ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
+const _DOW_FULL = { pt: ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'], en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] };
+const _enUI = () => /^en/i.test(UI_LANG);
+const _isoD = iso => { if (!iso) return null; const p = String(iso).split('-'); if (p.length < 3) return null; const d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); return isNaN(d.getTime()) ? null : d; };
+const _cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+const fmtDM = iso => { const d = _isoD(iso); return d ? d.getUTCDate() + ' ' + _MON_ABBR[_enUI() ? 'en' : 'pt'][d.getUTCMonth()] : '—'; };       // "30 jun"
+const fmtDMY = iso => { const d = _isoD(iso); return d ? fmtDM(iso) + ' ' + d.getUTCFullYear() : '—'; };                                          // "30 jun 2026"
+const fmtWeekday = iso => { const d = _isoD(iso); return d ? _cap(_DOW_ABBR[_enUI() ? 'en' : 'pt'][d.getUTCDay()]) + ', ' + fmtDM(iso) : '—'; };  // "Qua, 1 jul"
+const fmtLong = iso => { const d = _isoD(iso); if (!d) return '—'; const en = _enUI(); return _cap(_DOW_FULL[en ? 'en' : 'pt'][d.getUTCDay()]) + ', ' + d.getUTCDate() + (en ? ' ' : ' de ') + _MON_FULL[en ? 'en' : 'pt'][d.getUTCMonth()]; }; // "Quarta, 1 de julho"
+const fmtRange = (a, b) => { const da = _isoD(a), db = _isoD(b); if (!da && !db) return '—'; if (!da) return fmtDMY(b); if (!db) return fmtDMY(a);
+    return da.getUTCFullYear() === db.getUTCFullYear() ? fmtDM(a) + ' – ' + fmtDM(b) + ' · ' + db.getUTCFullYear() : fmtDMY(a) + ' – ' + fmtDMY(b); }; // "30 jun – 20 jul · 2026"
+const brDateT = iso => fmtDMY(iso); // exibição por extenso (substitui o antigo dd/mm/yyyy em todos os usos)
 /* ===== Interpretador de Hospedagem (parser testado em PT/EN, múltiplos formatos de data) ===== */
 const MON_L = { jan: 0, feb: 1, fev: 1, mar: 2, apr: 3, abr: 3, may: 4, mai: 4, jun: 5, jul: 6, aug: 7, ago: 7, sep: 8, set: 8, oct: 9, out: 9, nov: 10, dec: 11, dez: 11,
     january: 0, february: 1, march: 2, april: 3, june: 5, july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
@@ -2080,7 +2092,7 @@ function ScheduleTab({ t, trip, update, toast }) {
         view === 'day' && React.createElement(React.Fragment, null,
             React.createElement("div", { style: { fontWeight: 700, fontFamily: 'Sora', margin: '4px 0 12px' } },
                 "\uD83D\uDCC5 ",
-                curDay),
+                fmtLong(curDay)),
             (() => {
                 const loc = locationForDay(trip, curDay);
                 return loc ?
@@ -2169,13 +2181,9 @@ function WeekView({ t, trip, curDay, openDay }) {
     const inTrip = ds => ds >= trip.startDate && ds <= trip.endDate;
     return (React.createElement("div", null,
         React.createElement("div", { style: { textAlign: 'center', fontWeight: 700, fontFamily: 'Sora', marginBottom: 10, fontSize: 13 } },
-            week[0].slice(8),
-            "/",
-            week[0].slice(5, 7),
+            fmtDM(week[0]),
             " \u2013 ",
-            week[6].slice(8),
-            "/",
-            week[6].slice(5, 7)),
+            fmtDM(week[6])),
         week.map((ds, wi) => {
             const acts = trip.activities.filter(a => a.date === ds).sort((a, b) => a.start.localeCompare(b.start));
             const loc = locationForDay(trip, ds);
@@ -2444,12 +2452,11 @@ function MapTab({ t, trip, update, toast, goTab }) {
                         " \u2192 ",
                         dn(s.toCity)),
                     React.createElement("span", null,
-                        s.depDate,
+                        fmtDM(s.depDate),
                         " ",
                         s.depTime,
                         " \u2192 ",
-                        s.arrDate,
-                        " ",
+                        (s.arrDate && s.arrDate !== s.depDate) ? fmtDM(s.arrDate) + ' ' : '',
                         s.arrTime)))))),
         React.createElement("div", { className: "sectiontitle" }, "\uD83D\uDCCD Lugares por onde voc\u00EA vai passar"),
         pts.map((p, i) => {
@@ -2900,12 +2907,12 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                 React.createElement("button", { className: "blkbtn del", onClick: () => removeDoc(d.id) }, "\u2715")))),
         confirmDoc && confirmDoc.itin && (() => {
             const { dates, blocks } = buildStageBlocks(confirmDoc);
-            const fmt = ds => { const p = (ds || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] : '—'; };
+            const fmt = fmtDM;
             return React.createElement(ConfirmModal, { icon: "\uD83D\uDCC5", title: t.addStages + '?', msg: blocks.length + ' ' + (blocks.length === 1 ? 'card' : 'cards') + ' · ' + t.cardsWillAdd + ' ' + dates.map(fmt).join(', ') + '.', confirmLabel: '📅 ' + t.addStages, cancelLabel: t.cancel, onConfirm: () => applyStages(confirmDoc), onCancel: () => setConfirmDoc(null) });
         })(),
         confirmDoc && confirmDoc.lodging && !confirmDoc.itin && (() => {
             const L = confirmDoc.lodging;
-            const fmt = ds => { const p = (ds || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] : '—'; };
+            const fmt = fmtDM;
             return React.createElement(ConfirmModal, { icon: "\uD83C\uDFE8", title: t.addLodging + '?', msg: (L.name || t.property) + (L.city ? ' · ' + L.city : '') + ' — ' + t.lodgingConfirm + ' ' + fmt(L.ciDate) + ' ' + t.until + ' ' + fmt(L.coDate) + '.', confirmLabel: '📅 ' + t.addLodging, cancelLabel: t.cancel, onConfirm: () => applyLodging(confirmDoc), onCancel: () => setConfirmDoc(null) });
         })(),
         removeDocId && React.createElement(ConfirmModal, { icon: "⚠️", title: "Remover documento?",
@@ -3785,6 +3792,7 @@ function App() {
     useEffect(() => { const r = document.getElementById('root'); if (r)
         r.setAttribute('data-theme', settings.theme === 'dark' ? 'dark' : 'light'); }, [settings.theme]);
     const t = dict(lang || 'pt-BR');
+    UI_LANG = lang || 'pt-BR'; // formato de datas humano segue o idioma
     const toast = m => { setToastMsg(m); setTimeout(() => setToastMsg(''), 2200); };
     // a preferência de notificações controla o que é exibido
     const effNotifs = settings.notifications ? notifs : [];
