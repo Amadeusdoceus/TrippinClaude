@@ -133,6 +133,10 @@
   .dcell .dn{font-weight:700;font-size:11px}
   .dcell.dim{opacity:.35}
   .dcell .dot{width:6px;height:6px;border-radius:50%;background:var(--lagoon);position:absolute;bottom:5px;left:5px}
+  /* bolinha verde: marca o dia de hoje (mês e semana) */
+  .tdot{width:8px;height:8px;border-radius:50%;background:#27AE60;display:inline-block;box-shadow:0 0 0 2px rgba(39,174,96,.28);flex-shrink:0}
+  .dcell .tdot{position:absolute;top:4px;right:4px}
+  .wkday .wd .tdot{margin-right:6px}
   .dcell .stay{position:absolute;bottom:4px;right:4px;font-size:9px}
   .tslot{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
   .tslot .tm{font-size:12px;color:var(--muted);width:48px;flex-shrink:0;font-weight:600}
@@ -441,6 +445,29 @@
   .galadd{aspect-ratio:1;border-radius:10px;background:var(--card);border:1.5px dashed var(--line);color:var(--muted);
     display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer}
 
+  /* ===== Visualizador de documento ===== */
+  .docviewer{position:absolute;inset:0;background:rgba(10,16,28,.96);z-index:70;display:flex;flex-direction:column;animation:fade .2s}
+  .docviewer .dvh{display:flex;align-items:center;gap:8px;padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+  .docviewer .dvt{flex:1;color:#fff;font-weight:700;font-size:14px;font-family:'Sora';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .docviewer .dvb{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-size:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .docviewer .dvb:active{background:rgba(255,255,255,.3)}
+  .docviewer .dvbody{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:10px}
+  .docviewer .dvbody img{max-width:100%;max-height:100%;border-radius:10px;object-fit:contain}
+  .docviewer .dvbody iframe{width:100%;height:100%;border:none;border-radius:10px;background:#fff}
+  .docviewer .dvempty{color:#c9d4e6;text-align:center;font-size:14px;padding:30px 20px;line-height:1.5}
+
+  /* ===== Peek (pré-visualização ao segurar) ===== */
+  .docitem.peeking{outline:2px solid var(--coral);outline-offset:-2px}
+  .docpeek{position:absolute;inset:0;background:rgba(10,16,28,.82);z-index:75;display:flex;align-items:center;justify-content:center;padding:24px;animation:fade .12s}
+  .docpeekcard{width:100%;max-width:360px;max-height:76%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;animation:pop .14s ease}
+  .docpeekcard img{width:100%;max-height:60vh;object-fit:contain;background:#f3f3f3}
+  .docpeekcard iframe{width:100%;height:60vh;border:none;background:#fff}
+  .docpeekempty{padding:40px 20px;text-align:center;font-size:15px;color:var(--ink);font-weight:600}
+  .docpeektag{padding:10px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);background:var(--sand);border-top:1px solid var(--line)}
+  /* item sendo arrastado no reorder por segurar */
+  .dragging{opacity:.65;box-shadow:0 10px 28px rgba(20,33,61,.28);transform:scale(1.02);position:relative;z-index:5}
+  .reorderhint{font-size:11px;color:var(--muted);text-align:center;margin:2px 0 10px}
+
   /* ===== "x" para excluir viagem (admin) ===== */
   .cardx{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:9px;background:rgba(0,0,0,.28);
     color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;z-index:2;border:none}
@@ -560,6 +587,77 @@
 <script>
 "use strict";
 const { useState, useEffect, useRef } = React;
+/* ---------------- reorder por arrastar após segurar (long-press) ----------------
+   Hook de container: coordena UMA lista arrastável. Ao segurar `holdMs` sobre um item,
+   entra em modo arraste; enquanto arrasta, reordena visualmente; ao soltar, confirma.
+   `axis` = 'y' (álbuns, vertical) ou 'x' (mapa, horizontal). `onCommit(newOrder)` recebe
+   o array de ids reordenado. Funciona com mouse e toque (Pointer Events). */
+function useHoldReorder({ ids, onCommit, axis = 'y', holdMs = 380 }) {
+    const [dragId, setDragId] = useState(null);
+    const [order, setOrder] = useState(null); // ordem provisória durante o arraste
+    const timer = useRef(null);
+    const startPt = useRef(null);
+    const orderRef = useRef(null);
+    const nodes = useRef({}); // id -> elemento DOM (para achar sobre quem estamos)
+    const clearTimer = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
+    const setNode = (id) => (el) => { if (el) nodes.current[id] = el; else delete nodes.current[id]; };
+    const begin = (id) => (e) => {
+        if (e.target.closest('button, input, a, select, textarea')) return; // segurar um controle não inicia arraste
+        startPt.current = { x: e.clientX, y: e.clientY };
+        clearTimer();
+        timer.current = setTimeout(() => {
+            orderRef.current = ids.slice();
+            setOrder(ids.slice());
+            setDragId(id);
+            if (navigator.vibrate) try { navigator.vibrate(15); } catch (_) {}
+        }, holdMs);
+    };
+    const move = (e) => {
+        if (!dragId) {
+            // ainda não entrou em arraste: se mexeu muito, cancela o hold (era rolagem)
+            if (startPt.current && (Math.abs(e.clientX - startPt.current.x) > 12 || Math.abs(e.clientY - startPt.current.y) > 12)) clearTimer();
+            return;
+        }
+        if (e.cancelable) e.preventDefault();
+        const cur = orderRef.current || [];
+        const p = axis === 'y' ? e.clientY : e.clientX;
+        // acha o item cujo CENTRO no eixo está mais próximo do ponteiro (robusto: não exige
+        // que o ponteiro esteja exatamente dentro do retângulo do alvo)
+        let overId = null, best = Infinity;
+        for (const id of cur) {
+            const el = nodes.current[id];
+            if (!el) continue;
+            const r = el.getBoundingClientRect();
+            const mid = axis === 'y' ? (r.top + r.bottom) / 2 : (r.left + r.right) / 2;
+            const d = Math.abs(p - mid);
+            if (d < best) { best = d; overId = id; }
+        }
+        if (overId && overId !== dragId) {
+            const next = cur.slice();
+            const from = next.indexOf(dragId), to = next.indexOf(overId);
+            if (from !== -1 && to !== -1) {
+                next.splice(from, 1); next.splice(to, 0, dragId);
+                orderRef.current = next;
+                setOrder(next);
+            }
+        }
+    };
+    const suppressClick = useRef(false);
+    const end = () => {
+        clearTimer();
+        startPt.current = null;
+        if (dragId && orderRef.current) { onCommit(orderRef.current); suppressClick.current = true; }
+        setDragId(null);
+        setOrder(null);
+        orderRef.current = null;
+    };
+    // engole o clique que vem logo após um arraste (senão abriria o item solto)
+    const onClickCapture = (e) => { if (suppressClick.current) { suppressClick.current = false; e.preventDefault(); e.stopPropagation(); } };
+    // handlers para o CONTAINER (captura move/up em toda a área) e para cada ITEM (down)
+    const containerProps = { onPointerMove: move, onPointerUp: end, onPointerLeave: end, onPointerCancel: end, onClickCapture };
+    const itemProps = (id) => ({ onPointerDown: begin(id), ref: setNode(id) });
+    return { dragId, order, containerProps, itemProps };
+}
 /* ---------------- i18n ---------------- */
 const I18N = {
     'pt-BR': {
@@ -740,8 +838,69 @@ const load = () => { try {
 catch (e) {
     return {};
 } };
+/* ---------------- mídia (fotos/anexos) em IndexedDB ----------------
+   base64 grande estoura a cota do localStorage (~5MB) e fazia o save INTEIRO falhar
+   em silêncio — perdendo as fotos. Aqui as imagens vão para o IndexedDB (centenas de MB),
+   e o localStorage guarda só o estado leve com referências (campo `blob`). */
+const IMG_DB = 'trippin_media', IMG_STORE = 'images';
+let _imgDbPromise = null;
+const _storedKeys = new Set(); // evita regravar o mesmo blob a cada save
+function imgDB() {
+    if (_imgDbPromise) return _imgDbPromise;
+    _imgDbPromise = new Promise((res, rej) => {
+        try {
+            const req = indexedDB.open(IMG_DB, 1);
+            req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(IMG_STORE)) db.createObjectStore(IMG_STORE); };
+            req.onsuccess = () => res(req.result);
+            req.onerror = () => rej(req.error);
+        } catch (e) { rej(e); }
+    });
+    return _imgDbPromise;
+}
+async function imgPut(key, dataUrl) {
+    try { const db = await imgDB(); await new Promise((res, rej) => { const tx = db.transaction(IMG_STORE, 'readwrite'); tx.objectStore(IMG_STORE).put(dataUrl, key); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); _storedKeys.add(key); }
+    catch (e) { /* IndexedDB indisponível: segue sem persistir a imagem */ }
+}
+async function imgGetAll() {
+    try {
+        const db = await imgDB();
+        return await new Promise((res, rej) => {
+            const out = {}; const tx = db.transaction(IMG_STORE, 'readonly'); const cur = tx.objectStore(IMG_STORE).openCursor();
+            cur.onsuccess = () => { const c = cur.result; if (c) { out[c.key] = c.value; c.continue(); } else res(out); };
+            cur.onerror = () => rej(cur.error);
+        });
+    } catch (e) { return {}; }
+}
+// tira as imagens (base64) do estado e as manda ao IndexedDB; devolve estado leve p/ localStorage
+function stripMedia(s) {
+    if (!s || !s.trips) return s;
+    return { ...s, trips: s.trips.map(trip => {
+        const t2 = { ...trip };
+        if (trip.gallery) t2.gallery = trip.gallery.map(g => {
+            if (g.src && g.src.indexOf('data:') === 0) { const key = 'g:' + g.id; if (!_storedKeys.has(key)) imgPut(key, g.src); return { ...g, src: null, blob: key }; }
+            return g;
+        });
+        if (trip.docs) t2.docs = trip.docs.map(d => {
+            if (d.dataUrl && d.dataUrl.indexOf('data:') === 0) { const key = 'd:' + d.id; if (!_storedKeys.has(key)) imgPut(key, d.dataUrl); return { ...d, dataUrl: null, blob: key }; }
+            return d;
+        });
+        return t2;
+    }) };
+}
+// recompõe as imagens no estado a partir do IndexedDB (após carregar do localStorage)
+async function hydrateMedia(s) {
+    if (!s || !s.trips) return s;
+    const all = await imgGetAll();
+    Object.keys(all).forEach(k => _storedKeys.add(k));
+    return { ...s, trips: s.trips.map(trip => {
+        const t2 = { ...trip };
+        if (trip.gallery) t2.gallery = trip.gallery.map(g => (g.blob && all[g.blob]) ? { ...g, src: all[g.blob] } : g);
+        if (trip.docs) t2.docs = trip.docs.map(d => (d.blob && all[d.blob]) ? { ...d, dataUrl: all[d.blob] } : d);
+        return t2;
+    }) };
+}
 const save = s => { try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    localStorage.setItem(KEY, JSON.stringify(stripMedia(s)));
 }
 catch (e) { } };
 const rid = n => { const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let r = ''; for (let i = 0; i < n; i++)
@@ -749,6 +908,7 @@ const rid = n => { const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let r = '';
 const rnum = n => { let r = ''; for (let i = 0; i < n; i++)
     r += Math.floor(Math.random() * 10); return r; };
 const uid = () => Math.random().toString(36).slice(2, 9);
+const todayISO = () => new Date().toISOString().slice(0, 10); // data de hoje (YYYY-MM-DD)
 async function hashPwd(pw) {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -1448,6 +1608,33 @@ function legsToStages(legs) {
     }
     return stages;
 }
+// converte etapas EDITADAS (campos simplificados date/dep/arr) de volta em legs, para que
+// mapa e cronograma — que leem itin.legs — reflitam a correção manual do usuário.
+// preserva aeroporto/duração das legs antigas quando a cidade bate.
+function stagesToLegs(editStages, oldLegs) {
+    const legs = [];
+    const old = oldLegs || [];
+    for (let i = 0; i < editStages.length - 1; i++) {
+        const a = editStages[i], b = editStages[i + 1];
+        const prev = old[i] || {};
+        legs.push({
+            flight: a.flight || prev.flight || null,
+            duration: prev.duration || null,
+            from: { city: (a.city || '').trim(), iata: (a.iata || '').trim(), airport: (prev.from && prev.from.airport) || '' },
+            to: { city: (b.city || '').trim(), iata: (b.iata || '').trim(), airport: (prev.to && prev.to.airport) || '' },
+            depDate: a.date || a.depDate || '', depTime: a.dep || a.depTime || '',
+            arrDate: b.date || b.arrDate || '', arrTime: b.arr || b.arrTime || '',
+        });
+    }
+    return legs;
+}
+// prepara uma etapa para edição: expõe date/dep/arr a partir dos campos reais (depDate/arrDate/…)
+function stageToEditable(st) {
+    return { ...st,
+        date: st.date || st.depDate || st.arrDate || '',
+        dep: st.dep || st.depTime || '',
+        arr: st.arr || st.arrTime || '' };
+}
 /* ===== Fallback "solto": interpreta layouts de imagem (print de confirmação):
         rota "AAA → BBB" + datas dd/mm/yyyy (estilo Azul) ou endpoints
         "Nome (IATA)" em sequência (estilo KLM/esky). Horários e datas são
@@ -1563,6 +1750,8 @@ if (typeof window !== 'undefined') {
     window._trippinParse = { parseAirTicket, parseAirTicketLoose, parseExpense, parseTicketMeta };
     window._trippinLoc = { locationAnchors, locationForDay, tripLocations, tripDays, cityByDay, sharedDaysBetween, meetingsFor };
     window._trippinCost = { normExpense, shareOf, balances, simplifyDebts };
+    window._trippinItin = { legsToStages, stagesToLegs, stageToEditable, todayISO };
+    window._trippinMedia = { stripMedia, hydrateMedia, imgGetAll };
 }
 const _scriptCache = {};
 function loadScriptOnce(src) { return _scriptCache[src] || (_scriptCache[src] = new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = () => res(); el.onerror = () => rej(new Error('falha ao carregar ' + src)); document.head.appendChild(el); })); }
@@ -2043,7 +2232,10 @@ function LodgingMark({ t, L, day }) {
 function ScheduleTab({ t, trip, update, toast }) {
     const [view, setView] = useState('day');
     const days = [...new Set([...trip.activities.map(a => a.date), ...(trip.docs || []).filter(d => d.lodging && d.lodging.scheduled && d.lodging.ciDate).map(d => d.lodging.ciDate)])].filter(Boolean).sort();
-    const [curDay, setCurDay] = useState(days[0] || trip.startDate);
+    // dia inicial: hoje, se estivermos dentro do período da viagem; senão o 1º dia com eventos / início
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const initialDay = (todayISO >= trip.startDate && todayISO <= trip.endDate) ? todayISO : (days[0] || trip.startDate);
+    const [curDay, setCurDay] = useState(initialDay);
     const [adding, setAdding] = useState(false);
     const [editId, setEditId] = useState(null);
     const [delId, setDelId] = useState(null);
@@ -2095,9 +2287,9 @@ function ScheduleTab({ t, trip, update, toast }) {
         view === 'month' && React.createElement(MonthGrid, { trip: trip, curDay: curDay, setCurDay: d => { setCurDay(d); setView('day'); } }),
         view === 'week' && React.createElement(WeekView, { t: t, trip: trip, curDay: curDay, openDay: d => { setCurDay(d); setView('day'); } }),
         view === 'day' && React.createElement(React.Fragment, null,
-            React.createElement("div", { style: { fontWeight: 700, fontFamily: 'Sora', margin: '4px 0 12px' } },
-                "\uD83D\uDCC5 ",
-                fmtLong(curDay)),
+            React.createElement("div", { style: { fontWeight: 700, fontFamily: 'Sora', margin: '4px 0 12px', display: 'flex', alignItems: 'center', gap: 6 } },
+                "\uD83D\uDCC5 " + fmtLong(curDay),
+                curDay === todayISO && React.createElement("span", { className: "tdot", title: "Hoje" })),
             (() => {
                 const loc = locationForDay(trip, curDay);
                 return loc ?
@@ -2162,6 +2354,7 @@ function MonthGrid({ trip, curDay, setCurDay }) {
         cells.push(d);
     }
     const has = ds => trip.activities.some(a => a.date === ds);
+    const today = new Date().toISOString().slice(0, 10);
     return (React.createElement(React.Fragment, null,
         React.createElement("div", { style: { textAlign: 'center', fontWeight: 800, fontFamily: 'Sora', marginBottom: 8, fontSize: 15, color: 'var(--ink)', textTransform: 'capitalize' } }, base.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })),
         React.createElement("div", { className: "daygrid", style: { marginBottom: 6 } }, DOW.map((d, i) => React.createElement("div", { key: i, style: { textAlign: 'center', fontSize: 10, color: 'var(--muted)', fontWeight: 700 } }, d[0]))),
@@ -2174,6 +2367,7 @@ function MonthGrid({ trip, curDay, setCurDay }) {
             const inMonth = d.getMonth() === m;
             return (React.createElement("button", { key: i, className: "dcell" + (!inMonth && !hasAdd ? ' dim' : '') + (hasAdd ? ' hasadd' : ''), style: hasAdd ? { background: col + '2E', borderColor: col + '99' } : {}, onClick: () => setCurDay(ds) },
                 React.createElement("div", { className: "dn", style: { color: hasAdd ? 'var(--ink)' : 'var(--muted)', opacity: hasAdd ? 1 : .55 } }, d.getDate()),
+                ds === today && React.createElement("span", { className: "tdot", title: "Hoje" }),
                 hasAct && React.createElement("span", { className: "dot" }),
                 loc && React.createElement("span", { style: { position: 'absolute', bottom: 3, right: 3, left: 3, fontSize: 8, fontWeight: 800,
                         color: col, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, loc)));
@@ -2197,6 +2391,7 @@ function WeekView({ t, trip, curDay, openDay }) {
                 React.createElement("div", { className: "wkh", onClick: () => openDay(ds) },
                     React.createElement("div", null,
                         React.createElement("div", { className: "wd" },
+                            ds === today && React.createElement("span", { className: "tdot", title: "Hoje" }),
                             DOW[wi],
                             " ",
                             dd.getDate(),
@@ -2356,10 +2551,10 @@ function MapTab({ t, trip, update, toast, goTab }) {
         window.open(url, '_blank');
     };
     const saveRename = (orig) => { const v = editVal.trim(); if (v) {
-        update({ ...trip, cityOverrides: { renames: { ...(ov.renames || {}), [orig]: v }, hidden: ov.hidden || [] } });
+        update({ ...trip, cityOverrides: { renames: { ...(ov.renames || {}), [orig]: v }, hidden: ov.hidden || [], order: ov.order || [] } });
         toast(t.saved || '✓');
     } setEditCity(null); };
-    const doDelCity = (orig) => { update({ ...trip, cityOverrides: { renames: ov.renames || {}, hidden: [...(ov.hidden || []), orig] } }); setDelCity(null); toast(t.cityRemoved); };
+    const doDelCity = (orig) => { update({ ...trip, cityOverrides: { renames: ov.renames || {}, hidden: [...(ov.hidden || []), orig], order: ov.order || [] } }); setDelCity(null); toast(t.cityRemoved); };
     // trechos: usa o roteiro interpretado (com escalas) quando houver; senão o seg manual
     // (filtrados pela visão atual: rota do integrante selecionado ou de todos)
     const segs = [];
@@ -2386,7 +2581,7 @@ function MapTab({ t, trip, update, toast, goTab }) {
     (trip.docs || []).filter(d => belongsToMember(d, routeMid)).forEach(d => {
         const legs = (d.itin && d.itin.legs) ? d.itin.legs
             : (d.seg ? [{ from: { city: d.seg.fromCity }, to: { city: d.seg.toCity }, depDate: d.seg.depDate, depTime: d.seg.depTime, arrDate: d.seg.arrDate, arrTime: d.seg.arrTime }] : []);
-        const fb = legs.map(l => l.depDate || l.arrDate).find(Boolean) || trip.startDate;
+        const fb = legs.map(l => l.depDate || l.arrDate).find(Boolean) || todayISO();
         legs.forEach(l => {
             if (l.from && l.from.city) allPts.push({ city: l.from.city, date: l.depDate || fb, time: l.depTime || '00:00' });
             if (l.to && l.to.city) allPts.push({ city: l.to.city, date: l.arrDate || l.depDate || fb, time: l.arrTime || '00:00' });
@@ -2394,11 +2589,30 @@ function MapTab({ t, trip, update, toast, goTab }) {
     });
     allPts.sort((a, b) => ((a.date || '') + 'T' + (a.time || '00:00')).localeCompare((b.date || '') + 'T' + (b.time || '00:00')));
     allPts.forEach(p => push(p.city, p.date));
+    // ordem manual (usuário arrastou os lugares para corrigir erro de leitura): reordena `stops`
+    // segundo ov.order, mantendo no fim quaisquer cidades novas ainda não ordenadas manualmente.
+    if (ov.order && ov.order.length && stops.length) {
+        const rank = {};
+        ov.order.forEach((c, i) => { rank[c] = i; });
+        stops.sort((a, b) => {
+            const ra = rank[a.city], rb = rank[b.city];
+            if (ra == null && rb == null) return 0;
+            if (ra == null) return 1;
+            if (rb == null) return -1;
+            return ra - rb;
+        });
+    }
     const pts = stops.length ? stops : [{ city: 'A definir', date: trip.startDate }];
     const n = pts.length;
     const xs = i => n === 1 ? 150 : 30 + (240 * i / (n - 1));
     const ys = i => 55 + (i % 2 === 0 ? -15 : 15);
     const citiesOrdered = pts.map(p => dn(p.city)).filter(c => c && c !== 'A definir');
+    // reordenar lugares por segurar-e-arrastar (corrige erro de leitura de sequência)
+    const placeReorder = useHoldReorder({
+        ids: pts.map(p => p.city), axis: 'y',
+        onCommit: (newCities) => { update({ ...trip, cityOverrides: { renames: ov.renames || {}, hidden: ov.hidden || [], order: newCities } }); toast('✓ ' + (t.orderSaved || 'Ordem salva')); },
+    });
+    const ptsToShow = placeReorder.order ? placeReorder.order.map(c => pts.find(p => p.city === c)).filter(Boolean) : pts;
     return (React.createElement("div", null,
         React.createElement("div", { className: "viewsel" },
             React.createElement("span", { style: { fontSize: 13, fontWeight: 700 } }, t.viewLabel + ':'),
@@ -2464,9 +2678,11 @@ function MapTab({ t, trip, update, toast, goTab }) {
                         (s.arrDate && s.arrDate !== s.depDate) ? fmtDM(s.arrDate) + ' ' : '',
                         s.arrTime)))))),
         React.createElement("div", { className: "sectiontitle" }, "\uD83D\uDCCD Lugares por onde voc\u00EA vai passar"),
-        pts.map((p, i) => {
+        n > 1 && React.createElement("div", { className: "reorderhint" }, "✋ " + (t.holdToReorder || 'Segure e arraste para reordenar')),
+        React.createElement("div", Object.assign({ style: { touchAction: placeReorder.dragId ? 'none' : 'auto' } }, placeReorder.containerProps),
+        ptsToShow.map((p, i) => {
             const role = i === 0 ? 'Origem' : i === n - 1 ? 'Destino' : 'Escala / parada';
-            return (React.createElement("div", { className: "dest", key: i },
+            return (React.createElement("div", Object.assign({ className: "dest" + (placeReorder.dragId === p.city ? ' dragging' : ''), key: p.city, style: { touchAction: 'manipulation' } }, placeReorder.itemProps(p.city)),
                 React.createElement("span", { className: "pin" }, i === 0 ? '🟠' : i === n - 1 ? '🔵' : '⚪'),
                 editCity === p.city
                     ? React.createElement("span", { className: "dd" },
@@ -2483,8 +2699,10 @@ function MapTab({ t, trip, update, toast, goTab }) {
                     : React.createElement(React.Fragment, null,
                         React.createElement("button", { className: "blkbtn", title: "Editar", onClick: () => { setEditCity(p.city); setEditVal(dn(p.city)); } }, "\u270F\uFE0F"),
                         React.createElement("button", { className: "blkbtn del", title: "Excluir", onClick: () => setDelCity(p.city) }, "\uD83D\uDDD1\uFE0F"))));
-        }),
-        (ov.hidden && ov.hidden.length > 0) && React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: () => { update({ ...trip, cityOverrides: { renames: ov.renames || {}, hidden: [] } }); toast(t.saved || '✓'); } },
+        })),
+        (ov.order && ov.order.length > 0) && React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: () => { update({ ...trip, cityOverrides: { renames: ov.renames || {}, hidden: ov.hidden || [], order: [] } }); toast(t.saved || '✓'); } },
+            "↩ " + (t.resetOrder || 'Restaurar ordem por data')),
+        (ov.hidden && ov.hidden.length > 0) && React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: () => { update({ ...trip, cityOverrides: { renames: ov.renames || {}, hidden: [], order: ov.order || [] } }); toast(t.saved || '✓'); } },
             "\u21A9 ",
             t.restoreCities),
         React.createElement("div", { className: "card sub", style: { textAlign: 'center', fontSize: 12 } }, "\uD83D\uDFE0 Origem \u00B7 \u26AA Escala \u00B7 \uD83D\uDD35 Destino final \u00B7 Toque \u270F\uFE0F para renomear ou \uD83D\uDDD1\uFE0F para ocultar uma cidade")),
@@ -2576,6 +2794,45 @@ function TicketCheckin({ t, doc }) {
             React.createElement("b", { className: "mono" }, b.code),
             React.createElement("button", { className: "copybtn", onClick: copy, title: t.copyCode }, copied ? ('✓ ' + t.copied) : '📋')));
 }
+/* --- Visualizador de documento (abrir, baixar, fechar) --- */
+// download via Blob + link programático: âncora com data-URL falha em webviews
+function downloadDataUrl(dataUrl, filename) {
+    try {
+        const arr = dataUrl.split(','), mime = (arr[0].match(/:(.*?);/) || [])[1] || 'application/octet-stream';
+        const bin = atob(arr[1]);
+        const u8 = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++)
+            u8[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([u8], { type: mime }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'documento';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        return true;
+    }
+    catch (e) { return false; }
+}
+function DocViewer({ doc, onClose, toast }) {
+    const isImg = /image\//i.test(doc.mime || '');
+    const isPdf = /pdf/i.test(doc.mime || doc.file || '');
+    const doDownload = () => { toast(downloadDataUrl(doc.dataUrl, doc.file) ? '⬇ Download iniciado' : 'Não foi possível baixar'); };
+    return (React.createElement("div", { className: "docviewer" },
+        React.createElement("div", { className: "dvh" },
+            React.createElement("div", { className: "dvt" }, doc.name || doc.file),
+            doc.dataUrl && React.createElement("button", { className: "dvb", title: "Download", "aria-label": "Download", onClick: doDownload }, "⬇"),
+            React.createElement("button", { className: "dvb", title: "Fechar", "aria-label": "Fechar", onClick: onClose }, "✕")),
+        React.createElement("div", { className: "dvbody" },
+            !doc.dataUrl
+                ? React.createElement("div", { className: "dvempty" }, "📄 Pré-visualização indisponível: o arquivo é grande demais para ficar salvo no app (limite 2 MB).")
+                : isImg
+                    ? React.createElement("img", { src: doc.dataUrl, alt: doc.name })
+                    : isPdf
+                        ? React.createElement("iframe", { src: doc.dataUrl, title: doc.name })
+                        : React.createElement("div", { className: "dvempty" }, "📄 Sem visualização para este tipo de arquivo. Use o botão ⬇ acima para baixar."))));
+}
 /* --- Docs (anexo real do dispositivo + remoção; inteligência sob controle do usuário) --- */
 function DocsTab({ t, trip, update, toast, goTab }) {
     const cats = [['tickets', t.tickets, '🎫', ['Avião', 'Trem', 'Ônibus']],
@@ -2585,6 +2842,17 @@ function DocsTab({ t, trip, update, toast, goTab }) {
     const [cat, setCat] = useState('tickets');
     const [sub, setSub] = useState('Avião');
     const [readId, setReadId] = useState(null); // doc sendo "lido" (passagem)
+    const [viewDocId, setViewDocId] = useState(null); // doc aberto no visualizador
+    const [peekDocId, setPeekDocId] = useState(null); // pré-visualização enquanto segura o card
+    const peekTimer = useRef(null);
+    const peekFired = useRef(false);
+    const startPeek = (d) => (e) => {
+        if (e.target.closest('button, a')) return; // não faz peek ao segurar um botão do card
+        peekFired.current = false;
+        clearTimeout(peekTimer.current);
+        peekTimer.current = setTimeout(() => { peekFired.current = true; setPeekDocId(d.id); }, 420);
+    };
+    const endPeek = () => { clearTimeout(peekTimer.current); setPeekDocId(null); };
     const [busy, setBusy] = useState(false);
     const [confirmDoc, setConfirmDoc] = useState(null); // doc aguardando confirmação p/ cronograma
     const [lodgeEdit, setLodgeEdit] = useState(false); // edição manual da hospedagem
@@ -2661,7 +2929,8 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                     }
                     const L = parseLodging(txt);
                     if (L.ciDate || L.name || L.city || L.host || L.price)
-                        doc.lodging = { ...L, scheduled: false };
+                        // sem data no documento: assume hoje (anexo feito durante a viagem)
+                        doc.lodging = { ...L, ciDate: L.ciDate || todayISO(), scheduled: false };
                 }
                 catch (err) { /* segue para preenchimento manual */ }
                 setBusy(false);
@@ -2695,7 +2964,8 @@ function DocsTab({ t, trip, update, toast, goTab }) {
         const legs = d.itin.legs;
         // fallbacks: datas/horas podem vir nulas do OCR (parser solto). Sem isso,
         // uma data nula derruba o app ao montar o cronograma (tela branca).
-        const fallbackDate = (legs.map(l => l.depDate || l.arrDate).find(Boolean)) || trip.startDate || trip.endDate;
+        // sem NENHUMA data no documento: assume hoje (anexo feito durante a viagem).
+        const fallbackDate = (legs.map(l => l.depDate || l.arrDate).find(Boolean)) || todayISO();
         const dt = v => v || fallbackDate;
         const tm = v => v || '00:00';
         const fl = v => v ? (t.flight + ' ' + v) : '';
@@ -2839,7 +3109,15 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                                     React.createElement("input", { className: "inp", style: { marginTop: 6, width: '100%' }, placeholder: 'Voo (ex: LA 1234)', value: st.flight || '',
                                         onChange: e => setEditStages(editStages.map((s, j) => j === i ? { ...s, flight: e.target.value } : s)) }))),
                             React.createElement("button", { className: "btn btn-primary", style: { marginTop: 8 },
-                                onClick: () => { const upd = { ...readingDoc, itin: { ...readingDoc.itin, stages: editStages } }; setConfirmDoc(upd); setEditStages(null); } },
+                                onClick: () => {
+                                    // reconstr\u00F3i legs a partir das etapas editadas para que MAPA e CRONOGRAMA
+                                    // (que leem itin.legs) reflitam a corre\u00E7\u00E3o; persiste j\u00E1, mesmo sem confirmar.
+                                    const legs = stagesToLegs(editStages, readingDoc.itin.legs);
+                                    const itin = { legs, stages: legsToStages(legs) };
+                                    const upd = { ...readingDoc, itin };
+                                    update({ ...trip, docs: trip.docs.map(x => x.id === readingDoc.id ? upd : x) });
+                                    setConfirmDoc(upd); setEditStages(null);
+                                } },
                                 "\uD83D\uDCC5 ",
                                 t.addStages),
                             React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 6 }, onClick: () => setEditStages(null) },
@@ -2850,14 +3128,16 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                                 "\uD83D\uDCC5 ",
                                 t.addStages),
                             React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 },
-                                onClick: () => setEditStages(readingDoc.itin.stages.map(s => ({ ...s }))) },
+                                onClick: () => setEditStages(readingDoc.itin.stages.map(stageToEditable)) },
                                 "\u270F\uFE0F " + (t.editBeforeAdding || 'Editar dados'))))
                 : React.createElement(TicketReadForm, { t: t, trip: trip, doc: readingDoc, onSave: seg => saveTicket(readingDoc, seg), onCancel: () => setReadId(null) })),
         catDocs.length === 0
             ? React.createElement("div", { className: "empty" },
                 React.createElement("div", { className: "ei" }, "\uD83D\uDCC4"),
                 t.noDocs)
-            : catDocs.map(d => (React.createElement("div", { className: "docitem", key: d.id },
+            : catDocs.map(d => (React.createElement("div", { className: "docitem" + (peekDocId === d.id ? " peeking" : ""), key: d.id, style: { cursor: 'pointer', touchAction: 'manipulation' },
+                onPointerDown: startPeek(d), onPointerUp: endPeek, onPointerLeave: endPeek, onPointerCancel: endPeek,
+                onClick: e => { if (peekFired.current) { peekFired.current = false; return; } if (e.target.closest('button, a')) return; setViewDocId(d.id); } },
                 React.createElement("span", { className: "di" }, icon),
                 React.createElement("span", { className: "dt" },
                     React.createElement("b", null, d.name),
@@ -2901,7 +3181,8 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                         d.offline && React.createElement("span", { className: "offline" },
                             "\u2B07 ",
                             t.offlineAvail),
-                        d.dataUrl && React.createElement("a", { className: "joinbtn", href: d.dataUrl, download: d.file, style: { textDecoration: 'none' } }, "\u2B07 Download"),
+                        d.dataUrl && React.createElement("button", { className: "joinbtn", onClick: () => { toast(downloadDataUrl(d.dataUrl, d.file) ? '\u2B07 Download iniciado' : 'N\u00E3o foi poss\u00EDvel baixar'); } }, "\u2B07 Download"),
+                        React.createElement("button", { className: "joinbtn", onClick: () => setViewDocId(d.id) }, "\uD83D\uDC41 Visualizar"),
                         d.cat === 'tickets' && React.createElement("button", { className: "joinbtn", onClick: () => setReadId(d.id) },
                             "\uD83E\uDD16 ",
                             (d.itin || d.seg) ? 'Ver roteiro' : 'Ler passagem'),
@@ -2923,7 +3204,24 @@ function DocsTab({ t, trip, update, toast, goTab }) {
         removeDocId && React.createElement(ConfirmModal, { icon: "⚠️", title: "Remover documento?",
             msg: "As etapas criadas a partir deste documento serão removidas do cronograma.",
             confirmLabel: "Sim, remover", cancelLabel: t.cancel, danger: true,
-            onConfirm: () => doRemoveDoc(removeDocId), onCancel: () => setRemoveDocId(null) })));
+            onConfirm: () => doRemoveDoc(removeDocId), onCancel: () => setRemoveDocId(null) }),
+        (() => {
+            const vd = viewDocId ? trip.docs.find(d => d.id === viewDocId) : null;
+            return vd ? React.createElement(DocViewer, { doc: vd, onClose: () => setViewDocId(null), toast: toast }) : null;
+        })(),
+        (() => {
+            const pk = peekDocId ? trip.docs.find(d => d.id === peekDocId) : null;
+            if (!pk) return null;
+            const isImg = /image\//i.test(pk.mime || '');
+            const isPdf = /pdf/i.test(pk.mime || pk.file || '');
+            return React.createElement("div", { className: "docpeek", onPointerUp: endPeek, onPointerCancel: endPeek },
+                React.createElement("div", { className: "docpeekcard" },
+                    !pk.dataUrl ? React.createElement("div", { className: "docpeekempty" }, "📄 " + (pk.name || pk.file))
+                        : isImg ? React.createElement("img", { src: pk.dataUrl, alt: pk.name })
+                            : isPdf ? React.createElement("iframe", { src: pk.dataUrl, title: pk.name })
+                                : React.createElement("div", { className: "docpeekempty" }, "📄 " + (pk.name || pk.file)),
+                    React.createElement("div", { className: "docpeektag" }, "👁 Solte para fechar")));
+        })()));
 }
 function LodgingCard({ t, L }) {
     const row = (k, v, mono) => v ? React.createElement("div", { className: "lf" },
@@ -3005,7 +3303,8 @@ function LodgingForm({ t, doc, onSave, onCancel }) {
 }
 function TicketReadForm({ t, trip, doc, onSave, onCancel }) {
     const destGuess = (trip.destinations && trip.destinations[0]) ? cityOf(trip.destinations[0].name) : '';
-    const [s, setS] = useState(doc.seg || { fromCity: '', toCity: destGuess, depDate: trip.startDate, depTime: '10:00', arrDate: trip.startDate, arrTime: '13:30' });
+    // campos de texto começam VAZIOS (destino sugerido vira só placeholder — nada a apagar)
+    const [s, setS] = useState(doc.seg || { fromCity: '', toCity: '', depDate: trip.startDate, depTime: '10:00', arrDate: trip.startDate, arrTime: '13:30' });
     const set = (k, v) => setS({ ...s, [k]: v });
     const ok = s.fromCity && s.toCity && s.depDate && s.arrDate;
     return (React.createElement("div", { className: "card", style: { borderColor: '#b9d4ff' } },
@@ -3029,7 +3328,7 @@ function TicketReadForm({ t, trip, doc, onSave, onCancel }) {
             React.createElement("label", null,
                 "\uD83D\uDEEC ",
                 t.destination),
-            React.createElement("input", { className: "inp", placeholder: "Lisboa (LIS)", value: s.toCity, onChange: e => set('toCity', e.target.value) })),
+            React.createElement("input", { className: "inp", placeholder: destGuess ? (destGuess + ' (ex.)') : "Lisboa (LIS)", value: s.toCity, onChange: e => set('toCity', e.target.value) })),
         React.createElement("div", { className: "row" },
             React.createElement("div", { className: "field", style: { flex: 1.2 } },
                 React.createElement("label", null, t.arriveDT),
@@ -3081,6 +3380,11 @@ function GalleryTab({ t, trip, update, toast }) {
     const gallery = (trip.gallery || []).map((g, i) => ({ id: g.id || ('i' + i), album: g.album || g.city, src: g.src }));
     const imgsOf = id => gallery.filter(g => g.album === id);
     const setAlbums = a => update({ ...trip, albums: a });
+    // reordenar álbuns: segurar e arrastar (fotos acompanham, pois referenciam o id do álbum)
+    const albumReorder = useHoldReorder({
+        ids: albums.map(a => a.id), axis: 'y',
+        onCommit: (newIds) => { const map = {}; albums.forEach(a => map[a.id] = a); update({ ...trip, albums: newIds.map(id => map[id]).filter(Boolean) }); toast('✓ ' + (t.orderSaved || 'Ordem salva')); },
+    });
     const addAlbum = () => { const nm = newName.trim() || ('Álbum ' + (albums.length + 1)); update({ ...trip, albums: [...albums, { id: uid(), name: nm }] }); setNewName(''); setAdding(false); toast(t.albumAdded); };
     const renameAlbum = id => { const v = editName.trim(); if (v)
         setAlbums(albums.map(a => a.id === id ? { ...a, name: v } : a)); setEditId(null); };
@@ -3155,14 +3459,16 @@ function GalleryTab({ t, trip, update, toast }) {
             shareConfirm && React.createElement(ConfirmModal, { icon: "\uD83D\uDCE4", title: t.share + '?', msg: (sel.length ? sel.length + ' ' + t.shareSelected : ph.length + ' ' + t.shareAll), confirmLabel: '📤 ' + t.share, cancelLabel: t.cancel, onConfirm: () => doShare(toShare), onCancel: () => setShareConfirm(false) })));
     }
     // ---------- PÁGINA DE ÁLBUNS ----------
-    return (React.createElement("div", null,
-        React.createElement("p", { className: "sub", style: { marginBottom: 14 } },
+    const albumsToShow = albumReorder.order ? albumReorder.order.map(id => albums.find(a => a.id === id)).filter(Boolean) : albums;
+    return (React.createElement("div", Object.assign({ style: { touchAction: albumReorder.dragId ? 'none' : 'auto' } }, albumReorder.containerProps),
+        React.createElement("p", { className: "sub", style: { marginBottom: 4 } },
             "\uD83D\uDDBC\uFE0F ",
             t.galByLocation),
-        albums.map(a => {
+        albums.length > 1 && React.createElement("div", { className: "reorderhint" }, "✋ " + (t.holdToReorder || 'Segure e arraste para reordenar')),
+        albumsToShow.map(a => {
             const ph = imgsOf(a.id);
             const top = ph.slice(0, 3);
-            return (React.createElement("div", { className: "albumcard", key: a.id },
+            return (React.createElement("div", Object.assign({ className: "albumcard" + (albumReorder.dragId === a.id ? ' dragging' : ''), key: a.id, style: { touchAction: 'manipulation' } }, albumReorder.itemProps(a.id)),
                 React.createElement("div", { className: "albumstack", onClick: () => ph.length && setOpenId(a.id) },
                     top.length === 0 && React.createElement("div", { className: "albumthumb s0", style: { background: '#eef2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 } }, "\uD83C\uDFDE\uFE0F"),
                     top.map((g, i) => React.createElement("div", { className: "albumthumb s" + i, key: g.id, style: { backgroundImage: 'url(' + g.src + ')', zIndex: i } }))),
@@ -3787,6 +4093,14 @@ function App() {
     useEffect(() => { if (lang || user || trips)
         save({ lang, user, trips, notifs, settings }); }, [lang, user, trips, notifs, settings]);
     useEffect(() => { window._trippinUser = user; }, [user]);
+    // hidrata as fotos/anexos do IndexedDB (o localStorage guarda só as referências)
+    useEffect(() => {
+        let alive = true;
+        hydrateMedia({ trips: persisted.trips || null }).then(h => {
+            if (alive && h && h.trips && h.trips.some(t => (t.gallery || []).some(g => g.src) || (t.docs || []).some(d => d.dataUrl))) setTrips(h.trips);
+        });
+        return () => { alive = false; };
+    }, []);
     // clear deep-link flag once consumed
     useEffect(() => { if (_pendingTrip) { sessionStorage.removeItem('trippin_open_trip'); sessionStorage.removeItem('trippin_open_tab'); } }, []);
     // start with empty trips list on first profile creation

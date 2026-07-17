@@ -465,12 +465,18 @@ test.describe('Local: escala não é destino; ordem e dedup', () => {
     await page.waitForTimeout(200);
     await page.evaluate(() => { const x = Array.from(document.querySelectorAll('.segbtns button')).find(e => /Mês/.test(e.textContent)); x && x.click(); });
     await page.waitForTimeout(200);
-    const monthBefore = await page.evaluate(() => (document.body.innerText.match(/(Junho|Julho|Agosto) De 2026/i) || [])[0]);
+    // o cronograma abre na data vigente (pode ser qualquer mês); › deve avançar UM mês.
+    const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const monthIdx = () => page.evaluate((MONTHS) => {
+      const m = (document.body.innerText.match(new RegExp('(' + MONTHS.join('|') + ') De 20\\d\\d', 'i')) || [])[0] || '';
+      return MONTHS.findIndex(n => new RegExp(n, 'i').test(m));
+    }, MONTHS);
+    const before = await monthIdx();
     await page.evaluate(() => { const ar = Array.from(document.querySelectorAll('.navarrow')); ar[1] && ar[1].click(); });
     await page.waitForTimeout(200);
-    const monthAfter = await page.evaluate(() => (document.body.innerText.match(/(Junho|Julho|Agosto) De 2026/i) || [])[0]);
-    expect(monthBefore, 'mês inicial').toMatch(/Junho/i);
-    expect(monthAfter, 'após › deve avançar de mês').toMatch(/Julho/i);
+    const after = await monthIdx();
+    expect(before, 'mês inicial identificado').toBeGreaterThanOrEqual(0);
+    expect(after, 'após › deve avançar exatamente um mês').toBe(before + 1);
   });
 });
 
@@ -494,6 +500,14 @@ test.describe('Datas legíveis (formato humano)', () => {
 
     await page.locator('text=DatasTrip').first().click();
     await page.waitForTimeout(400);
+    // navega até a atividade (1 de julho) pela visão de mês — o cronograma abre na data vigente
+    await page.evaluate(() => { const x = Array.from(document.querySelectorAll('.segbtns button')).find(e => /Mês/.test(e.textContent)); x && x.click(); });
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      const cell = Array.from(document.querySelectorAll('.dcell')).find(c => c.querySelector('.dot') && /(^|\D)1(\D|$)/.test((c.querySelector('.dn') || {}).textContent || ''));
+      cell && cell.click();
+    });
+    await page.waitForTimeout(300);
     const body = await page.evaluate(() => document.body.innerText);
     expect(body, 'título do dia por extenso (ex.: Quarta, 1 de julho)').toMatch(/(segunda|terça|quarta|quinta|sexta|sábado|domingo),\s*1 de julho/i);
     expect(body, 'cronograma não deve mostrar ISO no título').not.toMatch(/📅\s*2026-07-01/);
