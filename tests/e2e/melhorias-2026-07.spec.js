@@ -400,4 +400,44 @@ test.describe('Origem/destino sem texto pré-preenchido', () => {
       expect((v.placeholder || '').length, 'campo tem placeholder de dica').toBeGreaterThan(0);
     }
   });
+
+  test('com leitura do interpretador, origem/destino vêm pré-preenchidos', async ({ page }) => {
+    const trip = { id: 't8b', name: 'PreTrip', startDate: '2026-07-01', endDate: '2026-07-20', status: 'active',
+      destinations: [{ name: 'Lisboa, Portugal', date: '2026-07-02' }], members: baseMembers, activities: [],
+      docs: [
+        { id: 'sem', cat: 'tickets', sub: 'Avião', name: 'sem leitura', file: 's.pdf' },
+        { id: 'com', cat: 'tickets', sub: 'Avião', name: 'com leitura', file: 'c.pdf',
+          seg: { fromCity: 'São Paulo', toCity: 'Barcelona', depDate: '2026-07-01', depTime: '22:00', arrDate: '2026-07-02', arrTime: '14:00' } },
+      ], albums: [], gallery: [], expenses: [] };
+    await seedTrip(page, trip);
+    await page.goto('/');
+    await page.waitForFunction(() => document.body.innerText.includes('PreTrip'));
+    await page.locator('text=PreTrip').first().click();
+    await page.waitForTimeout(300);
+    await clickButton(page, 'Docs');
+    await page.waitForTimeout(300);
+
+    const openForm = (docName) => page.evaluate((docName) => {
+      const it = Array.from(document.querySelectorAll('.docitem')).find(i => i.textContent.includes(docName));
+      const b = Array.from(it.querySelectorAll('button')).find(x => /Ver roteiro|Ler passagem/.test(x.textContent));
+      b.click();
+    }, docName);
+    const readOriginDest = () => page.evaluate(() => {
+      const card = Array.from(document.querySelectorAll('.card')).find(c => c.textContent.includes('Confirme os dados lidos'));
+      const ins = Array.from(card.querySelectorAll('input')).filter(i => !['date', 'time', 'file'].includes(i.type));
+      return ins.map(i => i.value);
+    });
+
+    // com leitura: pré-preenchido com o que o interpretador leu
+    await openForm('com leitura');
+    await page.waitForTimeout(200);
+    expect(await readOriginDest(), 'origem/destino vêm da leitura').toEqual(['São Paulo', 'Barcelona']);
+
+    // alterna para o doc SEM leitura: campos vazios (key força remontagem — sem estado obsoleto)
+    await page.evaluate(() => { const c = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Cancelar'); c && c.click(); });
+    await page.waitForTimeout(150);
+    await openForm('sem leitura');
+    await page.waitForTimeout(200);
+    expect(await readOriginDest(), 'doc sem leitura não herda dados do outro').toEqual(['', '']);
+  });
 });

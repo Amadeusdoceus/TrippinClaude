@@ -3130,7 +3130,7 @@ function DocsTab({ t, trip, update, toast, goTab }) {
                             React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 },
                                 onClick: () => setEditStages(readingDoc.itin.stages.map(stageToEditable)) },
                                 "\u270F\uFE0F " + (t.editBeforeAdding || 'Editar dados'))))
-                : React.createElement(TicketReadForm, { t: t, trip: trip, doc: readingDoc, onSave: seg => saveTicket(readingDoc, seg), onCancel: () => setReadId(null) })),
+                : React.createElement(TicketReadForm, { key: readingDoc.id, t: t, trip: trip, doc: readingDoc, onSave: seg => saveTicket(readingDoc, seg), onCancel: () => setReadId(null) })),
         catDocs.length === 0
             ? React.createElement("div", { className: "empty" },
                 React.createElement("div", { className: "ei" }, "\uD83D\uDCC4"),
@@ -3303,7 +3303,8 @@ function LodgingForm({ t, doc, onSave, onCancel }) {
 }
 function TicketReadForm({ t, trip, doc, onSave, onCancel }) {
     const destGuess = (trip.destinations && trip.destinations[0]) ? cityOf(trip.destinations[0].name) : '';
-    // campos de texto começam VAZIOS (destino sugerido vira só placeholder — nada a apagar)
+    // origem/destino vêm PRÉ-PREENCHIDOS pela leitura do interpretador (doc.seg). Sem leitura,
+    // começam VAZIOS — o exemplo fica só no placeholder (cinza, nada a apagar).
     const [s, setS] = useState(doc.seg || { fromCity: '', toCity: '', depDate: trip.startDate, depTime: '10:00', arrDate: trip.startDate, arrTime: '13:30' });
     const set = (k, v) => setS({ ...s, [k]: v });
     const ok = s.fromCity && s.toCity && s.depDate && s.arrDate;
