@@ -16,7 +16,7 @@
 <style>
   :root{
     --ink:#14213D; --deep:#1A2B4A; --coral:#FF6B5C; --coral-d:#E85746;
-    --lagoon:#2DB5A3; --sand:#F7F5F0; --amber:#F4A259; --danger:#D9534F;
+    --lagoon:#2DB5A3; --sand:#F7F5F0; --amber:#F4A259; --danger:#D9534F; --sky:#5B8DEF; --violet:#9B7BE0;
     --line:#E4E0D6; --muted:#6B7A90; --card:#FFFFFF; --shadow:0 6px 24px rgba(20,33,61,.10);
     --info-bg:#eef5ff; --info-line:#b9d4ff; --stay-bg:#fff4ec; --stay-line:#ffd9bd;
     --warn-bg:#fffaf3; --warn-line:#f4c98a; --cor-bg:#fff5f3; --cor-line:#ffc9c1;
@@ -334,7 +334,7 @@
   .maprole{margin-top:3px;font-size:8.5px;color:#5a6b86;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
   .mapconn{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;flex:0 0 auto;width:44px;padding-top:9px}
   .mapconn .ic{font-size:17px;line-height:1;margin-bottom:3px;height:18px}
-  .mapconn .ln{width:100%;border-top:2.5px dashed #5B8DEF;opacity:.7}
+  .mapconn .ln{width:100%;border-top:2.5px dashed var(--sky);opacity:.7}
   #root[data-theme="dark"] .mapcanvas{background:#16243e;background-image:radial-gradient(rgba(120,160,230,.18) 1.1px,transparent 1.6px)}
   #root[data-theme="dark"] .mapcity{background:var(--card);color:#e8edf6}
   #root[data-theme="dark"] .maprole{color:#9fb0cc}
@@ -447,7 +447,7 @@
   .cardx:active{background:rgba(0,0,0,.5)}
 
   /* ===== Tema escuro ===== */
-  #root[data-theme="dark"]{--sand:#151d2c;--ink:#E6ECF5;--card:#1c2740;--line:#2c3a55;--muted:#9aabc4;--deep:#0f1726;
+  #root[data-theme="dark"]{--sand:#151d2c;--ink:#E6ECF5;--card:#1c2740;--line:#2c3a55;--muted:#9aabc4;--deep:#0f1726;--sky:#6f9bf0;--violet:#a98fe6;
     --info-bg:#16243e;--info-line:#2c4a72;--stay-bg:#2a2113;--stay-line:#5a3e10;--warn-bg:#252010;--warn-line:#5a3e10;--cor-bg:#2a1515;--cor-line:#5a2a2a;
     background:#151d2c;color:#E6ECF5}
   /* --- Correção raiz: força herança de cor dentro do #root --- */
@@ -1155,7 +1155,7 @@ function TripScreen({ lang, trip, update, onBack, toast }) {
 }
 /* --- Schedule --- */
 const EVENT_TYPES = ['typeTransport', 'typeStay', 'typeFood', 'typeTour', 'typeEvent', 'typeOther'];
-const TYPE_COLOR = { typeTransport: '#2DB5A3', typeStay: '#FF6B5C', typeFood: '#F4A259', typeTour: '#5B8DEF', typeEvent: '#9B7BE0', typeOther: '#6B7A90' };
+const TYPE_COLOR = { typeTransport: 'var(--lagoon)', typeStay: 'var(--coral)', typeFood: 'var(--amber)', typeTour: 'var(--sky)', typeEvent: 'var(--violet)', typeOther: 'var(--muted)' };
 function ActivityForm({ t, init, onSave, onCancel }) {
     const [a, setA] = useState({ ...init, type: init.type || 'typeTour', desc: init.desc || '' });
     const set = (k, v) => setA({ ...a, [k]: v });
@@ -1935,7 +1935,7 @@ async function imageToText(file) {
     const { data } = await worker.recognize(input);
     return data.text || '';
 }
-const STAGE_COL = { origin: '#2DB5A3', layover: '#F4A259', destination: '#5B8DEF' };
+const STAGE_COL = { origin: 'var(--lagoon)', layover: 'var(--amber)', destination: 'var(--sky)' };
 function ItinStageCard({ st, lbl }) {
     const col = STAGE_COL[st.kind];
     return (React.createElement("div", { className: "stageWrap" },
@@ -2118,7 +2118,7 @@ function ScheduleTab({ t, trip, update, toast }) {
                 "Nada planejado neste dia."),
             dayActs.map(a => {
                 const cf = hasConflict(a);
-                const tc = TYPE_COLOR[a.type] || '#2DB5A3';
+                const tc = TYPE_COLOR[a.type] || 'var(--lagoon)';
                 return (editId === a.id
                     ? React.createElement(ActivityForm, { key: a.id, t: t, init: a, onSave: saveEdit, onCancel: () => setEditId(null) })
                     : React.createElement("div", { className: "tslot", key: a.id },
@@ -2209,7 +2209,7 @@ function WeekView({ t, trip, curDay, openDay }) {
                 acts.length === 0
                     ? React.createElement("div", { className: "wkempty" }, "\u2014")
                     : acts.map(a => {
-                        const tc = TYPE_COLOR[a.type] || '#2DB5A3';
+                        const tc = TYPE_COLOR[a.type] || 'var(--lagoon)';
                         return (React.createElement("div", { className: "wkrow", key: a.id, onClick: () => openDay(ds) },
                             React.createElement("div", { className: "wt" }, a.start),
                             React.createElement("div", { className: "wblk", style: { borderLeftColor: tc } },
@@ -2254,7 +2254,7 @@ function DestPinMap({ pts, segs, t, goGallery }) {
     const children = [];
     pts.forEach((p, i) => {
         const isFirst = i === 0, isLast = i === n - 1;
-        const color = isFirst ? '#F4A259' : isLast ? '#5B8DEF' : '#1A2B4A';
+        const color = isFirst ? 'var(--amber)' : isLast ? 'var(--sky)' : 'var(--ink)';
         const role = isFirst ? 'Origem' : isLast ? 'Destino' : 'Parada';
         children.push(React.createElement('div', { key: 'p' + i, className: 'mapstop' },
             React.createElement('div', { className: 'mappin', onClick: () => goGallery && goGallery('gallery') }, pinSvg(color)),
