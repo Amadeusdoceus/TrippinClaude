@@ -1,0 +1,107 @@
+# 02 — Especificação de UX/UI (Trippin)
+
+| Campo | Valor |
+|---|---|
+| **Produto** | Trippin — planejador de viagens em grupo |
+| **Tipo de documento** | Especificação de UX/UI |
+| **Deriva de** | `briefing.md` (fonte de verdade do produto real — ver decisão registrada abaixo) |
+| **Não deriva de** | `00-visao-de-negocio.md` / `01-VN-revisada.md` — confirmados como exercício didático autocontido, não vinculante para esta especificação |
+| **Data** | 2026-08-26 |
+| **Escopo desta versão** | Sub-projeto 1 (MVP): **Módulo 01 (Usuários) + Módulo 02 (Cronograma) + Módulo 03 (Despesas)** — corresponde à Fase 1 de `briefing.md` §7 |
+| **Fora desta versão** | Módulo 04 (Leitor de arquivos inteligente) — Fase 2 de `briefing.md`; recebe sua própria especificação depois que o backlog deste sub-projeto estiver encaminhado |
+| **Documento seguinte** | `03-backlog.md` — épicos e tarefas derivados desta especificação |
+
+---
+
+## 0. Decisões de escopo confirmadas
+
+Estas decisões foram tomadas explicitamente antes de detalhar as telas, porque mudam a arquitetura da spec:
+
+| Decisão | Escolha |
+|---|---|
+| Fonte de verdade | `briefing.md` é o produto real; `00`/`01` não influenciam este documento |
+| Plataforma | App nativo (iOS/Android, React Native/Expo — stack ainda **a validar**, conforme `CLAUDE.md`) **+ companion web**, ambos no MVP |
+| Papel do companion web | Focado em planejamento — CRUD completo de viagem/cronograma/despesas em telas maiores, **sem exigência de offline** |
+| Offline | Obrigatório no app mobile desde o MVP (risco §8 de `briefing.md` prevalece sobre o roadmap de fases) |
+| Autenticação | E-mail + senha |
+| Navegação primária (mobile) | Barra de abas inferior (bottom tab bar) |
+| Moeda | Única por viagem no MVP — multi-moeda é Fase 3 (`briefing.md` §7) |
+| Idiomas | PT-BR + EN-US desde o MVP |
+| Identidade visual | Sem branding prévio — definida por esta spec (ver seção 3) |
+
+---
+
+## 1. Arquitetura de informação
+
+**Abas inferiores (mobile):** Início · Cronograma · Despesas · Viagem (integrantes/permissões/config) · Perfil.
+
+**Companion web:** os mesmos quatro destinos como barra lateral fixa (mais espaço horizontal favorece navegação persistente em vez de abas), mais um "modo planejamento" que mostra calendário e extrato de despesas lado a lado.
+
+**Fluxo pré-viagem (antes de existirem as abas):** Login/cadastro → Início (estado vazio: "Criar viagem" / "Entrar com código") → formulário de criação (nome, datas, destino — o calendário nasce automaticamente do intervalo de dias) ou entrada por código/link/QR → cai no painel da viagem recém-criada ou encontrada.
+
+**Início é sensível ao estado da viagem** — não é uma tela fixa. A transição é automática, sem toggle manual: a viagem passa de "pré-viagem" para "ativa" no momento em que a data atual entra no intervalo `[data_início, data_fim]`, e volta a "concluída" no dia seguinte ao fim — consistente com `briefing.md` §3 ("sempre ancorada na data real da viagem") e §4 ("'Hoje na viagem' atualiza sozinho conforme a data avança").
+- **Antes da partida:** painel mostra contagem regressiva, checklist de planejamento (convidar integrantes, montar cronograma, definir moeda) e progresso de convites.
+- **Durante a viagem:** o módulo principal do painel passa a ser o cartão "Hoje na viagem" (linha do tempo do dia), sem precisar de uma aba separada — isso satisfaz o comportamento descrito em `briefing.md` §4 ("o app abre direto na visão 'hoje'") sem forçar essa visão antes de fazer sentido.
+
+---
+
+## 2. Inventário de telas por módulo
+
+**Módulo 01 — Usuários**
+- Cadastro/login (e-mail + senha)
+- Perfil (nome, foto, telefone — usado também como contato de emergência)
+- Criação de viagem
+- Tela de convite (link, QR, código curto)
+- Lista de integrantes com badge de papel (Admin / Coadmin / Convidado)
+- Ação de promover integrante a coadministrador
+- Histórico leve de auditoria, visível a admins ("Fulano editou o evento X, há 2h")
+
+**Módulo 02 — Cronograma**
+- Cartão-herói do painel (pré-viagem: contagem regressiva + checklist; durante a viagem: linha do tempo de hoje)
+- Aba Cronograma completa, com alternância Dia / Semana / Mês
+- Painel (bottom sheet) de detalhe do evento: local, horário, link de mapa, notas, participantes vinculados
+- Reordenar evento por arrastar dentro do mesmo dia
+- Formulário de criar/editar evento
+- Indicador de conflito quando dois eventos se sobrepõem
+
+**Módulo 03 — Despesas**
+- Lista de despesas da viagem ativa
+- Fluxo de "adicionar despesa", podendo nascer de um evento (pré-preenche participantes) ou ser criado à parte
+- Seletor de método de divisão: igual / partes customizadas / valor fixo
+- Saldo por participante ("você deve" / "te devem")
+- Ação manual de quitação
+- Extrato consolidado ao final da viagem
+
+---
+
+## 3. Identidade visual — "Golden Hour"
+
+**Paleta:** terracota/coral como cor primária (CTAs, estado ativo das abas); verde-petróleo profundo como acento secundário (links, datas selecionadas); neutros em tom areia/creme para superfícies — não branco puro, para evocar o calor de papel/filme em vez de um visual clínico de SaaS; cinza quase-preto (não preto puro) para texto. No modo escuro, a base passa para um azul-crepúsculo profundo, mantendo os mesmos acentos terracota/verde-petróleo — o app permanece "quente" em vez de virar cinza-frio.
+
+**Tipografia:** uma família geométrica sem serifa para toda a interface e números (saldos, datas — exige bons algarismos tabulares), com ajuste óptico por tamanho: tracking mais fechado em textos grandes (nome da viagem, títulos), mais aberto em textos pequenos (legendas), conforme os fundamentos de tipografia do `apple-design`.
+
+**Iconografia e movimento:** ícones de linha simples (não preenchidos, não skeuomórficos) — o calor da identidade vem da cor, não da textura do ícone. Movimento segue os princípios do `apple-design`: transições baseadas em spring (não easing linear), gestos interrompíveis nos painéis de detalhe (arrastar para baixo para dispensar, acompanhando o dedo, sem trava de duração fixa).
+
+---
+
+## 4. Interação e comportamento offline
+
+Painéis de evento/despesa são **bottom sheets**, não telas cheias — mantém a posição de rolagem da visão do dia e segue o padrão "adicionar rápido sem perder contexto" recomendado pelo `apple-design`. Reordenar evento usa "long-press para levantar" com feedback tátil e soltar com momentum, seguindo a orientação de consistência espacial da Apple.
+
+**Offline (somente mobile, por decisão da seção 0):** cronograma e despesas já carregados da viagem ativa ficam em cache e legíveis offline; qualquer criação/edição feita offline entra numa fila local com indicador "pendente de sincronização" no item afetado, sincronizando na reconexão com estratégia *last-write-wins* — o histórico de auditoria (Módulo 01) torna conflitos visíveis depois do fato. O companion web não tem modo offline: mostra um estado de bloqueio "sem conexão", já que planejamento em uma mesa assume conectividade.
+
+---
+
+## 5. Tratamento de erros e log de detecção/correção
+
+Estados vazios claros para: nenhuma viagem ainda, viagem sem eventos, viagem sem despesas — cada um com uma única ação clara, nunca uma tela em branco. Erros de permissão (convidado tentando editar contribuição de outra pessoa) são bloqueados na interface (a ação de editar simplesmente não aparece, em vez de aparecer desabilitada com erro). Avisos de conflito no calendário ficam inline no card do evento (uma marcação colorida + toque para ver o que conflita), nunca um modal bloqueante.
+
+**Log de erros — visível ao usuário:** uma tela "Registro de sincronização", acessível em Perfil ou nas configurações da Viagem, lista operações que falharam (ex.: "Falha ao sincronizar despesa X às 14:32") com uma ação manual "Tentar novamente" por item, e marca como "Corrigido automaticamente" quando uma nova tentativa em segundo plano é bem-sucedida sem intervenção do usuário. Isso estende o histórico leve de auditoria do Módulo 01 para cobrir também falhas técnicas, não só ações de usuários.
+
+**Log de erros — lado da engenharia (requisito técnico, não tela):** todo erro do cliente (falha de sincronização, chamada de API com erro, crash) precisa ser capturado por uma camada estruturada de logging/crash-reporting (ex.: Sentry ou equivalente), para que o time detecte regressões antes que o usuário precise reportá-las. Isso não é uma tela desta spec — é um requisito transversal que se torna um épico próprio em `03-backlog.md`, com a tela de "Registro de sincronização" acima como seu consumidor voltado ao usuário.
+
+---
+
+## 6. Próximos passos
+
+Este documento alimenta `03-backlog.md`: cada seção acima (telas do inventário, requisito de offline, identidade visual, log de erros) se torna um ou mais épicos, com critérios de aceite derivados diretamente das decisões da seção 0 e dos comportamentos descritos nas seções 1–5.
