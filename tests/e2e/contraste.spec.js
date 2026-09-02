@@ -11,7 +11,7 @@
  * limiar — assim, toda nova implementação que esqueça as variáveis de tema é
  * barrada no `npm run review`.
  */
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./local-mode');
 const { isKnownError } = require('./helpers');
 
 const TRIP = {

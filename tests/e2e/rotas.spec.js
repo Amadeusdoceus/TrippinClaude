@@ -10,7 +10,7 @@
  *   2. Fluxo de UI: abrir viagem semeada → aba Mapa → trocar para a visão "Grupo"
  *      → linha do tempo + encontros renderizam; alternar "quem vai a cada destino"
  */
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./local-mode');
 const { isKnownError } = require('./helpers');
 
 // rota com integrantes vindos de caminhos diferentes que se encontram em Barcelona

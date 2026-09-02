@@ -11,7 +11,7 @@
  *
  * Run:  npx playwright test smoke-screens
  */
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./local-mode');
 const {
   selectLanguage,
   registerUser,

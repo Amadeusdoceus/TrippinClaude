@@ -11,7 +11,7 @@
  * As rotas externas (Edge Function e Nominatim) são interceptadas para
  * manter os testes determinísticos e independentes de rede.
  */
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./local-mode');
 
 const PAGE = '/buscar-hospedagem.html';
 

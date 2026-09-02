@@ -9,7 +9,7 @@
  *
  * Tudo via a função pura window._trippinParse.parseAirTicketLoose (determinístico).
  */
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./local-mode');
 
 test.describe('Interpretador de passagens · formatos visuais', () => {
   test.beforeEach(async ({ page }) => { await page.goto('/'); });

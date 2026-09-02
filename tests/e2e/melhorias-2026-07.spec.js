@@ -13,7 +13,7 @@
  *
  * Run:  npx playwright test melhorias-2026-07
  */
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./local-mode');
 const { selectLanguage, registerUser, createTrip, clickButton, isKnownError } = require('./helpers');
 
 const ISO = d => d.toISOString().slice(0, 10);

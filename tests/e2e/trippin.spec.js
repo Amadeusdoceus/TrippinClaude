@@ -15,7 +15,7 @@
  * Watch: npx playwright test --headed
  */
 
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./local-mode');
 const {
   selectLanguage,
   registerUser,
@@ -219,11 +219,16 @@ test.describe('7 · Envio de convite', () => {
     const opened = await getOpened();
     expect(opened.length).toBeGreaterThan(0);
 
+    // A partir da Fase 2B (AD-08), APP_URL vem de TRIPPIN_CONFIG e varia por
+    // ambiente (prod vs. staging/local) — checa contra o valor resolvido de
+    // verdade em vez de assumir sempre o domínio de produção.
+    const appUrl = await page.evaluate(() => (window.TRIPPIN_CONFIG || {}).APP_URL);
+
     const mailto = opened[0];
     expect(mailto).toMatch(/^mailto:amigo@gmail\.com/);
     expect(decodeURIComponent(mailto)).toContain('Aventura 2026');
     expect(decodeURIComponent(mailto)).toContain('Lucas');
-    expect(decodeURIComponent(mailto)).toContain('github.io');
+    expect(decodeURIComponent(mailto)).toContain(appUrl);
   });
 
   test('convite aparece em "Aguardando resposta" após envio', async ({ page }) => {

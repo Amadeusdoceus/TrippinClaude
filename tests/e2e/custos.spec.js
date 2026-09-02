@@ -10,7 +10,7 @@
  *   2. Fluxo de UI: criar viagem → aba Custos → adicionar despesa → ver card →
  *      simplificar (sem erro de JS / tela branca)
  */
-const { test, expect } = require('@playwright/test');
+const { test, expect } = require('./local-mode');
 const { selectLanguage, registerUser, createTrip, clickButton, fillByIndex, isKnownError } = require('./helpers');
 
 const MEMBERS = [{ id: 'me' }, { id: 'b' }, { id: 'c' }];

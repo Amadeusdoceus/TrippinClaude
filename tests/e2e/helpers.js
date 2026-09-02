@@ -85,6 +85,14 @@ async function registerUser(page, {
   await fillByIndex(page, 6, password);
   await fillByIndex(page, 7, password);
 
+  // Fase 6 (tarefa 6.7): consentimento explícito passou a ser obrigatório
+  // pra concluir o cadastro — sem isso, o botão fica bloqueado (`valid`
+  // exige `consent`) e nenhum teste que registra usuário completaria.
+  await page.evaluate(() => {
+    const cb = document.querySelector('input[type="checkbox"]');
+    if (cb && !cb.checked) cb.click();
+  });
+
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   await clickButton(page, 'Confirmar e entrar');
 
