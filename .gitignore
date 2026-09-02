@@ -14,3 +14,6 @@ tests/report/
 # temporários do CLI do Supabase
 **/.temp/
 backend/supabase/supabase/
+
+# skills/plugins instalados via npx skills add — ferramenta, não código do app
+.agents/

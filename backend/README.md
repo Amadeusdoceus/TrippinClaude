@@ -1,15 +1,23 @@
-# Trippin — Backend (Supabase + Resend)
+# Trippin — Backend (Supabase + Brevo)
+
+> **Este README documenta o setup original (schema legado, ainda em
+> produção).** Para o schema-alvo da Fase 1 em diante (`public.profiles`,
+> multiusuário real) e para operação do dia a dia, veja
+> [`RUNBOOK.md`](RUNBOOK.md) e [`../analise/`](../analise/) — em especial
+> `06-pontas-soltas.md`, que lista o que falta pra colocar o schema novo no ar.
 
 Este diretório tem tudo o que o **Trippin** precisa do lado do servidor para:
 
 - **Autenticação** real de usuários (Supabase Auth)
 - **Banco** PostgreSQL com Row Level Security (cada usuário só vê o que pode)
-- **Envio de e-mail** de convite via Resend
+- **Envio de e-mail** de convite via Brevo (trocado do Resend na Fase 0 —
+  ver `analise/02-auditoria-seguranca.md`, finding C-02)
 - **Storage** de PDFs/fotos (Supabase Storage)
-- **Log central** de eventos em `events_log` (auditoria + telemetria)
+- **Log central** de eventos em `events_log` (schema legado) / `audit_log`
+  (schema-alvo) — auditoria + telemetria
 
-> A camada gratuita do Supabase (500 MB, autenticação ilimitada) e a do
-> Resend (3.000 e-mails/mês) bastam para todo o piloto.
+> A camada gratuita do Supabase (500 MB, autenticação ilimitada) e a da
+> Brevo (300 e-mails/dia) bastam para todo o piloto.
 
 ---
 
@@ -57,21 +65,28 @@ supabase link --project-ref <ref-do-seu-projeto>
 Defina os segredos (eles ficam só no servidor):
 ```bash
 supabase secrets set \
-  RESEND_API_KEY=re_xxxxx \
-  RESEND_FROM="Trippin <convites@seu-dominio.com>" \
+  BREVO_API_KEY=xkeysib-xxxxx \
+  BREVO_SENDER_EMAIL="convites@seu-dominio.com" \
+  BREVO_SENDER_NAME="Trippin" \
   APP_URL="https://trippin.app"
 ```
+`send-invite` falha explicitamente (503) se um desses faltar — decisão
+deliberada da Fase 0 (finding M-05: nada de e-mail pessoal hardcoded como
+fallback).
 
-Publique as 4 funções:
+Publique as 5 funções (`RUNBOOK.md` tem o comando individual e os secrets
+que cada uma exige):
 ```bash
-supabase functions deploy send-invite    --no-verify-jwt
-supabase functions deploy accept-invite  --no-verify-jwt
-supabase functions deploy request-join   --no-verify-jwt
-supabase functions deploy approve-join   --no-verify-jwt
+supabase functions deploy send-invite
+supabase functions deploy accept-invite
+supabase functions deploy request-join
+supabase functions deploy approve-join
+supabase functions deploy search-stays
 ```
 
-> `--no-verify-jwt` porque a função valida o token manualmente (precisa ler
-> o e-mail do usuário). A segurança real é feita dentro de cada função.
+> Nenhuma função usa mais `--no-verify-jwt`: `send-invite` exige JWT de
+> usuário real desde a Fase 0 (finding C-02 — antes era um relay de e-mail
+> aberto). As demais já validavam o token manualmente por dentro.
 
 ---
 
@@ -124,10 +139,12 @@ select * from public.invites where status like 'pending-%';
 
 ---
 
-## 8. Próximos passos (não cobertos aqui)
+## 8. Próximos passos
 
-- Página `/aceitar` (no front-end) que lê `?token=` e chama `accept-invite`
-- Migração dos `localStorage` atuais para o banco (atividades, docs, galeria,
-  despesas) — o cliente `app/src/trippin-api.js` já tem todos os métodos
-  prontos; só falta o app chamá-los no lugar de `save(...)`
-- Política de retenção em `events_log` (ex.: deletar > 12 meses)
+O plano completo (Fases 0–6) está em `../analise/04-plano-de-acao.md` e já
+foi implementado no código — o que falta é só a parte que exige
+infraestrutura real (provisionar `trippin-staging`/`trippin-prod`, aplicar
+as migrations, rodar os testes de policy contra um banco de verdade). Ver
+`../analise/06-pontas-soltas.md` para a lista exata do que ainda depende de
+alguém com acesso às contas fazer manualmente, e `RUNBOOK.md` para os
+procedimentos do dia a dia uma vez que isso estiver no ar.

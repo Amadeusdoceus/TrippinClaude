@@ -22,6 +22,13 @@
 // painel do Supabase (Edge Functions), sem precisar do CLI.
 // ============================================================
 
+// Fase 6 (tarefa 6.4, finding M-02): rate limit por IP — esta função não
+// exige login (funciona pro app em modo local também), então não dá pra
+// chavear por auth.uid() como send-invite faz. Só é importado se
+// SUPABASE_URL/SERVICE_ROLE_KEY existirem (ambiente de teste local sem
+// esses secrets continua funcionando, só sem o limite).
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 // ---------- contrato de dados ----------
 interface SearchQuery {
   location: string;
@@ -511,13 +518,16 @@ function demoStays(q: SearchQuery): Stay[] {
 // ============================================================
 // HTTP + ORQUESTRAÇÃO
 // ============================================================
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { ...CORS, "content-type": "application/json" } });
+const ALLOWED_ORIGINS = [Deno.env.get("APP_URL") ?? "", "http://localhost:8000"].filter(Boolean);
+function corsHeaders(origin: string | null) {
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
 
 const readEnv: Env = (k) => Deno.env.get(k);
 
@@ -568,6 +578,10 @@ function rank(stays: Stay[]): Stay[] {
 }
 
 Deno.serve(async (req) => {
+  const CORS = corsHeaders(req.headers.get("Origin"));
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status, headers: { ...CORS, "content-type": "application/json" } });
+
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json(405, { error: "method not allowed" });
 
@@ -588,6 +602,29 @@ Deno.serve(async (req) => {
       stays: demoStays(q), demo: true, providers: [],
       note: "Nenhuma API configurada — exibindo exemplos. Configure TRAVELPAYOUTS_TOKEN ou RAPIDAPI_KEY nos Secrets para dados reais.",
     });
+  }
+
+  // Rate limit só a partir daqui: chamar um agregador de verdade custa
+  // dinheiro/cota (finding M-02) — o caminho demo acima é grátis.
+  const MAX_SEARCHES_PER_HOUR = 30;
+  const supaUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (supaUrl && serviceKey) {
+    try {
+      const ip = (req.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
+      const admin = createClient(supaUrl, serviceKey);
+      const windowStart = new Date(); windowStart.setMinutes(0, 0, 0);
+      const { data: rl } = await admin.from("ip_rate_limits")
+        .select("count").eq("ip", ip).eq("action", "search-stays")
+        .eq("window_start", windowStart.toISOString()).maybeSingle();
+      if ((rl?.count ?? 0) >= MAX_SEARCHES_PER_HOUR) {
+        return json(429, { error: "rate limit exceeded", retry_after: 3600 });
+      }
+      await admin.from("ip_rate_limits").upsert(
+        { ip, action: "search-stays", window_start: windowStart.toISOString(), count: (rl?.count ?? 0) + 1 },
+        { onConflict: "ip,action,window_start" },
+      );
+    } catch (_) { /* rate limit indisponível não deve derrubar a busca */ }
   }
 
   const settled = await Promise.all(

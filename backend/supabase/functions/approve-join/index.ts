@@ -6,15 +6,22 @@
 // ============================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-const json = (s: number, b: unknown) =>
-  new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "content-type": "application/json" } });
+const ALLOWED_ORIGINS = [Deno.env.get("APP_URL") ?? "", "http://localhost:8000"].filter(Boolean);
+function corsHeaders(origin: string | null) {
+  const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
 
 Deno.serve(async (req) => {
+  const CORS = corsHeaders(req.headers.get("Origin"));
+  const json = (s: number, b: unknown) =>
+    new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "content-type": "application/json" } });
+
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json(405, { error: "method not allowed" });
 
