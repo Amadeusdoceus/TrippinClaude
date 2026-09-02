@@ -4,12 +4,21 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#1A2B4A" />
+<!-- Fase 6 (tarefa 6.5, finding M-04). script-src precisa de 'unsafe-inline':
+     o app inteiro é um único elemento SCRIPT inline (decisão AD-01 — arquivo único,
+     sem bundler). Isso é uma lacuna real e documentada, não um descuido: CSP
+     aqui protege contra (a) uma CDN comprometida servindo código diferente do
+     esperado (mitigado também pelo SRI em cada tag SCRIPT com src abaixo) e (b)
+     qualquer origem de script nova além de unpkg/cdnjs — mas NÃO contra uma
+     injeção de SCRIPT inline via XSS refletido/armazenado. Reavaliar quando
+     (e se) o projeto adotar um bundler. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
 <title>Trippin — V1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin="anonymous" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script src="config.js"></script>
 <script src="src/trippin-api.js"></script>
 <!-- pdf.js carregado sob demanda -->
@@ -587,6 +596,18 @@
 <script>
 "use strict";
 const { useState, useEffect, useRef } = React;
+/* Fase 6 (tarefa 6.3) — telemetria de erro do cliente. TrippinAPI.log.error()
+   já existia (Fase 2A) mas nunca era chamado; liga aqui. Sem efeito em modo
+   local (log.error() só grava se mode==='remote'). Contexto é só tela +
+   id da viagem (window._trippinScreen, atualizado por App()) — nunca o corpo
+   do erro além de message/stack, que já é o que log.error() grava; nenhum
+   dado de formulário, e-mail ou documento passa por aqui. */
+window.addEventListener('error', e => {
+    TrippinAPI.log.error(e.error || e.message, { kind: 'onerror', ...(window._trippinScreen || {}) });
+});
+window.addEventListener('unhandledrejection', e => {
+    TrippinAPI.log.error(e.reason, { kind: 'promise', ...(window._trippinScreen || {}) });
+});
 /* ---------------- reorder por arrastar após segurar (long-press) ----------------
    Hook de container: coordena UMA lista arrastável. Ao segurar `holdMs` sobre um item,
    entra em modo arraste; enquanto arrasta, reordena visualmente; ao soltar, confirma.
@@ -830,79 +851,15 @@ const CITIES = ['Lisboa, Portugal', 'Porto, Portugal', 'Barcelona, Espanha', 'Ma
     'Zagreb, Croácia', 'Dubrovnik, Croácia', 'Buenos Aires, Argentina', 'Londres, Reino Unido',
     'Amsterdã, Holanda', 'Praga, Tchéquia', 'Viena, Áustria', 'Atenas, Grécia', 'Veneza, Itália'];
 const COUNTRIES = ['🇧🇷 +55', '🇵🇹 +351', '🇺🇸 +1', '🇬🇧 +44', '🇩🇪 +49', '🇫🇷 +33', '🇪🇸 +34', '🇮🇹 +39', '🇦🇷 +54', '🇭🇷 +385'];
-/* ---------------- storage ---------------- */
-const KEY = 'trippin_v1';
-const load = () => { try {
-    return JSON.parse(localStorage.getItem(KEY)) || {};
-}
-catch (e) {
-    return {};
-} };
-/* ---------------- mídia (fotos/anexos) em IndexedDB ----------------
-   base64 grande estoura a cota do localStorage (~5MB) e fazia o save INTEIRO falhar
-   em silêncio — perdendo as fotos. Aqui as imagens vão para o IndexedDB (centenas de MB),
-   e o localStorage guarda só o estado leve com referências (campo `blob`). */
-const IMG_DB = 'trippin_media', IMG_STORE = 'images';
-let _imgDbPromise = null;
-const _storedKeys = new Set(); // evita regravar o mesmo blob a cada save
-function imgDB() {
-    if (_imgDbPromise) return _imgDbPromise;
-    _imgDbPromise = new Promise((res, rej) => {
-        try {
-            const req = indexedDB.open(IMG_DB, 1);
-            req.onupgradeneeded = () => { const db = req.result; if (!db.objectStoreNames.contains(IMG_STORE)) db.createObjectStore(IMG_STORE); };
-            req.onsuccess = () => res(req.result);
-            req.onerror = () => rej(req.error);
-        } catch (e) { rej(e); }
-    });
-    return _imgDbPromise;
-}
-async function imgPut(key, dataUrl) {
-    try { const db = await imgDB(); await new Promise((res, rej) => { const tx = db.transaction(IMG_STORE, 'readwrite'); tx.objectStore(IMG_STORE).put(dataUrl, key); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); _storedKeys.add(key); }
-    catch (e) { /* IndexedDB indisponível: segue sem persistir a imagem */ }
-}
-async function imgGetAll() {
-    try {
-        const db = await imgDB();
-        return await new Promise((res, rej) => {
-            const out = {}; const tx = db.transaction(IMG_STORE, 'readonly'); const cur = tx.objectStore(IMG_STORE).openCursor();
-            cur.onsuccess = () => { const c = cur.result; if (c) { out[c.key] = c.value; c.continue(); } else res(out); };
-            cur.onerror = () => rej(cur.error);
-        });
-    } catch (e) { return {}; }
-}
-// tira as imagens (base64) do estado e as manda ao IndexedDB; devolve estado leve p/ localStorage
-function stripMedia(s) {
-    if (!s || !s.trips) return s;
-    return { ...s, trips: s.trips.map(trip => {
-        const t2 = { ...trip };
-        if (trip.gallery) t2.gallery = trip.gallery.map(g => {
-            if (g.src && g.src.indexOf('data:') === 0) { const key = 'g:' + g.id; if (!_storedKeys.has(key)) imgPut(key, g.src); return { ...g, src: null, blob: key }; }
-            return g;
-        });
-        if (trip.docs) t2.docs = trip.docs.map(d => {
-            if (d.dataUrl && d.dataUrl.indexOf('data:') === 0) { const key = 'd:' + d.id; if (!_storedKeys.has(key)) imgPut(key, d.dataUrl); return { ...d, dataUrl: null, blob: key }; }
-            return d;
-        });
-        return t2;
-    }) };
-}
-// recompõe as imagens no estado a partir do IndexedDB (após carregar do localStorage)
-async function hydrateMedia(s) {
-    if (!s || !s.trips) return s;
-    const all = await imgGetAll();
-    Object.keys(all).forEach(k => _storedKeys.add(k));
-    return { ...s, trips: s.trips.map(trip => {
-        const t2 = { ...trip };
-        if (trip.gallery) t2.gallery = trip.gallery.map(g => (g.blob && all[g.blob]) ? { ...g, src: all[g.blob] } : g);
-        if (trip.docs) t2.docs = trip.docs.map(d => (d.blob && all[d.blob]) ? { ...d, dataUrl: all[d.blob] } : d);
-        return t2;
-    }) };
-}
-const save = s => { try {
-    localStorage.setItem(KEY, JSON.stringify(stripMedia(s)));
-}
-catch (e) { } };
+/* ---------------- storage ----------------
+   Fase 2A: a persistência (localStorage + IndexedDB de mídia) mora só em
+   TrippinAPI (app/src/trippin-api.js) agora — princípio 3 de
+   analise/03-arquitetura-alvo.md ("nenhuma tela toca localStorage/indexedDB
+   direto"). Estes nomes continuam existindo como atalho para as telas que já
+   os chamavam, sem reescrever cada call site. */
+const load = TrippinAPI.local.load;
+const save = TrippinAPI.local.save;
+const hydrateMedia = TrippinAPI.media.hydrate;
 const rid = n => { const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let r = ''; for (let i = 0; i < n; i++)
     r += c[Math.floor(Math.random() * c.length)]; return r; };
 const rnum = n => { let r = ''; for (let i = 0; i < n; i++)
@@ -974,7 +931,7 @@ function ConfirmModal({ icon, title, msg, confirmLabel, cancelLabel, onConfirm, 
             cancelLabel && React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 10 }, onClick: onCancel }, cancelLabel))));
 }
 /* ---------------- SCREENS ---------------- */
-function LanguageScreen({ onPick }) {
+function LanguageScreen({ onPick, onLogin }) {
     const [sel, setSel] = useState('pt-BR');
     const t = dict(sel);
     return (React.createElement("div", { className: "screen" },
@@ -995,7 +952,178 @@ function LanguageScreen({ onPick }) {
                     React.createElement("span", { className: "lc" }, l.sub)))))),
             React.createElement("button", { className: "btn btn-primary", style: { marginTop: 20 }, onClick: () => onPick(sel) },
                 t.continue,
-                " \u2192"))));
+                " \u2192"),
+            onLogin && React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 10 }, onClick: () => onLogin(sel) },
+                t.alreadyHaveAccount || 'J\u00e1 tenho conta'))));
+}
+/* Fase 2B — tela de entrada para quem já tem conta (dispositivo novo, cache
+   limpo). Só é alcançável quando TrippinAPI.mode === 'remote' de verdade
+   (ver App(): o link "Já tenho conta" na LanguageScreen fica escondido até
+   lá) — em modo local não existe servidor pra autenticar contra. */
+function LoginScreen({ lang, onDone, onBack }) {
+    const t = dict(lang);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [err, setErr] = useState('');
+    const [busy, setBusy] = useState(false);
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const submit = () => {
+        setErr('');
+        if (!emailOk || !password) { setErr(t.loginFillFields || 'Preencha e-mail e senha.'); return; }
+        setBusy(true);
+        TrippinAPI.auth.signIn({ email, password })
+            .then(u => {
+                setBusy(false);
+                if (!u) { setErr(t.loginFailed || 'Não foi possível entrar. Confira e-mail e senha.'); return; }
+                onDone(u);
+            })
+            .catch(e => { setBusy(false); setErr((e && e.message) || t.loginFailed || 'Não foi possível entrar.'); });
+    };
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "←"),
+            React.createElement("div", { className: "ttl" }, t.login || 'Entrar'),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.loginSub || 'Entre com a conta que você já criou em outro dispositivo.'),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.email),
+                React.createElement("input", { className: "inp" + (err ? ' err' : ''), type: "email", autoComplete: "email", value: email, onChange: e => setEmail(e.target.value) })),
+            React.createElement("div", { className: "field" },
+                React.createElement("label", null, t.password || 'Senha'),
+                React.createElement("input", { className: "inp" + (err ? ' err' : ''), type: "password", autoComplete: "current-password", value: password, onChange: e => setPassword(e.target.value) })),
+            err && React.createElement("p", { className: "sub", style: { color: 'var(--danger)', marginTop: -8, marginBottom: 12 } }, err),
+            React.createElement("button", { className: "btn btn-primary", disabled: busy, onClick: submit }, busy ? '…' : (t.enter || 'Entrar')))));
+}
+/* Fase 5 (tarefa 5.4) — log de sincronização, acessível em Configurações
+   quando há (ou já houve) fila offline. Só leitura — TrippinAPI.queue.log()
+   já devolve o mais recente primeiro. */
+/* Fase 6 (tarefa 6.1) — "Privacidade e dados": exportar tudo (LGPD art. 18, I
+   e II — acesso e portabilidade) e excluir a conta (art. 18, VI —
+   eliminação). Só faz sentido em modo remoto: modo local não tem uma cópia
+   do lado servidor pra exportar/apagar — os dados já estão só no
+   dispositivo, sob controle direto do usuário. */
+function PrivacyScreen({ lang, onBack, apiMode, onAccountDeleted, toast }) {
+    const t = dict(lang);
+    const [exporting, setExporting] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [askDelete, setAskDelete] = useState(false);
+    const doExport = () => {
+        setExporting(true);
+        TrippinAPI.privacy.exportAll().then(data => {
+            setExporting(false);
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'trippin-meus-dados.json';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }).catch(() => { setExporting(false); toast('⚠️ ' + (t.exportFailed || 'Não foi possível exportar agora.')); });
+    };
+    const doDelete = () => {
+        setDeleting(true);
+        TrippinAPI.privacy.deleteAccount().then(() => {
+            setDeleting(false); setAskDelete(false);
+            onAccountDeleted();
+        }).catch(() => { setDeleting(false); setAskDelete(false); toast('⚠️ ' + (t.deleteAccountFailed || 'Não foi possível excluir a conta agora.')); });
+    };
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "←"),
+            React.createElement("div", { className: "ttl" }, t.privacyTitle || 'Privacidade e dados'),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            apiMode !== 'remote'
+                ? React.createElement("div", { className: "card sub", style: { textAlign: 'center' } },
+                    t.privacyLocalOnly || 'Seus dados hoje ficam só neste dispositivo — não há nada na nuvem para exportar ou excluir.')
+                : React.createElement(React.Fragment, null,
+                    React.createElement("div", { className: "card", style: { marginBottom: 12 } },
+                        React.createElement("b", { style: { fontSize: 14, display: 'block', marginBottom: 6 } }, "📤 " + (t.exportData || 'Exportar meus dados')),
+                        React.createElement("p", { className: "sub", style: { marginBottom: 10 } }, t.exportDataSub || 'Baixa um arquivo com tudo que é seu: perfil, viagens, atividades, despesas e documentos que você enviou.'),
+                        React.createElement("button", { className: "btn btn-primary", disabled: exporting, onClick: doExport }, exporting ? '…' : (t.exportData || 'Exportar meus dados'))),
+                    React.createElement("div", { className: "card" },
+                        React.createElement("b", { style: { fontSize: 14, display: 'block', marginBottom: 6, color: 'var(--danger)' } }, "🗑️ " + (t.deleteAccount || 'Excluir minha conta')),
+                        React.createElement("p", { className: "sub", style: { marginBottom: 10 } }, t.deleteAccountSub || 'Remove seu login e seus dados pessoais. Despesas já divididas com o grupo ficam anonimizadas, não apagadas — pra não bagunçar o acerto de contas de quem ficar.'),
+                        React.createElement("button", { className: "btn btn-ghost", style: { color: 'var(--danger)' }, onClick: () => setAskDelete(true) }, t.deleteAccount || 'Excluir minha conta')))),
+        askDelete && React.createElement(ConfirmModal, {
+            icon: "🗑️", title: t.deleteAccountQ || 'Excluir sua conta?',
+            msg: t.deleteAccountConfirmSub || 'Essa ação não pode ser desfeita.',
+            confirmLabel: deleting ? '…' : (t.yesDelete || 'Sim, excluir'), cancelLabel: t.cancel || 'Cancelar',
+            danger: true, onConfirm: doDelete, onCancel: () => setAskDelete(false)
+        })));
+}
+function SyncLogScreen({ lang, onBack }) {
+    const t = dict(lang);
+    const [log] = useState(() => TrippinAPI.queue.log());
+    const statusLabel = { queued: '📶 ' + (t.syncQueued || 'Na fila'), applied: '✓ ' + (t.syncApplied || 'Sincronizado'),
+        conflict: '⚠️ ' + (t.syncConflict || 'Conflito — servidor venceu'), 'retry-failed': '↻ ' + (t.syncRetry || 'Tentando de novo') };
+    const kindLabel = { activity: t.schedule || 'Atividade', expense: t.costs || 'Despesa' };
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "←"),
+            React.createElement("div", { className: "ttl" }, t.syncLog || 'Sincronização'),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            log.length === 0
+                ? React.createElement("div", { className: "card sub", style: { textAlign: 'center' } }, t.syncLogEmpty || 'Nada sincronizado ainda.')
+                : log.map((e, i) => React.createElement("div", { className: "card", key: i, style: { marginBottom: 8, padding: 12 } },
+                    React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', fontSize: 13 } },
+                        React.createElement("b", null, kindLabel[e.kind] || e.kind),
+                        React.createElement("span", null, statusLabel[e.status] || e.status)),
+                    React.createElement("div", { className: "sub", style: { fontSize: 11, marginTop: 2 } }, (e.at || '').replace('T', ' ').slice(0, 16)),
+                    e.detail && React.createElement("div", { className: "sub", style: { fontSize: 11, marginTop: 2 } }, e.detail))))));
+}
+/* Fase 3 (tarefa 3.2) — Assistente de Migração: dispositivo -> nuvem.
+   Só é alcançável depois de um login/cadastro remoto bem-sucedido quando
+   TrippinAPI.migration.hasPending() é true (ver App(), afterAuth()). Nada é
+   apagado do dispositivo aqui — só TrippinAPI.migration.sweepIfExpired(),
+   chamado à parte, apaga (e só 30 dias depois de um envio concluído). */
+function MigrationAssistantScreen({ lang, onDone }) {
+    const t = dict(lang);
+    const [preview] = useState(() => TrippinAPI.migration.preview());
+    const [running, setRunning] = useState(false);
+    const [step, setStep] = useState('');
+    const [result, setResult] = useState(null);
+    const [err, setErr] = useState('');
+    const start = () => {
+        setRunning(true); setErr('');
+        TrippinAPI.migration.run(s => setStep(s))
+            .then(r => { setRunning(false); setResult(r); })
+            .catch(e => { setRunning(false); setErr((e && e.message) || t.migrationFailed || 'Não foi possível enviar seus dados agora.'); });
+    };
+    if (result) {
+        const ok = !result.errors || !result.errors.length;
+        return (React.createElement("div", { className: "screen" },
+            React.createElement("div", { className: "pad" },
+                React.createElement("div", { className: "eyebrow" }, ok ? '☁️ ' + (t.migrationDoneTitle || 'Envio concluído') : '⚠️ ' + (t.migrationPartialTitle || 'Concluído com pendências')),
+                React.createElement("h2", { style: { fontSize: 22, marginBottom: 10 } }, ok ? (t.migrationSuccess || 'Tudo enviado!') : (t.migrationPartial || 'Parte dos dados não foi enviada')),
+                React.createElement("p", { className: "sub", style: { marginBottom: 14 } },
+                    (result.trips || 0) + ' ' + (t.trips || 'viagens') + ' · ' +
+                    (result.activities || 0) + ' ' + (t.activities || 'atividades') + ' · ' +
+                    (result.docs || 0) + ' ' + (t.docs || 'documentos') + ' · ' +
+                    (result.photos || 0) + ' ' + (t.photos || 'fotos') + ' · ' +
+                    (result.expenses || 0) + ' ' + (t.expenses || 'despesas')),
+                !ok && React.createElement("div", { className: "errmsg", style: { marginBottom: 14 } },
+                    result.errors.map(function (e, i) { return React.createElement("div", { key: i }, e.trip + ': ' + e.error); })),
+                React.createElement("button", { className: "btn btn-primary", onClick: onDone }, t.continue || 'Continuar'))));
+    }
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "pad" },
+            React.createElement("div", { className: "eyebrow" }, "☁️ " + (t.migrationTitle || 'Enviar para a nuvem')),
+            React.createElement("h2", { style: { fontSize: 22, marginBottom: 6 } }, t.migrationHeadline || 'Encontramos viagens neste dispositivo'),
+            React.createElement("p", { className: "sub", style: { marginBottom: 18 } },
+                t.migrationSub || 'Enviar para sua conta? Nada é apagado do dispositivo — seus dados locais continuam aqui por 30 dias.'),
+            React.createElement("div", { className: "card" },
+                React.createElement("div", null, preview.trips + ' ' + (t.trips || 'viagens')),
+                React.createElement("div", null, preview.activities + ' ' + (t.activities || 'atividades')),
+                React.createElement("div", null, preview.docs + ' ' + (t.docs || 'documentos')),
+                React.createElement("div", null, preview.photos + ' ' + (t.photos || 'fotos')),
+                React.createElement("div", null, preview.expenses + ' ' + (t.expenses || 'despesas'))),
+            err && React.createElement("div", { className: "errmsg", style: { marginTop: 10 } }, err),
+            React.createElement("button", { className: "btn btn-primary", style: { marginTop: 14 }, disabled: running, onClick: start },
+                running ? ('… ' + (step || '')) : (t.migrationSend || 'Enviar agora')),
+            React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, disabled: running, onClick: onDone },
+                t.migrationSkip || 'Agora não'))));
 }
 function PhotoPicker({ photo, onPick, hint }) {
     const ref = useRef(null);
@@ -1012,23 +1140,64 @@ function PhotoPicker({ photo, onPick, hint }) {
         React.createElement("div", { className: "sub", style: { fontSize: 12, marginTop: -10 } }, hint),
         React.createElement("input", { ref: ref, type: "file", accept: "image/*", style: { display: 'none' }, onChange: handle })));
 }
-function ProfileScreen({ lang, onDone }) {
+/* Fase 6 (tarefa 6.7) — texto real, refletindo o que o app de fato coleta e
+   faz com os dados hoje (não um boilerplate genérico). Reescrever aqui
+   sempre que uma tela nova passar a coletar ou compartilhar algo diferente. */
+function PrivacyPolicyScreen({ lang, onBack }) {
+    const t = dict(lang);
+    const P = ({ children }) => React.createElement("p", { style: { fontSize: 13.5, lineHeight: 1.6, marginBottom: 12, color: 'var(--ink)' } }, children);
+    const H = ({ children }) => React.createElement("h3", { style: { fontSize: 14, fontFamily: 'Sora', marginTop: 18, marginBottom: 6 } }, children);
+    return (React.createElement("div", { className: "screen" },
+        React.createElement("div", { className: "appbar" },
+            React.createElement("button", { className: "iconbtn", onClick: onBack }, "←"),
+            React.createElement("div", { className: "ttl" }, t.privacyPolicyTitle || 'Privacidade e Termos'),
+            React.createElement("div", { style: { width: 38 } })),
+        React.createElement("div", { className: "pad" },
+            React.createElement(P, null, "Este resumo descreve o que o Trippin coleta e faz com seus dados quando você usa uma conta na nuvem (modo local: nada sai do seu aparelho)."),
+            React.createElement(H, null, "O que coletamos"),
+            React.createElement(P, null, "Nome, sobrenome, e-mail, telefone e data de nascimento (obrigatórios); CPF (sempre opcional); foto de perfil. Dados das suas viagens: roteiro, atividades, despesas, e documentos que você anexa (passagens, reservas) — que podem conter dados de terceiros, como nome do hóspede e localizador da reserva."),
+            React.createElement(H, null, "Com quem compartilhamos"),
+            React.createElement(P, null, "Só com os outros integrantes da mesma viagem, e só nome, e-mail e foto — nunca CPF, telefone ou data de nascimento de terceiros. Não vendemos nem compartilhamos dados com ninguém fora da sua viagem."),
+            React.createElement(H, null, "Onde ficam guardados"),
+            React.createElement(P, null, "Em infraestrutura da Supabase (banco de dados e armazenamento de arquivos), contratada para operar o Trippin."),
+            React.createElement(H, null, "Por quanto tempo"),
+            React.createElement(P, null, "Documentos de viagens encerradas há mais de 180 dias são apagados automaticamente (com aviso prévio). Os demais dados ficam até você pedir a exclusão."),
+            React.createElement(H, null, "Seus direitos"),
+            React.createElement(P, null, "Exportar tudo que é seu, excluir um documento específico, ou excluir sua conta inteira — tudo pela tela \"Privacidade e dados\" em Configurações, sem precisar pedir pra ninguém."))));
+}
+function ProfileScreen({ lang, onDone, onOpenPolicy }) {
     const t = dict(lang);
     const [f, setF] = useState({ firstName: '', lastName: '', birth: '', cpf: '', email: '', country: '🇧🇷 +55', phone: '', photo: '', password: '', confirmPwd: '' });
     const [touched, setTouched] = useState(false);
     const [showPwd, setShowPwd] = useState(false);
+    const [consent, setConsent] = useState(false);
+    const [remoteErr, setRemoteErr] = useState('');
+    const [busy, setBusy] = useState(false);
     const set = (k, v) => setF({ ...f, [k]: v });
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
     const pwdOk = f.password.length >= 6;
     const pwdMatch = f.password === f.confirmPwd;
-    const valid = f.firstName && f.lastName && f.birth && emailOk && f.phone && pwdOk && pwdMatch;
-    const submit = () => {
-        setTouched(true);
-        if (!valid) return;
+    const valid = f.firstName && f.lastName && f.birth && emailOk && f.phone && pwdOk && pwdMatch && consent;
+    // Fase 2B: em mode='remote' a conta é criada de verdade no Supabase Auth
+    // (bcrypt no servidor — nada de hashPwd/passwordHash aqui). Em 'local'
+    // (o padrão hoje) o comportamento é exatamente o de antes da Fase 2B.
+    const submitRemote = () => {
+        setRemoteErr(''); setBusy(true);
+        TrippinAPI.auth.signUp({
+            firstName: f.firstName, lastName: f.lastName, email: f.email,
+            password: f.password, phone: f.country + ' ' + f.phone,
+            cpf: f.cpf, birth: f.birth, lang: lang
+        }).then(u => {
+            setBusy(false);
+            if (!u) { setRemoteErr(t.signupFailed || 'Não foi possível criar a conta.'); return; }
+            onDone(u);
+        }).catch(e => { setBusy(false); setRemoteErr((e && e.message) || t.signupFailed || 'Não foi possível criar a conta.'); });
+    };
+    const submitLocal = () => {
         const finish = (passwordHash) => {
             onDone({ firstName: f.firstName, lastName: f.lastName, birth: f.birth, cpf: f.cpf,
                 email: f.email, country: f.country, phone: f.phone, photo: f.photo,
-                passwordHash, passwordDisplay: btoa(unescape(encodeURIComponent(f.password))),
+                passwordHash,
                 code: rnum(6), createdAt: new Date().toISOString() });
         };
         if (window.crypto && window.crypto.subtle) {
@@ -1036,6 +1205,11 @@ function ProfileScreen({ lang, onDone }) {
         } else {
             finish(btoa(f.password));
         }
+    };
+    const submit = () => {
+        setTouched(true);
+        if (!valid) return;
+        if (TrippinAPI.mode === 'remote') submitRemote(); else submitLocal();
     };
     return (React.createElement("div", { className: "screen" },
         React.createElement("div", { className: "appbar" },
@@ -1075,7 +1249,15 @@ function ProfileScreen({ lang, onDone }) {
                 React.createElement("label", null, t.confirmPwd, " ", React.createElement("span", { className: "req" }, "*")),
                 React.createElement("input", { type: showPwd ? "text" : "password", className: "inp" + (touched && !pwdMatch ? ' err' : ''), placeholder: "repita a senha", value: f.confirmPwd, onChange: e => set('confirmPwd', e.target.value) }),
                 touched && !pwdMatch && React.createElement("div", { className: "errmsg" }, t.pwdMismatch)),
-            React.createElement("button", { className: "btn btn-primary", style: { marginTop: 8 }, onClick: submit }, t.confirm))));
+            remoteErr && React.createElement("div", { className: "errmsg" }, remoteErr),
+            React.createElement("div", { className: "row", style: { alignItems: 'flex-start', gap: 8, margin: '10px 0' } },
+                React.createElement("input", { type: "checkbox", checked: consent, onChange: e => setConsent(e.target.checked), style: { marginTop: 3 } }),
+                React.createElement("span", { className: "sub", style: { fontSize: 12.5 } },
+                    t.consentPrefix || 'Li e concordo com a ',
+                    React.createElement("a", { href: "#", onClick: e => { e.preventDefault(); onOpenPolicy && onOpenPolicy(); } }, t.consentLink || 'Política de Privacidade e Termos'),
+                    '.')),
+            touched && !consent && React.createElement("div", { className: "errmsg" }, t.consentRequired || 'Você precisa concordar para continuar.'),
+            React.createElement("button", { className: "btn btn-primary", style: { marginTop: 8 }, disabled: busy, onClick: submit }, busy ? '…' : t.confirm))));
 }
 function ProfileEditScreen({ lang, user, onSave, onBack }) {
     const t = dict(lang);
@@ -1138,7 +1320,8 @@ function HomeScreen({ lang, user, trips, onNew, onJoin, onOpen, onDelete }) {
     const t = dict(lang);
     const active = trips.filter(x => x.status === 'active');
     const past = trips.filter(x => x.status === 'past');
-    const isAdmin = tr => tr.members && tr.members.some(m => m.id === 'me' && m.isAdmin);
+    const myId = (user && user.id) || 'me';
+    const isAdmin = tr => tr.members && tr.members.some(m => m.id === myId && m.isAdmin);
     return (React.createElement("div", { className: "screen" },
         React.createElement("div", { className: "pad" },
             React.createElement("div", { className: "eyebrow" }, t.home),
@@ -1188,9 +1371,23 @@ function TripCard({ t, tr, onOpen, canDelete, onDelete }) {
             "\uD83D\uDC65 ",
             tr.members.length)));
 }
-function JoinScreen({ lang, onBack, toast }) {
+function JoinScreen({ lang, onBack, toast, apiMode, onJoined }) {
     const t = dict(lang);
     const [code, setCode] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState('');
+    // Fase 4 (tarefa 4.3): em modo remoto, entra de verdade via RPC
+    // join_trip_by_code \u2014 substitui a varredura completa de trips que a
+    // Edge Function request-join fazia (findings A-03/M-03). Em modo local
+    // n\u00e3o h\u00e1 servidor pra validar contra, ent\u00e3o o comportamento de sempre
+    // (s\u00f3 avisa e volta) se mant\u00e9m.
+    const submit = () => {
+        if (apiMode !== 'remote') { toast(t.joinSent); onBack(); return; }
+        setBusy(true); setErr('');
+        TrippinAPI.trips.joinByCode(code)
+            .then(() => onJoined())
+            .catch(e => { setBusy(false); setErr((e && e.message) || t.joinFailed || 'C\u00f3digo inv\u00e1lido ou expirado.'); });
+    };
     return (React.createElement("div", { className: "screen" },
         React.createElement("div", { className: "appbar" },
             React.createElement("button", { className: "iconbtn", onClick: onBack }, "\u2190"),
@@ -1202,7 +1399,8 @@ function JoinScreen({ lang, onBack, toast }) {
             React.createElement("div", { className: "field" },
                 React.createElement("label", null, t.enterCode),
                 React.createElement("input", { className: "inp mono", placeholder: "XXXXXXXXXXXX", maxLength: 12, value: code, onChange: e => setCode(e.target.value.toUpperCase()) })),
-            React.createElement("button", { className: "btn btn-primary", disabled: code.length < 6, onClick: () => { toast(t.joinSent); onBack(); } }, t.askJoin))));
+            err && React.createElement("div", { className: "errmsg" }, err),
+            React.createElement("button", { className: "btn btn-primary", disabled: code.length < 6 || busy, onClick: submit }, busy ? '\u2026' : t.askJoin))));
 }
 /* ---------------- NEW TRIP ---------------- */
 function NewTripScreen({ lang, user, onCreate, onCancel, toast }) {
@@ -1230,7 +1428,7 @@ function NewTripScreen({ lang, user, onCreate, onCancel, toast }) {
             return;
         const u = user || {};
         const today = new Date().toISOString().slice(0, 10);
-        const me = { id: 'me', firstName: u.firstName || 'Você', lastName: u.lastName || '', name: ((u.firstName || 'Você') + ' ' + (u.lastName || '')).trim(),
+        const me = { id: u.id || 'me', firstName: u.firstName || 'Você', lastName: u.lastName || '', name: ((u.firstName || 'Você') + ' ' + (u.lastName || '')).trim(),
             email: u.email || '', phone: u.phone || '', birth: u.birth || '', photo: u.photo || '', code: u.code || '', isAdmin: true, joinedAt: today, joinVia: 'creator' };
         const trip = { id: rid(12), name, startDate: start, endDate: end,
             destinations: dests.length ? dests : [{ name: 'A definir', date: start }], status: 'active',
@@ -1290,9 +1488,12 @@ function NewTripScreen({ lang, user, onCreate, onCancel, toast }) {
         askDel && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1\uFE0F", title: t.deleteConfirm, msg: t.deleteConfirmSub, confirmLabel: t.yesDelete, cancelLabel: t.cancel, danger: true, onConfirm: () => { setAskDel(false); toast(t.deleted); onCancel(); }, onCancel: () => setAskDel(false) })));
 }
 /* ---------------- TRIP VIEW ---------------- */
-function TripScreen({ lang, trip, update, onBack, toast }) {
+function TripScreen({ lang, trip, update, onBack, toast, user }) {
     const t = dict(lang);
     const [tab, setTab] = useState('schedule');
+    // Fase 2B/2.7: identidade de "você" nas listas de participantes/pagamento —
+    // 'me' em modo local (idêntico a antes), o UUID real da sessão em remoto.
+    const myId = (user && user.id) || 'me';
     const tabs = [['schedule', t.schedule, '📅'], ['map', t.map, '🗺️'], ['docs', t.docs, '📄'],
         ['gallery', t.gallery, '🖼️'], ['costs', t.costs, '💰'], ['members', t.members, '👥'], ['suggestions', t.suggestions, '✨']];
     return (React.createElement("div", { className: "screen" },
@@ -1305,13 +1506,13 @@ function TripScreen({ lang, trip, update, onBack, toast }) {
             " ",
             label)))),
         React.createElement("div", { className: "pad" },
-            tab === 'schedule' && React.createElement(ScheduleTab, { t: t, trip: trip, update: update, toast: toast }),
-            tab === 'map' && React.createElement(MapTab, { t: t, trip: trip, update: update, toast: toast, goTab: setTab }),
-            tab === 'docs' && React.createElement(DocsTab, { t: t, trip: trip, update: update, toast: toast, goTab: setTab }),
+            tab === 'schedule' && React.createElement(ScheduleTab, { t: t, trip: trip, update: update, toast: toast, myId: myId }),
+            tab === 'map' && React.createElement(MapTab, { t: t, trip: trip, update: update, toast: toast, goTab: setTab, myId: myId }),
+            tab === 'docs' && React.createElement(DocsTab, { t: t, trip: trip, update: update, toast: toast, goTab: setTab, myId: myId }),
             tab === 'gallery' && React.createElement(GalleryTab, { t: t, trip: trip, update: update, toast: toast }),
-            tab === 'costs' && React.createElement(ExpensesTab, { t: t, trip: trip, update: update, toast: toast }),
+            tab === 'costs' && React.createElement(ExpensesTab, { t: t, trip: trip, update: update, toast: toast, myId: myId }),
             tab === 'suggestions' && React.createElement(SuggestTab, { t: t, trip: trip, update: update, toast: toast }),
-            tab === 'members' && React.createElement(MembersTab, { t: t, trip: trip, update: update, toast: toast }))));
+            tab === 'members' && React.createElement(MembersTab, { t: t, trip: trip, update: update, toast: toast, myId: myId }))));
 }
 /* --- Schedule --- */
 const EVENT_TYPES = ['typeTransport', 'typeStay', 'typeFood', 'typeTour', 'typeEvent', 'typeOther'];
@@ -1751,13 +1952,13 @@ if (typeof window !== 'undefined') {
     window._trippinLoc = { locationAnchors, locationForDay, tripLocations, tripDays, cityByDay, sharedDaysBetween, meetingsFor };
     window._trippinCost = { normExpense, shareOf, balances, simplifyDebts };
     window._trippinItin = { legsToStages, stagesToLegs, stageToEditable, todayISO };
-    window._trippinMedia = { stripMedia, hydrateMedia, imgGetAll };
+    window._trippinMedia = { stripMedia: TrippinAPI.media.strip, hydrateMedia: TrippinAPI.media.hydrate, imgGetAll: TrippinAPI.media.getAll };
 }
 const _scriptCache = {};
-function loadScriptOnce(src) { return _scriptCache[src] || (_scriptCache[src] = new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = () => res(); el.onerror = () => rej(new Error('falha ao carregar ' + src)); document.head.appendChild(el); })); }
+function loadScriptOnce(src, integrity) { return _scriptCache[src] || (_scriptCache[src] = new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; if (integrity) { el.integrity = integrity; el.crossOrigin = 'anonymous'; } el.onload = () => res(); el.onerror = () => rej(new Error('falha ao carregar ' + src)); document.head.appendChild(el); })); }
 async function pdfToText(buf) {
     if (typeof pdfjsLib === 'undefined') {
-        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e');
     }
     if (typeof pdfjsLib === 'undefined')
         throw new Error('PDF indisponível');
@@ -1992,7 +2193,8 @@ function parseLodging(text) {
 }
 /* ===== Custos: divisão e simplificação de dívidas (funções puras, testáveis) ===== */
 // Normaliza uma despesa, com retrocompat dos itens antigos {id,desc,amount,paidBy}.
-function normExpense(e, members) {
+function normExpense(e, members, myId) {
+    myId = myId || 'me'; // Fase 2B/2.7: identidade real (session.user.id) quando remoto; 'me' local (padrão)
     const ids = (members || []).map(m => m.id);
     const has = id => ids.length === 0 || ids.includes(id);
     const participants = (e.participants && e.participants.length)
@@ -2001,8 +2203,8 @@ function normExpense(e, members) {
     return {
         id: e.id, desc: e.desc || '', amount: +e.amount || 0,
         currency: e.currency || 'BRL', date: e.date || null,
-        paidBy: (e.paidBy && has(e.paidBy)) ? e.paidBy : (has('me') ? 'me' : (ids[0] || 'me')),
-        participants: participants.length ? participants : (ids.length ? ids.slice() : ['me']),
+        paidBy: (e.paidBy && has(e.paidBy)) ? e.paidBy : (has(myId) ? myId : (ids[0] || myId)),
+        participants: participants.length ? participants : (ids.length ? ids.slice() : [myId]),
         equalSplit: e.equalSplit !== false, // padrão: divisão igualitária
         shares: e.shares || {},             // cotas custom (valor absoluto) quando equalSplit=false
         settled: e.settled || {},           // parcelas já pagas: ficam fora da simplificação
@@ -2095,7 +2297,7 @@ async function getOcrWorker() {
     if (_ocrWorker)
         return _ocrWorker;
     if (typeof Tesseract === 'undefined')
-        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js');
+        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js', 'sha384-1zP4ZOtlk2FXAOiUArpMuWf7INJJKe/ROfYFAVSeUa11DEfXdKWGiPI3dVma2Gt0');
     if (typeof Tesseract === 'undefined')
         throw new Error('OCR indisponível');
     // createWorker(lang) já baixa+inicializa o idioma; o modelo fica em cache (IndexedDB)
@@ -2229,7 +2431,8 @@ function LodgingMark({ t, L, day }) {
                 React.createElement("div", { className: "k" }, t.confirmation),
                 React.createElement("div", { className: "v mono" }, L.code)))));
 }
-function ScheduleTab({ t, trip, update, toast }) {
+function ScheduleTab({ t, trip, update, toast, myId }) {
+    myId = myId || 'me';
     const [view, setView] = useState('day');
     const days = [...new Set([...trip.activities.map(a => a.date), ...(trip.docs || []).filter(d => d.lodging && d.lodging.scheduled && d.lodging.ciDate).map(d => d.lodging.ciDate)])].filter(Boolean).sort();
     // dia inicial: hoje, se estivermos dentro do período da viagem; senão o 1º dia com eventos / início
@@ -2267,7 +2470,7 @@ function ScheduleTab({ t, trip, update, toast }) {
     const moveMonth = dir => { const b = new Date((curDay || trip.startDate) + 'T00:00:00'); b.setDate(1); b.setMonth(b.getMonth() + dir); setCurDay(b.toISOString().slice(0, 10)); };
     const arrow = dir => view === 'month' ? moveMonth(dir) : move(dir);
     const saveNew = (a) => {
-        update({ ...trip, activities: [...trip.activities, { ...a, id: uid(), source: 'manual', joined: ['me'] }] });
+        update({ ...trip, activities: [...trip.activities, { ...a, id: uid(), source: 'manual', joined: [myId] }] });
         setAdding(false);
         toast(t.addActivity + ' ✓');
     };
@@ -2275,7 +2478,7 @@ function ScheduleTab({ t, trip, update, toast }) {
     const doDelete = (id) => { update({ ...trip, activities: trip.activities.filter(x => x.id !== id) }); setDelId(null); toast(t.activityDeleted); };
     const toggleJoin = (id) => {
         update({ ...trip, activities: trip.activities.map(a => a.id === id ?
-                { ...a, joined: a.joined.includes('me') ? a.joined.filter(x => x !== 'me') : [...a.joined, 'me'] } : a) });
+                { ...a, joined: a.joined.includes(myId) ? a.joined.filter(x => x !== myId) : [...a.joined, myId] } : a) });
     };
     const editing = editId ? trip.activities.find(a => a.id === editId) : null;
     return (React.createElement("div", null,
@@ -2321,7 +2524,7 @@ function ScheduleTab({ t, trip, update, toast }) {
                                     React.createElement("button", { className: "blkbtn", title: t.editActivity, onClick: () => { setAdding(false); setEditId(a.id); } }, "\u270E"),
                                     React.createElement("button", { className: "blkbtn del", title: t.deleteActivity, onClick: () => setDelId(a.id) }, "\u2715")),
                                 a.type && React.createElement("span", { className: "typetag", style: { color: tc, background: tc + '1A' } }, t[a.type]),
-                                React.createElement("b", { style: { display: 'block', paddingRight: 60 } }, a.title),
+                                React.createElement("b", { style: { display: 'block', paddingRight: 60 } }, a.title, a._pending && React.createElement("span", { title: t.pendingSyncItem || 'Pendente de sincronização', style: { marginLeft: 6, fontSize: 12 } }, "📶")),
                                 React.createElement("div", { className: "meta" },
                                     "\uD83D\uDD50 ",
                                     a.start,
@@ -2332,7 +2535,7 @@ function ScheduleTab({ t, trip, update, toast }) {
                                     " ",
                                     a.source === 'doc' && '· 🤖 auto'),
                                 a.desc && React.createElement("div", { className: "adesc" }, a.desc),
-                                cf && React.createElement("button", { className: "joinbtn" + (a.joined.includes('me') ? ' joined' : ''), onClick: () => toggleJoin(a.id) }, a.joined.includes('me') ? '✓ ' + t.joined : t.join)))));
+                                cf && React.createElement("button", { className: "joinbtn" + (a.joined.includes(myId) ? ' joined' : ''), onClick: () => toggleJoin(a.id) }, a.joined.includes(myId) ? '✓ ' + t.joined : t.join)))));
             }),
             adding
                 ? React.createElement(ActivityForm, { t: t, init: { title: '', type: 'typeTour', date: curDay, start: '09:00', end: '10:00', loc: '', desc: '' }, onSave: saveNew, onCancel: () => setAdding(false) })
@@ -2509,7 +2712,8 @@ function GroupRouteMap({ t, trip, members, segs }) {
     return React.createElement("div", null, rows);
 }
 /* --- Map: monta a jornada a partir dos destinos + trechos das passagens (Docs) --- */
-function MapTab({ t, trip, update, toast, goTab }) {
+function MapTab({ t, trip, update, toast, goTab, myId }) {
+    myId = myId || 'me';
     const ov = trip.cityOverrides || { renames: {}, hidden: [] };
     const dn = c => (ov.renames && ov.renames[c]) || c;
     const [editCity, setEditCity] = useState(null);
@@ -2517,8 +2721,8 @@ function MapTab({ t, trip, update, toast, goTab }) {
     const [delCity, setDelCity] = useState(null);
     const [myLoc, setMyLoc] = useState(null);
     const [locating, setLocating] = useState(false);
-    // visões por usuário: 'me' (minha jornada), 'group' (todos), ou um id de integrante
-    const [view, setView] = useState('me');
+    // visões por usuário: myId (minha jornada), 'group' (todos), ou um id de integrante
+    const [view, setView] = useState(myId);
     const members = trip.members || [];
     const isGroup = view === 'group';
     const routeMid = isGroup ? null : view; // null = rota da viagem inteira (todos)
@@ -2617,9 +2821,9 @@ function MapTab({ t, trip, update, toast, goTab }) {
         React.createElement("div", { className: "viewsel" },
             React.createElement("span", { style: { fontSize: 13, fontWeight: 700 } }, t.viewLabel + ':'),
             React.createElement("select", { value: view, onChange: e => setView(e.target.value) },
-                React.createElement("option", { value: "me" }, t.myJourney),
+                React.createElement("option", { value: myId }, t.myJourney),
                 React.createElement("option", { value: "group" }, t.groupView),
-                members.filter(m => m.id !== 'me').map(m => React.createElement("option", { key: m.id, value: m.id }, memberName(members, m.id))))),
+                members.filter(m => m.id !== myId).map(m => React.createElement("option", { key: m.id, value: m.id }, memberName(members, m.id, myId))))),
         isGroup
             ? React.createElement(React.Fragment, null,
                 React.createElement("div", { className: "sectiontitle", style: { marginTop: 0 } }, "🗓️ " + t.timeline),
@@ -2627,12 +2831,12 @@ function MapTab({ t, trip, update, toast, goTab }) {
                 React.createElement("div", { className: "card sub", style: { fontSize: 11.5, marginTop: 8 } }, "✦ " + t.meetsHere),
                 React.createElement("div", { className: "sectiontitle" }, "🤝 " + t.meetings),
                 (() => {
-                    const ms = meetingsFor(trip, 'me').filter(x => x.count > 0);
+                    const ms = meetingsFor(trip, myId).filter(x => x.count > 0);
                     if (!ms.length) return React.createElement("div", { className: "card sub", style: { fontSize: 13 } }, t.noMeetings);
                     return ms.map(mt => React.createElement("div", { className: "meetcard", key: mt.id },
-                        React.createElement("div", { className: "av" }, (memberName(members, mt.id)[0] || '?').toUpperCase()),
+                        React.createElement("div", { className: "av" }, (memberName(members, mt.id, myId)[0] || '?').toUpperCase()),
                         React.createElement("div", { className: "mm" },
-                            React.createElement("b", null, memberName(members, mt.id)),
+                            React.createElement("b", null, memberName(members, mt.id, myId)),
                             React.createElement("span", null, mt.segments.map(s => dn(s.city) + ' (' + brDateT(s.from) + '–' + brDateT(s.to) + ')').join(' · '))),
                         React.createElement("div", { className: "cnt" }, mt.count + ' ' + (mt.count === 1 ? t.dayTogether : t.daysTogether))));
                 })(),
@@ -2834,7 +3038,8 @@ function DocViewer({ doc, onClose, toast }) {
                         : React.createElement("div", { className: "dvempty" }, "📄 Sem visualização para este tipo de arquivo. Use o botão ⬇ acima para baixar."))));
 }
 /* --- Docs (anexo real do dispositivo + remoção; inteligência sob controle do usuário) --- */
-function DocsTab({ t, trip, update, toast, goTab }) {
+function DocsTab({ t, trip, update, toast, goTab, myId }) {
+    myId = myId || 'me';
     const cats = [['tickets', t.tickets, '🎫', ['Avião', 'Trem', 'Ônibus']],
         ['stays', t.stays, '🏨', ['Airbnb', 'Hotel', 'Booking']],
         ['events', t.events, '🎭', ['Esporte', 'Festa', 'Teatro', 'Culinária']],
@@ -2862,9 +3067,9 @@ function DocsTab({ t, trip, update, toast, goTab }) {
     const [newTabName, setNewTabName] = useState('');
     const [removeDocId, setRemoveDocId] = useState(null);
     const [editStages, setEditStages] = useState(null);
-    const [customSubsMap, setCustomSubsMap] = useState(() => { try { return JSON.parse(localStorage.getItem('trippin_custom_subs') || '{}'); } catch(e) { return {}; } });
+    const [customSubsMap, setCustomSubsMap] = useState(() => TrippinAPI.local.getItem('trippin_custom_subs', {}));
     const customSubs = customSubsMap[cat] || [];
-    const saveCustomSubs = (c, subs) => { const m = { ...customSubsMap, [c]: subs }; setCustomSubsMap(m); localStorage.setItem('trippin_custom_subs', JSON.stringify(m)); };
+    const saveCustomSubs = (c, subs) => { const m = { ...customSubsMap, [c]: subs }; setCustomSubsMap(m); TrippinAPI.local.setItem('trippin_custom_subs', m); };
     const addCustomSub = () => { const nm = newTabName.trim(); if (!nm) return; saveCustomSubs(cat, [...customSubs, nm]); setSub(nm); setNewTabName(''); setAddingTab(false); };
     const fileRef = useRef(null);
     const camRef = useRef(null);
@@ -2955,7 +3160,7 @@ function DocsTab({ t, trip, update, toast, goTab }) {
     };
     const toSchedule = (d) => {
         const act = { id: uid(), docId: d.id, date: trip.startDate, start: '15:00', end: '16:00', title: d.name,
-            type: typeForCat[d.cat] || 'typeOther', loc: '', desc: 'Criado a partir do documento: ' + d.file, source: 'doc', joined: ['me'] };
+            type: typeForCat[d.cat] || 'typeOther', loc: '', desc: 'Criado a partir do documento: ' + d.file, source: 'doc', joined: [myId] };
         update({ ...trip, activities: [...trip.activities, act] });
         toast(t.recAdded);
     };
@@ -2975,11 +3180,11 @@ function DocsTab({ t, trip, update, toast, goTab }) {
             blocks.push({ id: uid(), docId: d.id, date: depDate, start: depT, end: addMin(depT, 40),
                 title: '✈️ ' + t.departure + ' — ' + lg.from.city + ' (' + lg.from.iata + ')', type: 'typeTransport', loc: lg.from.airport,
                 desc: t.departure + ' ' + lg.from.airport + (fl(lg.flight) ? ' · ' + fl(lg.flight) : '') + ' → ' + lg.to.city + (lg.duration ? (' · ' + lg.duration.replace(':', 'h')) : ''),
-                source: 'doc', joined: ['me'] });
+                source: 'doc', joined: [myId] });
             const isFinal = i === legs.length - 1;
             blocks.push({ id: uid(), docId: d.id, date: arrDate, start: arrT, end: addMin(arrT, 30),
                 title: '🛬 ' + t.arrival + ' — ' + lg.to.city + ' (' + lg.to.iata + ')', type: 'typeTransport', loc: lg.to.airport,
-                desc: t.arrival + ' ' + lg.to.airport + (fl(lg.flight) ? ' · ' + fl(lg.flight) : '') + (isFinal ? '' : ' · ' + t.lblLayover), source: 'doc', joined: ['me'] });
+                desc: t.arrival + ' ' + lg.to.airport + (fl(lg.flight) ? ' · ' + fl(lg.flight) : '') + (isFinal ? '' : ' · ' + t.lblLayover), source: 'doc', joined: [myId] });
         });
         const first = legs[0], last = legs[legs.length - 1];
         const seg = { fromCity: first.from.city, toCity: last.to.city, depDate: dt(first.depDate), depTime: tm(first.depTime), arrDate: dt(last.arrDate), arrTime: tm(last.arrTime) };
@@ -3011,10 +3216,10 @@ function DocsTab({ t, trip, update, toast, goTab }) {
     const saveTicket = (d, seg) => {
         const dep = { id: uid(), docId: d.id, date: seg.depDate, start: seg.depTime, end: addMin(seg.depTime, 40),
             title: '✈️ ' + t.departure + ' — ' + seg.fromCity, type: 'typeTransport', loc: seg.fromCity,
-            desc: seg.fromCity + ' → ' + seg.toCity + ' · ' + d.file, source: 'doc', joined: ['me'] };
+            desc: seg.fromCity + ' → ' + seg.toCity + ' · ' + d.file, source: 'doc', joined: [myId] };
         const arr = { id: uid(), docId: d.id, date: seg.arrDate, start: seg.arrTime, end: addMin(seg.arrTime, 30),
             title: '🛬 ' + t.arrival + ' — ' + seg.toCity, type: 'typeTransport', loc: seg.toCity,
-            desc: t.youAreIn + ' ' + seg.toCity + ' · ' + d.file, source: 'doc', joined: ['me'] };
+            desc: t.youAreIn + ' ' + seg.toCity + ' · ' + d.file, source: 'doc', joined: [myId] };
         update({ ...trip, docs: trip.docs.map(x => x.id === d.id ? { ...x, seg, itin: undefined } : x),
             activities: [...trip.activities.filter(a => a.docId !== d.id), dep, arr] });
         setReadId(null);
@@ -3542,10 +3747,11 @@ function SuggestTab({ t, trip, update, toast }) {
                 t.addToSchedule))))));
 }
 /* --- Members (Usuários da viagem) --- */
-function MembersTab({ t, trip, update, toast }) {
+function MembersTab({ t, trip, update, toast, myId }) {
+    myId = myId || 'me';
     const [openId, setOpenId] = useState(null);
     const [email, setEmail] = useState('');
-    const meIsAdmin = (trip.members || []).some(m => m.id === 'me' && m.isAdmin);
+    const meIsAdmin = (trip.members || []).some(m => m.id === myId && m.isAdmin);
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     const today = () => new Date().toISOString().slice(0, 10);
     const openMailto = () => {
@@ -3570,12 +3776,17 @@ function MembersTab({ t, trip, update, toast }) {
         };
         if (cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
             try {
+                // Fase 4 (tarefa 4.4): send-invite exige um JWT de usuário real
+                // desde a Fase 0 (finding C-02) — a chave anônima sozinha sempre
+                // responde 401 agora. Em modo local não há sessão nenhuma, então
+                // cai pro fallback mailto de sempre (accessToken() resolve null).
+                const jwt = (await TrippinAPI.auth.accessToken()) || cfg.SUPABASE_ANON_KEY;
                 const resp = await fetch(cfg.SUPABASE_URL + '/functions/v1/send-invite', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'apikey': cfg.SUPABASE_ANON_KEY,
-                        'Authorization': 'Bearer ' + cfg.SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + jwt,
                     },
                     body: JSON.stringify({
                         trip_id: trip.id,
@@ -3662,7 +3873,7 @@ function MembersTab({ t, trip, update, toast }) {
                     React.createElement("div", { className: "v" },
                         joinLabel(open.joinVia),
                         open.joinedAt ? ' · ' + brDateT(open.joinedAt) : ''))),
-            meIsAdmin && open.id !== 'me' && React.createElement(React.Fragment, null,
+            meIsAdmin && open.id !== myId && React.createElement(React.Fragment, null,
                 React.createElement("button", { className: "btn btn-dark", style: { marginTop: 10 }, onClick: () => toggleAdmin(open.id) }, open.isAdmin ? '⬇ ' + t.removeAdmin : '⬆ ' + t.makeAdmin),
                 React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8, color: 'var(--danger)' }, onClick: () => remove(open.id) },
                     "\uD83D\uDDD1\uFE0F ",
@@ -3740,13 +3951,15 @@ function fmtCur(v, cur) {
     try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: cur || 'BRL', maximumFractionDigits: 2 }).format(n); }
     catch (e) { return (cur === 'EUR' ? '\u20AC ' : cur === 'USD' ? '$ ' : 'R$ ') + n.toFixed(2).replace('.', ','); }
 }
-function memberName(members, id) {
+function memberName(members, id, myId) {
+    myId = myId || 'me';
     const m = (members || []).find(x => x.id === id);
-    if (m) return m.firstName || m.name || (id === 'me' ? 'Voc\u00EA' : id);
-    return id === 'me' ? 'Voc\u00EA' : id;
+    if (m) return m.firstName || m.name || (id === myId ? 'Voc\u00EA' : id);
+    return id === myId ? 'Voc\u00EA' : id;
 }
 /* ===== Aba de Custos: despesas com divis\u00E3o, flag de pago e simplifica\u00E7\u00E3o ===== */
-function ExpensesTab({ t, trip, update, toast }) {
+function ExpensesTab({ t, trip, update, toast, myId }) {
+    myId = myId || 'me';
     const members = trip.members || [];
     const expenses = trip.expenses || [];
     const cur = (expenses.find(e => e.currency) || {}).currency || 'BRL';
@@ -3767,7 +3980,7 @@ function ExpensesTab({ t, trip, update, toast }) {
     };
     if (editing) {
         const base = editing === 'new' ? null : expenses.find(e => e.id === editing);
-        return React.createElement(ExpenseEditor, { t: t, members: members, cur: cur, expense: base, onSave: saveExpense, onCancel: () => setEditing(null), toast: toast });
+        return React.createElement(ExpenseEditor, { t: t, members: members, cur: cur, expense: base, onSave: saveExpense, onCancel: () => setEditing(null), toast: toast, myId: myId });
     }
     const bal = balances(expenses, members);
     const settle = simplifyDebts(expenses, members);
@@ -3779,20 +3992,20 @@ function ExpensesTab({ t, trip, update, toast }) {
                 React.createElement("div", { style: { fontWeight: 700, marginTop: 8, color: 'var(--ink)' } }, t.noExpenses),
                 React.createElement("div", { style: { fontSize: 13, color: 'var(--muted)', marginTop: 4 } }, t.noExpensesSub))
             : React.createElement("div", { style: { marginTop: 14 } }, expenses.map(e => {
-                const x = normExpense(e, members);
+                const x = normExpense(e, members, myId);
                 return React.createElement("div", { className: "card", key: e.id, style: { padding: 13, marginBottom: 10 } },
                     React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 } },
                         React.createElement("div", { style: { minWidth: 0 } },
-                            React.createElement("b", { style: { fontSize: 14.5, fontFamily: 'Sora' } }, x.desc || t.newExpense),
+                            React.createElement("b", { style: { fontSize: 14.5, fontFamily: 'Sora' } }, x.desc || t.newExpense, e._pending && React.createElement("span", { title: t.pendingSyncItem || 'Pendente de sincronização', style: { marginLeft: 6, fontSize: 12 } }, "📶")),
                             React.createElement("div", { style: { fontSize: 12, color: 'var(--muted)', marginTop: 2 } },
-                                t.paidBy + ': ' + memberName(members, x.paidBy) + (x.date ? ' \u00B7 ' + brDateT(x.date) : ''))),
+                                t.paidBy + ': ' + memberName(members, x.paidBy, myId) + (x.date ? ' \u00B7 ' + brDateT(x.date) : ''))),
                         React.createElement("div", { style: { textAlign: 'right', flexShrink: 0 } },
                             React.createElement("div", { style: { fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 15 } }, fmtCur(x.amount, x.currency)),
                             React.createElement("div", { style: { fontSize: 10.5, color: 'var(--muted)' } }, x.equalSplit ? t.splitEqually : t.customShares))),
                     React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 } },
                         x.participants.map(pid => React.createElement("span", { key: pid, className: "pchip on", onClick: () => togglePaid(e, pid),
                             title: x.settled[pid] ? t.paid : t.pending, style: x.settled[pid] ? { opacity: .5, textDecoration: 'line-through' } : {} },
-                            React.createElement("span", null, memberName(members, pid)),
+                            React.createElement("span", null, memberName(members, pid, myId)),
                             React.createElement("span", { className: "pp" }, fmtCur(shareOf(x, pid, members), x.currency))))),
                     React.createElement("div", { style: { display: 'flex', gap: 8, marginTop: 10 } },
                         React.createElement("button", { className: "btn btn-ghost", style: { flex: 1, padding: '8px' }, onClick: () => setEditing(e.id) }, "\u270F\uFE0F " + t.edit),
@@ -3805,7 +4018,7 @@ function ExpensesTab({ t, trip, update, toast }) {
                 const cls = v > 0.005 ? 'pos' : v < -0.005 ? 'neg' : 'zero';
                 const lbl = v > 0.005 ? ('+' + fmtCur(v, cur) + ' \u00B7 ' + t.toReceive) : v < -0.005 ? (fmtCur(v, cur) + ' \u00B7 ' + t.toPay) : fmtCur(0, cur);
                 return React.createElement("div", { className: "balrow", key: m.id },
-                    React.createElement("span", null, memberName(members, m.id)),
+                    React.createElement("span", null, memberName(members, m.id, myId)),
                     React.createElement("span", { className: cls }, lbl));
             }),
             React.createElement("button", { className: "btn btn-dark", style: { marginTop: 12 }, onClick: () => setShowSettle(s => !s) }, "\uD83E\uDD1D " + t.simplify),
@@ -3813,18 +4026,19 @@ function ExpensesTab({ t, trip, update, toast }) {
                 settle.length === 0
                     ? React.createElement("div", { style: { textAlign: 'center', color: 'var(--muted)', fontSize: 13.5, padding: 10 } }, t.allSettled)
                     : settle.map((s, i) => React.createElement("div", { className: "settle", key: i },
-                        React.createElement("span", null, memberName(members, s.from) + " " + t.pays + " " + memberName(members, s.to)),
+                        React.createElement("span", null, memberName(members, s.from, myId) + " " + t.pays + " " + memberName(members, s.to, myId)),
                         React.createElement("span", { className: "amt" }, fmtCur(s.amount, cur)))))),
         del && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1", title: t.deleteExpenseQ, msg: t.deleteExpenseSub,
             confirmLabel: t.yesDelete, cancelLabel: t.back, danger: true,
             onConfirm: () => removeExpense(del.id), onCancel: () => setDel(null) }));
 }
-function ExpenseEditor({ t, members, cur, expense, onSave, onCancel, toast }) {
-    const base = expense ? normExpense(expense, members) : null;
+function ExpenseEditor({ t, members, cur, expense, onSave, onCancel, toast, myId }) {
+    myId = myId || 'me';
+    const base = expense ? normExpense(expense, members, myId) : null;
     const [desc, setDesc] = useState(base ? base.desc : '');
     const [amount, setAmount] = useState(base ? String(base.amount) : '');
     const [date, setDate] = useState(base ? (base.date || '') : '');
-    const [paidBy, setPaidBy] = useState(base ? base.paidBy : (members.some(m => m.id === 'me') ? 'me' : ((members[0] || {}).id || 'me')));
+    const [paidBy, setPaidBy] = useState(base ? base.paidBy : (members.some(m => m.id === myId) ? myId : ((members[0] || {}).id || myId)));
     const [parts, setParts] = useState(base ? base.participants.slice() : members.map(m => m.id));
     const [equal, setEqual] = useState(base ? base.equalSplit : true);
     const [shares, setShares] = useState(base ? { ...base.shares } : {});
@@ -3933,9 +4147,8 @@ function BottomBar({ t, onMenu, onHome, onNotif, notifCount }) {
             notifCount > 0 && React.createElement("span", { className: "badge" }, notifCount))));
 }
 /* ---------------- Configurações ---------------- */
-function SettingsScreen({ t, settings, setSettings, onBack, user, setUser, toast }) {
+function SettingsScreen({ t, settings, setSettings, onBack, user, setUser, toast, apiMode, onConnectCloud, onOpenSyncLog, onOpenPrivacy }) {
     const set = (k, v) => setSettings(s => ({ ...s, [k]: v }));
-    const [showCurPwd, setShowCurPwd] = useState(false);
     const [changingPwd, setChangingPwd] = useState(false);
     const [pwdForm, setPwdForm] = useState({ cur: '', next: '', confirm: '' });
     const [pwdErr, setPwdErr] = useState('');
@@ -3950,7 +4163,7 @@ function SettingsScreen({ t, settings, setSettings, onBack, user, setUser, toast
         doHash(pwdForm.cur).then(curHash => {
             if (curHash !== (user && user.passwordHash)) { setPwdErr(t.pwdWrong); return; }
             doHash(pwdForm.next).then(newHash => {
-                setUser({ ...user, passwordHash: newHash, passwordDisplay: btoa(unescape(encodeURIComponent(pwdForm.next))) });
+                setUser({ ...user, passwordHash: newHash });
                 setChangingPwd(false); setPwdForm({ cur: '', next: '', confirm: '' });
                 setPwdOk(t.pwdChanged);
             });
@@ -3998,15 +4211,28 @@ function SettingsScreen({ t, settings, setSettings, onBack, user, setUser, toast
             React.createElement("div", { className: "segpick" },
                 React.createElement("button", { className: settings.theme === 'light' ? 'on' : '', onClick: () => set('theme', 'light') }, "\u2600\uFE0F " + t.themeLight),
                 React.createElement("button", { className: settings.theme === 'dark' ? 'on' : '', onClick: () => set('theme', 'dark') }, "\uD83C\uDF19 " + t.themeDark)),
+            apiMode === 'remote' && (!user || !user.id) && React.createElement(React.Fragment, null,
+                React.createElement("div", { className: "sectiontitle" }, "\u2601\uFE0F " + (t.cloud || 'Nuvem')),
+                React.createElement("div", { className: "card", style: { marginBottom: 12 } },
+                    React.createElement("p", { className: "sub", style: { marginBottom: 10 } },
+                        t.connectCloudSub || 'Este perfil s\u00F3 existe neste dispositivo. Entre com uma conta para acessar suas viagens em qualquer lugar.'),
+                    React.createElement("button", { className: "btn btn-primary", onClick: onConnectCloud },
+                        t.connectCloud || 'Entrar / criar conta na nuvem'))),
+            apiMode === 'remote' && React.createElement("div", { className: "card", style: { marginBottom: 12 } },
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+                    React.createElement("b", { style: { fontSize: 14 } }, "\uD83D\uDCF6 " + (t.syncLog || 'Sincroniza\u00E7\u00E3o')),
+                    React.createElement("button", { className: "joinbtn", onClick: onOpenSyncLog }, t.syncLogSee || 'Ver'))),
+            React.createElement("div", { className: "card", style: { marginBottom: 12 } },
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+                    React.createElement("b", { style: { fontSize: 14 } }, "\uD83D\uDD10 " + (t.privacyTitle || 'Privacidade e dados')),
+                    React.createElement("button", { className: "joinbtn", onClick: onOpenPrivacy }, t.syncLogSee || 'Ver'))),
             React.createElement("div", { className: "sectiontitle" }, "\uD83D\uDD12 " + t.security),
             user && user.passwordHash && React.createElement(React.Fragment, null,
                 React.createElement("div", { className: "card", style: { marginBottom: 12 } },
                     React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
                         React.createElement("b", { style: { fontSize: 14 } }, "\uD83D\uDD11 Senha"),
                         React.createElement("div", { className: "row", style: { gap: 6 } },
-                            React.createElement("button", { className: "joinbtn", onClick: () => setShowCurPwd(!showCurPwd) }, showCurPwd ? t.hidePwd : t.showPwd),
                             React.createElement("button", { className: "joinbtn", onClick: () => { setChangingPwd(!changingPwd); setPwdErr(''); setPwdOk(''); } }, t.changePwd))),
-                    showCurPwd && React.createElement("div", { className: "mono", style: { background: 'var(--sand)', padding: '8px 10px', borderRadius: 8, fontSize: 13, letterSpacing: 2 } }, (() => { try { return decodeURIComponent(escape(atob(user.passwordDisplay || ''))); } catch(e) { return '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'; } })()),
                     changingPwd && React.createElement("div", { style: { marginTop: 10 } },
                         React.createElement("div", { className: "field" },
                             React.createElement("label", null, t.currentPwd),
@@ -4074,6 +4300,11 @@ function NotifPanel({ t, notifs, onClose, onAct, onDismiss }) {
 /* ---------------- ROOT APP ---------------- */
 function App() {
     const persisted = load();
+    // limpeza: apaga passwordDisplay (senha em texto claro/base64) de estados salvos antes desta versão
+    if (persisted.user && 'passwordDisplay' in persisted.user) {
+        const { passwordDisplay, ...userWithoutPasswordDisplay } = persisted.user;
+        persisted.user = userWithoutPasswordDisplay;
+    }
     // deep-link from buscar-hospedagem: open a specific trip on the schedule tab
     const _pendingTrip = sessionStorage.getItem('trippin_open_trip') || null;
     const [lang, setLang] = useState(persisted.lang || null);
@@ -4090,10 +4321,36 @@ function App() {
     const [notifs, setNotifs] = useState(persisted.notifs || [
         { id: 'welcome', text: 'Bem-vindo ao Trippin! ✈️ Crie sua viagem, anexe passagens e reservas, e acompanhe seu roteiro no mapa.', time: 'agora', read: false, action: null },
     ]);
+    // Fase 2B (tarefa 2.9): TrippinAPI.mode só sai de 'local' depois que init()
+    // confirma um backend remoto de verdade (config + health-check). Guarda
+    // num state pra reagir quando resolver — hoje (REMOTE_ENABLED=false em
+    // toda config.js) isso nunca muda, e a tela de login some da UI.
+    const [apiMode, setApiMode] = useState(TrippinAPI.mode);
+    const [loginBack, setLoginBack] = useState('lang');
+    useEffect(() => { TrippinAPI.init().then(() => { setApiMode(TrippinAPI.mode); TrippinAPI.migration.sweepIfExpired(); }); }, []);
+    // Fase 4 (tarefa 4.1): em modo remoto, a lista de viagens vem do Postgres,
+    // não do localStorage — carrega assim que login + apiMode='remote' resolverem.
+    // (persisted.trips continua servindo só o modo local, como sempre.)
+    useEffect(() => {
+        if (apiMode !== 'remote' || !user || !user.id) return;
+        let alive = true;
+        TrippinAPI.trips.list().then(list => { if (alive) setTrips(list); }).catch(() => {});
+        return () => { alive = false; };
+    }, [apiMode, user && user.id]);
+    // Fase 4 (tarefa 4.6): mesma troca de fonte, pras notificações — a UI
+    // (NotifPanel) não muda nada, só passa a receber dados do Postgres.
+    useEffect(() => {
+        if (apiMode !== 'remote' || !user || !user.id) return;
+        let alive = true;
+        TrippinAPI.notifications.list().then(list => { if (alive) setNotifs(list); }).catch(() => {});
+        return () => { alive = false; };
+    }, [apiMode, user && user.id]);
     // persist
     useEffect(() => { if (lang || user || trips)
         save({ lang, user, trips, notifs, settings }); }, [lang, user, trips, notifs, settings]);
     useEffect(() => { window._trippinUser = user; }, [user]);
+    // Fase 6 (tarefa 6.3): contexto pro log de erro global (sem PII — só tela e trip_id).
+    useEffect(() => { window._trippinScreen = { screen, tripId: activeTrip }; }, [screen, activeTrip]);
     // hidrata as fotos/anexos do IndexedDB (o localStorage guarda só as referências)
     useEffect(() => {
         let alive = true;
@@ -4123,14 +4380,80 @@ function App() {
     // a preferência de notificações controla o que é exibido
     const effNotifs = settings.notifications ? notifs : [];
     const notifCount = effNotifs.filter(n => !n.read).length;
-    const dismissNotif = id => setNotifs(notifs.filter(n => n.id !== id));
-    const updateTrip = (nt) => setTrips(trips.map(x => x.id === nt.id ? nt : x));
-    const openTrip = id => { setActiveTrip(id); setScreen('trip'); };
+    const dismissNotif = id => {
+        setNotifs(notifs.filter(n => n.id !== id));
+        // Sem policy de delete em notifications (por design — M-06/AD-06):
+        // "dispensar" em modo remoto marca como lida no servidor e só some
+        // da lista local, não apaga o registro.
+        if (apiMode === 'remote') TrippinAPI.notifications.markRead(id).catch(() => {});
+    };
+    const myId = (user && user.id) || 'me';
+    // Fase 4 (tarefas 4.1/4.2): toda aba continua chamando update({...trip,
+    // campo: novoValor}) exatamente como sempre — o adaptador aqui é o ÚNICO
+    // lugar que sabe traduzir isso em escritas no Postgres quando remoto.
+    // Local sempre otimista primeiro (mesmo comportamento de hoje); a
+    // sincronização roda depois, em segundo plano, e nunca bloqueia a UI.
+    const updateTrip = (nt) => {
+        const prev = trips && trips.find(x => x.id === nt.id);
+        setTrips(trips.map(x => x.id === nt.id ? nt : x));
+        if (apiMode === 'remote' && prev) {
+            // Fase 5 (tarefa 5.1/5.4): se a rede estiver fora (ou a escrita
+            // falhar), diffAndPush enfileira em vez de perder — devolve quais
+            // itens locais ficaram pendentes, pra marcar o indicador visual.
+            // O flag some sozinho quando o realtime (Fase 4) recarregar a
+            // viagem depois que a fila esvaziar.
+            TrippinAPI.sync.diffAndPush(prev, nt, myId).then(r => {
+                const queuedIds = (r && r.queued) || [];
+                if (!queuedIds.length) return;
+                setTrips(ts => ts.map(x => x.id !== nt.id ? x : {
+                    ...x,
+                    activities: x.activities.map(a => queuedIds.includes(a.id) ? { ...a, _pending: true } : a),
+                    expenses: x.expenses.map(e => queuedIds.includes(e.id) ? { ...e, _pending: true } : e),
+                }));
+                toast('📶 ' + (t.pendingSync || 'Sem conexão — será sincronizado quando a rede voltar.'));
+            }).catch(() => toast('⚠️ ' + (t.syncFailed || 'Falha ao sincronizar com a nuvem')));
+        }
+    };
+    const openTrip = id => {
+        if (apiMode === 'remote') {
+            TrippinAPI.trips.get(id, myId).then(full => {
+                setTrips(ts => ts.map(x => x.id === id ? full : x));
+                setActiveTrip(id); setScreen('trip');
+            }).catch(() => toast('⚠️ ' + (t.loadTripFailed || 'Não foi possível carregar a viagem.')));
+            return;
+        }
+        setActiveTrip(id); setScreen('trip');
+    };
     const curTrip = trips && trips.find(x => x.id === activeTrip);
+    // Fase 4 (tarefa 4.8, opcional pelo próprio plano): enquanto a viagem
+    // estiver aberta em modo remoto, qualquer mudança de outro integrante em
+    // activities/expenses recarrega a viagem — é assim que o colega vê a
+    // atividade aparecer sem precisar sair e voltar.
+    useEffect(() => {
+        if (apiMode !== 'remote' || !activeTrip || screen !== 'trip') return;
+        const unsub = TrippinAPI.sync.subscribeTrip(activeTrip, () => {
+            TrippinAPI.trips.get(activeTrip, myId).then(full => {
+                setTrips(ts => ts.map(x => x.id === activeTrip ? full : x));
+            }).catch(() => {});
+        });
+        return unsub;
+    }, [apiMode, activeTrip, screen]);
     const goHome = () => { setScreen('home'); setMenuOpen(false); };
-    const logout = () => { localStorage.removeItem(KEY); setLang(null); setUser(null); setTrips(null); setScreen('lang'); setMenuOpen(false); };
-    const doDeleteTrip = () => { setTrips(trips.filter(x => x.id !== delTrip.id)); if (activeTrip === delTrip.id)
-        setScreen('home'); setDelTrip(null); toast(t.tripDeleted); };
+    const logout = () => { TrippinAPI.local.clear(); setLang(null); setUser(null); setTrips(null); setScreen('lang'); setMenuOpen(false); };
+    // Fase 3 (tarefa 3.2): depois de entrar/criar conta em modo remoto, se
+    // sobrou estado local não migrado, oferece o Assistente antes do home.
+    const afterAuth = u => {
+        setUser(u);
+        if (TrippinAPI.mode === 'remote' && TrippinAPI.migration.hasPending()) { setScreen('migrate'); return; }
+        setScreen('home');
+        toast(t.profileCreated);
+    };
+    const doDeleteTrip = () => {
+        const delId = delTrip.id;
+        setTrips(trips.filter(x => x.id !== delId)); if (activeTrip === delId)
+        setScreen('home'); setDelTrip(null); toast(t.tripDeleted);
+        if (apiMode === 'remote') TrippinAPI.trips.remove(delId).catch(() => toast('⚠️ ' + (t.deleteTripFailed || 'Falha ao excluir na nuvem.')));
+    };
     const navFromMenu = s => {
         setMenuOpen(false);
         if (s === 'home')
@@ -4141,8 +4464,15 @@ function App() {
     const showBottom = user && trips && ['home', 'trip', 'settings', 'apps'].includes(screen);
     if (locked && user) return React.createElement(LockScreen, { lang: lang || 'pt-BR', user: user, onUnlock: () => { sessionStorage.setItem('trippin_unlocked', '1'); setLocked(false); } });
     return (React.createElement(React.Fragment, null,
-        screen === 'lang' && React.createElement(LanguageScreen, { onPick: l => { setLang(l); setScreen('profile'); } }),
-        screen === 'profile' && React.createElement(ProfileScreen, { lang: lang, onDone: u => { setUser(u); setScreen('home'); toast(t.profileCreated); } }),
+        screen === 'lang' && React.createElement(LanguageScreen, { onPick: l => { setLang(l); setScreen('profile'); }, onLogin: apiMode === 'remote' ? (l => { setLang(l); setLoginBack('lang'); setScreen('login'); }) : null }),
+        screen === 'login' && React.createElement(LoginScreen, { lang: lang, onBack: () => setScreen(loginBack), onDone: afterAuth }),
+        screen === 'profile' && React.createElement(ProfileScreen, { lang: lang, onDone: afterAuth, onOpenPolicy: () => setScreen('privacy-policy') }),
+        screen === 'privacy-policy' && React.createElement(PrivacyPolicyScreen, { lang: lang, onBack: () => setScreen('profile') }),
+        screen === 'migrate' && React.createElement(MigrationAssistantScreen, { lang: lang, onDone: () => { setScreen('home'); toast(t.profileCreated); } }),
+        screen === 'synclog' && React.createElement(SyncLogScreen, { lang: lang, onBack: () => setScreen('settings') }),
+        screen === 'privacy' && React.createElement(PrivacyScreen, { lang: lang, onBack: () => setScreen('settings'), apiMode: apiMode, toast: toast, onAccountDeleted: () => {
+                TrippinAPI.local.clear(); setUser(null); setTrips(null); setScreen('lang'); toast(t.accountDeleted || 'Conta excluída.');
+            } }),
         screen === 'home' && user && trips && React.createElement(React.Fragment, null,
             React.createElement("div", { className: "appbar" },
                 React.createElement("div", { style: { width: 38 } }),
@@ -4150,18 +4480,30 @@ function App() {
                 React.createElement("div", { style: { width: 38 } })),
             React.createElement(HomeScreen, { lang: lang, user: user, trips: trips, onNew: () => setScreen('new'), onJoin: () => setScreen('join'), onOpen: openTrip, onDelete: tr => setDelTrip(tr) })),
         screen === 'new' && React.createElement(NewTripScreen, { lang: lang, user: user, toast: toast, onCancel: goHome, onCreate: nt => {
+                if (apiMode === 'remote') {
+                    TrippinAPI.trips.create(nt, myId).then(full => {
+                        setTrips([...(trips || []), full]);
+                        toast(t.tripCreated);
+                        setTimeout(() => { setActiveTrip(full.id); setScreen('trip'); }, 700);
+                    }).catch(() => toast('⚠️ ' + (t.createTripFailed || 'Falha ao criar viagem na nuvem.')));
+                    return;
+                }
                 setTrips([...(trips || []), nt]);
                 toast(t.tripCreated);
                 setTimeout(() => { setActiveTrip(nt.id); setScreen('trip'); }, 700);
             } }),
-        screen === 'join' && React.createElement(JoinScreen, { lang: lang, onBack: goHome, toast: toast }),
+        screen === 'join' && React.createElement(JoinScreen, { lang: lang, onBack: goHome, toast: toast, apiMode: apiMode, onJoined: () => {
+                TrippinAPI.trips.list().then(list => setTrips(list)).catch(() => {}).then(() => {
+                    setScreen('home'); toast(t.joinedTrip || 'Você entrou na viagem! ✓');
+                });
+            } }),
         screen === 'profile-edit' && user && React.createElement(ProfileEditScreen, { lang: lang, user: user, onSave: u => { setUser(u); setScreen('home'); toast(t.profileSaved); }, onBack: goHome }),
-        screen === 'settings' && React.createElement(SettingsScreen, { t: t, settings: settings, setSettings: setSettings, onBack: goHome, user: user, setUser: u => { setUser(u); }, toast: toast }),
+        screen === 'settings' && React.createElement(SettingsScreen, { t: t, settings: settings, setSettings: setSettings, onBack: goHome, user: user, setUser: u => { setUser(u); }, toast: toast, apiMode: apiMode, onConnectCloud: () => { setLoginBack('settings'); setScreen('login'); }, onOpenSyncLog: () => setScreen('synclog'), onOpenPrivacy: () => setScreen('privacy') }),
         screen === 'apps' && React.createElement(TravelAppsScreen, { t: t, onBack: goHome }),
-        screen === 'trip' && curTrip && React.createElement(TripScreen, { lang: lang, trip: curTrip, update: updateTrip, onBack: goHome, toast: toast }),
+        screen === 'trip' && curTrip && React.createElement(TripScreen, { lang: lang, trip: curTrip, update: updateTrip, onBack: goHome, toast: toast, user: user }),
         showBottom && React.createElement(BottomBar, { t: t, onMenu: () => setMenuOpen(true), onHome: goHome, onNotif: () => setNotifOpen(true), notifCount: notifCount }),
         menuOpen && React.createElement(MenuSheet, { t: t, user: user || {}, onClose: () => setMenuOpen(false), onNav: navFromMenu, onLogout: logout }),
-        notifOpen && React.createElement(NotifPanel, { t: t, notifs: effNotifs, onClose: () => setNotifOpen(false), onAct: id => { setNotifs(notifs.map(n => n.id === id ? { ...n, read: true } : n)); toast('✓'); }, onDismiss: dismissNotif }),
+        notifOpen && React.createElement(NotifPanel, { t: t, notifs: effNotifs, onClose: () => setNotifOpen(false), onAct: id => { setNotifs(notifs.map(n => n.id === id ? { ...n, read: true } : n)); if (apiMode === 'remote') TrippinAPI.notifications.markRead(id).catch(() => {}); toast('✓'); }, onDismiss: dismissNotif }),
         delTrip && React.createElement(ConfirmModal, { icon: "\uD83D\uDDD1\uFE0F", title: t.deleteTripQ, msg: '"' + delTrip.name + '" — ' + t.deleteTripSub, confirmLabel: t.yesDelete, cancelLabel: t.cancel, danger: true, onConfirm: doDeleteTrip, onCancel: () => setDelTrip(null) }),
         React.createElement(Toast, { msg: toastMsg })));
 }
