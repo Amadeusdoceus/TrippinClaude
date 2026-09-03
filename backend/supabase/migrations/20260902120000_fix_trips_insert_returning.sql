@@ -1,0 +1,21 @@
+-- Bugfix: TrippinAPI.trips.create() (insert().select().single(), Prefer:
+-- return=representation) sempre falhava com 42501 "new row violates row-
+-- level security policy for table trips", mesmo enviando created_by
+-- correto.
+--
+-- Causa: a cláusula RETURNING de um INSERT é filtrada pelas policies de
+-- SELECT da tabela — e, ao contrário de um SELECT comum (que só omite
+-- linhas que não passam), Postgres levanta erro quando a linha recém-
+-- inserida não passa nessa checagem. O trigger on_trip_created (que insere
+-- o criador em trip_members, dando a ele is_trip_member(id) = true) só
+-- dispara ao final da query — depois que o RETURNING já foi montado. Ou
+-- seja: no momento em que a policy trips_select_member é avaliada para o
+-- RETURNING, o criador ainda não é membro segundo trip_members, então
+-- is_trip_member(id) é false e o insert inteiro falha.
+--
+-- Fix: deixa o próprio criador (created_by = auth.uid()) enxergar a linha
+-- que acabou de inserir, sem depender do trigger já ter rodado. Não afrouxa
+-- nada para os demais usuários — is_trip_member(id) continua sendo a única
+-- via de acesso para quem não é o criador.
+alter policy trips_select_member on public.trips
+  using ((select private.is_trip_member(id)) or created_by = (select auth.uid()));

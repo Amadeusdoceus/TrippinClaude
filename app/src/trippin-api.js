@@ -490,16 +490,25 @@
           });
         }).then(function (list) { cacheSet('trips_list', list); return list; });
     },
+    // Gera o id no cliente e faz o insert SEM `.select()` (sem RETURNING) de
+    // propósito: com RETURNING, a policy de SELECT (trips_select_member) é
+    // avaliada ANTES do trigger on_trip_created rodar (ele só dispara ao
+    // final da query) — nesse instante o criador ainda não está em
+    // trip_members, então a linha recém-inserida falha a checagem e o
+    // Postgres derruba o INSERT inteiro com "new row violates row-level
+    // security policy", mesmo com created_by correto. Buscando a viagem
+    // numa request separada (trips.get, depois do insert já commitado) o
+    // trigger já rodou e a policy passa normalmente.
     create: function (t, myId) {
+      var newId = crypto.randomUUID();
       return sb.from('trips').insert({
-        name: t.name, start_date: t.startDate, end_date: t.endDate,
-        destinations: t.destinations || [], city_overrides: t.cityOverrides || {}
-      }).select('id,name,code,start_date,end_date,status,destinations,city_overrides').single()
-        .then(function (r) {
-          if (r.error) throw r.error;
-          cacheDrop('trips');
-          return trips.get(r.data.id, myId);
-        });
+        id: newId, name: t.name, start_date: t.startDate, end_date: t.endDate,
+        destinations: t.destinations || [], city_overrides: t.cityOverrides || {}, created_by: myId
+      }).then(function (r) {
+        if (r.error) throw r.error;
+        cacheDrop('trips');
+        return trips.get(newId, myId);
+      });
     },
     remove: function (id) { return sb.from('trips').delete().eq('id', id).then(function (r) { if (r.error) throw r.error; cacheDrop('trips'); }); },
     update: function (id, patch) {

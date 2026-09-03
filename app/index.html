@@ -322,7 +322,7 @@
 
   /* sticky footer actions (new trip) */
   .footactions{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;
-    max-width:430px;display:flex;gap:10px;padding:14px 16px;background:linear-gradient(transparent,var(--sand) 30%)}
+    max-width:430px;display:flex;gap:10px;padding:14px 16px;background:linear-gradient(transparent,var(--sand) 30%);z-index:20}
 
   /* drawer + notif overlay */
   .overlay{position:fixed;top:0;bottom:0;left:0;right:0;margin:0 auto;width:100%;max-width:430px;
@@ -846,10 +846,37 @@ const LANGS = [
 ];
 // fallback: idiomas não traduzidos usam EN-US (infra i18n pronta, tradução é trabalho contínuo)
 const dict = code => I18N[code] || I18N['en-US'];
-const CITIES = ['Lisboa, Portugal', 'Porto, Portugal', 'Barcelona, Espanha', 'Madrid, Espanha',
-    'Paris, França', 'Roma, Itália', 'Florença, Itália', 'Berlim, Alemanha', 'Munique, Alemanha',
-    'Zagreb, Croácia', 'Dubrovnik, Croácia', 'Buenos Aires, Argentina', 'Londres, Reino Unido',
-    'Amsterdã, Holanda', 'Praga, Tchéquia', 'Viena, Áustria', 'Atenas, Grécia', 'Veneza, Itália'];
+const CITIES = ['Lisboa, Portugal', 'Porto, Portugal', 'Faro, Portugal', 'Barcelona, Espanha', 'Madrid, Espanha',
+    'Sevilha, Espanha', 'Valência, Espanha', 'Málaga, Espanha', 'Paris, França', 'Nice, França', 'Lyon, França',
+    'Roma, Itália', 'Florença, Itália', 'Milão, Itália', 'Nápoles, Itália', 'Veneza, Itália', 'Turim, Itália',
+    'Berlim, Alemanha', 'Munique, Alemanha', 'Frankfurt, Alemanha', 'Hamburgo, Alemanha',
+    'Zagreb, Croácia', 'Dubrovnik, Croácia', 'Split, Croácia', 'Buenos Aires, Argentina', 'Bariloche, Argentina',
+    'Mendoza, Argentina', 'Londres, Reino Unido', 'Edimburgo, Reino Unido', 'Manchester, Reino Unido',
+    'Amsterdã, Holanda', 'Roterdã, Holanda', 'Praga, Tchéquia', 'Viena, Áustria', 'Salzburgo, Áustria',
+    'Atenas, Grécia', 'Santorini, Grécia', 'Mykonos, Grécia', 'Bruxelas, Bélgica', 'Genebra, Suíça',
+    'Zurique, Suíça', 'Copenhague, Dinamarca', 'Estocolmo, Suécia', 'Oslo, Noruega', 'Helsinque, Finlândia',
+    'Reiquiavique, Islândia', 'Dublin, Irlanda', 'Varsóvia, Polônia', 'Cracóvia, Polônia', 'Budapeste, Hungria',
+    'Istambul, Turquia', 'Cappadocia, Turquia', 'Moscou, Rússia',
+    'São Paulo, Brasil', 'Rio de Janeiro, Brasil', 'Salvador, Brasil', 'Brasília, Brasil', 'Fortaleza, Brasil',
+    'Recife, Brasil', 'Belo Horizonte, Brasil', 'Porto Alegre, Brasil', 'Curitiba, Brasil', 'Florianópolis, Brasil',
+    'Natal, Brasil', 'Manaus, Brasil', 'Belém, Brasil', 'Foz do Iguaçu, Brasil', 'Gramado, Brasil',
+    'Búzios, Brasil', 'Paraty, Brasil', 'Maceió, Brasil', 'João Pessoa, Brasil', 'Porto Seguro, Brasil',
+    'Santiago, Chile', 'Valparaíso, Chile', 'Lima, Peru', 'Cusco, Peru', 'Bogotá, Colômbia', 'Cartagena, Colômbia',
+    'Medellín, Colômbia', 'Montevidéu, Uruguai', 'Punta del Este, Uruguai', 'La Paz, Bolívia', 'Assunção, Paraguai',
+    'Quito, Equador', 'Cidade do México, México', 'Cancún, México', 'Guadalajara, México', 'Tulum, México',
+    'Havana, Cuba', 'Punta Cana, República Dominicana', 'San Juan, Porto Rico', 'Nassau, Bahamas',
+    'Nova York, Estados Unidos', 'Los Angeles, Estados Unidos', 'Miami, Estados Unidos', 'Orlando, Estados Unidos',
+    'Las Vegas, Estados Unidos', 'São Francisco, Estados Unidos', 'Chicago, Estados Unidos',
+    'Washington, Estados Unidos', 'Boston, Estados Unidos', 'Seattle, Estados Unidos', 'Toronto, Canadá',
+    'Vancouver, Canadá', 'Montreal, Canadá',
+    'Tóquio, Japão', 'Quioto, Japão', 'Osaka, Japão', 'Seul, Coreia do Sul', 'Pequim, China', 'Xangai, China',
+    'Hong Kong, China', 'Bangkok, Tailândia', 'Phuket, Tailândia', 'Cingapura, Cingapura', 'Bali, Indonésia',
+    'Jacarta, Indonésia', 'Kuala Lumpur, Malásia', 'Hanói, Vietnã', 'Ho Chi Minh, Vietnã', 'Manila, Filipinas',
+    'Nova Delhi, Índia', 'Mumbai, Índia', 'Goa, Índia', 'Dubai, Emirados Árabes', 'Abu Dhabi, Emirados Árabes',
+    'Doha, Catar', 'Tel Aviv, Israel', 'Jerusalém, Israel',
+    'Cidade do Cabo, África do Sul', 'Joanesburgo, África do Sul', 'Marrakech, Marrocos', 'Cairo, Egito',
+    'Zanzibar, Tanzânia', 'Nairóbi, Quênia',
+    'Sydney, Austrália', 'Melbourne, Austrália', 'Brisbane, Austrália', 'Auckland, Nova Zelândia'];
 const COUNTRIES = ['🇧🇷 +55', '🇵🇹 +351', '🇺🇸 +1', '🇬🇧 +44', '🇩🇪 +49', '🇫🇷 +33', '🇪🇸 +34', '🇮🇹 +39', '🇦🇷 +54', '🇭🇷 +385'];
 /* ---------------- storage ----------------
    Fase 2A: a persistência (localStorage + IndexedDB de mídia) mora só em
@@ -1412,6 +1439,7 @@ function NewTripScreen({ lang, user, onCreate, onCancel, toast }) {
     const [q, setQ] = useState('');
     const [dq, setDq] = useState('');
     const [askDel, setAskDel] = useState(false);
+    const includeBtnRef = useRef(null);
     const matches = q.length >= 3 ? CITIES.filter(c => c.toLowerCase().includes(q.toLowerCase()) && c.toLowerCase() !== q.trim().toLowerCase()).slice(0, 5) : [];
     // inclui o destino digitado (texto livre) + data na lista; permite empilhar vários
     const includeDest = () => {
@@ -1423,6 +1451,13 @@ function NewTripScreen({ lang, user, onCreate, onCancel, toast }) {
         setDq('');
         toast(t.destAdded);
     };
+    // a lista de destinos cresce acima do campo de busca e empurra o botão
+    // "Incluir destino" para baixo do rodapé fixo (footactions); sem isso o
+    // botão fica coberto e parece que não dá pra sair dali (ver bug relatado)
+    useEffect(() => {
+        if (dests.length && includeBtnRef.current)
+            includeBtnRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, [dests.length]);
     const create = () => {
         if (!name || !start || !end)
             return;
@@ -1479,7 +1514,7 @@ function NewTripScreen({ lang, user, onCreate, onCancel, toast }) {
             React.createElement("div", { className: "field" },
                 React.createElement("label", null, t.destDate),
                 React.createElement("input", { type: "date", className: "inp", value: dq, onChange: e => setDq(e.target.value) })),
-            React.createElement("button", { className: "btn btn-lagoon", disabled: !q.trim(), onClick: includeDest },
+            React.createElement("button", { ref: includeBtnRef, className: "btn btn-lagoon", disabled: !q.trim(), onClick: includeDest },
                 "\u2795 ",
                 t.includeDest)),
         React.createElement("div", { className: "footactions" },
