@@ -760,6 +760,23 @@ const I18N = {
         unlock: 'Entrar', unlockTitle: 'Bem-vindo de volta!', unlockSub: 'Digite sua senha para acessar o app.',
         editBeforeAdding: 'Editar dados', addTab: 'Nova categoria', addTabHint: 'Nome da aba',
         interactiveMap: 'Ver mapa interativo', mapLoading: 'Carregando mapa…', openGmapsNav: 'Navegar no Google Maps',
+        emailTooLong: 'E-mail muito longo (máx. 254 caracteres).',
+        emailAlreadyRegistered: 'Este e-mail já tem uma conta cadastrada.',
+        emailAlreadyRegisteredHint: 'Você pode recuperar o acesso redefinindo sua senha.',
+        signupPendingConfirmation: 'Conta criada! Enviamos um link de confirmação para o seu e-mail — confirme para poder entrar.',
+        recoverPwd: 'Recuperar senha', goToLogin: 'Já tenho conta — entrar',
+        forgotPwd: 'Esqueci minha senha', sendResetLink: 'Enviar link de redefinição',
+        backToLogin: 'Voltar para o login', resetPwdTitle: 'Redefinir senha',
+        resetPwdSub: 'Informe o e-mail da sua conta. Se ele estiver cadastrado, enviamos um link para você criar uma nova senha.',
+        resetLinkSent: 'Se esse e-mail tiver uma conta, enviamos um link de redefinição de senha. Confira sua caixa de entrada (e o spam).',
+        resetLinkFailed: 'Não foi possível enviar o link agora. Tente de novo em instantes.',
+        pwdTooWeak: 'Senha muito fraca. Use uma senha mais forte.',
+        invalidEmailServer: 'Endereço de e-mail inválido.',
+        authRateLimited: 'Muitas tentativas. Aguarde um pouco antes de tentar de novo.',
+        signupDisabled: 'Cadastro de novas contas está temporariamente desativado.',
+        loginBadCredentials: 'E-mail ou senha incorretos.',
+        emailNotConfirmed: 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.',
+        networkError: 'Falha de conexão. Verifique sua internet e tente novamente.',
     },
     'en-US': {
         welcome: 'Everything about your trip, in one place.',
@@ -830,6 +847,23 @@ const I18N = {
         nights: 'Nights', guests: 'Guests', confirmation: 'Confirmation', host: 'Host/Contact', priceLbl: 'Price', interpretingImg: 'Reading image (OCR)…', addLodging: 'Add to schedule',
         lodgingAdded: 'Lodging added to schedule', lodgingConfirm: 'The lodging will appear on the schedule from',
         until: 'until', stayingAt: 'Staying at', viewLodging: 'view lodging',
+        emailTooLong: 'Email is too long (max 254 characters).',
+        emailAlreadyRegistered: 'This email already has an account.',
+        emailAlreadyRegisteredHint: 'You can recover access by resetting your password.',
+        signupPendingConfirmation: 'Account created! We sent a confirmation link to your email — confirm it to log in.',
+        recoverPwd: 'Recover password', goToLogin: 'I already have an account — log in',
+        forgotPwd: 'Forgot my password', sendResetLink: 'Send reset link',
+        backToLogin: 'Back to login', resetPwdTitle: 'Reset password',
+        resetPwdSub: 'Enter your account email. If it exists, we’ll send a link to set a new password.',
+        resetLinkSent: 'If that email has an account, we’ve sent a password reset link. Check your inbox (and spam).',
+        resetLinkFailed: 'Could not send the link right now. Try again shortly.',
+        pwdTooWeak: 'Password too weak. Use a stronger password.',
+        invalidEmailServer: 'Invalid email address.',
+        authRateLimited: 'Too many attempts. Wait a moment before trying again.',
+        signupDisabled: 'New account signups are temporarily disabled.',
+        loginBadCredentials: 'Incorrect email or password.',
+        emailNotConfirmed: 'Confirm your email before logging in. Check your inbox.',
+        networkError: 'Connection failed. Check your internet and try again.',
     }
 };
 const LANGS = [
@@ -846,6 +880,35 @@ const LANGS = [
 ];
 // fallback: idiomas não traduzidos usam EN-US (infra i18n pronta, tradução é trabalho contínuo)
 const dict = code => I18N[code] || I18N['en-US'];
+// GoTrue (auth do Supabase) só fala inglês e não tem um `code` estável em
+// todas as versões — por isso casamos por trecho da `message`. Sem isso, o
+// texto cru em inglês (ex.: "User already registered") vazava direto pro
+// usuário, ou a tela só mostrava um "não foi possível" genérico sem dizer
+// o motivo real. Retorna a CHAVE de i18n (não o texto já traduzido) pra
+// quem chama poder decidir UI extra (ex.: oferecer recuperar senha).
+function authErrorKey(err) {
+    const msg = ((err && err.message) || '').toLowerCase();
+    const code = ((err && err.code) || '').toLowerCase();
+    if (code === 'user_already_exists' || msg.includes('already registered') || msg.includes('already exists'))
+        return 'emailAlreadyRegistered';
+    if (code === 'signup_pending_confirmation')
+        return 'signupPendingConfirmation';
+    if (code === 'weak_password' || msg.includes('password should be at least') || msg.includes('password is too short') || msg.includes('should contain at least'))
+        return 'pwdTooWeak';
+    if (code === 'validation_failed' || msg.includes('unable to validate email') || msg.includes('invalid format') || msg.includes('invalid email'))
+        return 'invalidEmailServer';
+    if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || msg.includes('rate limit') || msg.includes('only request this after'))
+        return 'authRateLimited';
+    if (code === 'signup_disabled' || msg.includes('signups not allowed'))
+        return 'signupDisabled';
+    if (code === 'invalid_credentials' || msg.includes('invalid login credentials'))
+        return 'loginBadCredentials';
+    if (code === 'email_not_confirmed' || msg.includes('email not confirmed'))
+        return 'emailNotConfirmed';
+    if (msg.includes('failed to fetch') || msg.includes('network') || msg.includes('load failed'))
+        return 'networkError';
+    return null; // sem tradução conhecida — quem chama cai pro texto genérico
+}
 const CITIES = ['Lisboa, Portugal', 'Porto, Portugal', 'Faro, Portugal', 'Barcelona, Espanha', 'Madrid, Espanha',
     'Sevilha, Espanha', 'Valência, Espanha', 'Málaga, Espanha', 'Paris, França', 'Nice, França', 'Lyon, França',
     'Roma, Itália', 'Florença, Itália', 'Milão, Itália', 'Nápoles, Itália', 'Veneza, Itália', 'Turim, Itália',
@@ -993,7 +1056,12 @@ function LoginScreen({ lang, onDone, onBack }) {
     const [password, setPassword] = useState('');
     const [err, setErr] = useState('');
     const [busy, setBusy] = useState(false);
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    // "Esqueci minha senha": mesma tela, um modo alternativo — evita duplicar
+    // appbar/voltar e mantém o e-mail já digitado.
+    const [forgot, setForgot] = useState(false);
+    const [resetBusy, setResetBusy] = useState(false);
+    const [resetMsg, setResetMsg] = useState('');
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
     const submit = () => {
         setErr('');
         if (!emailOk || !password) { setErr(t.loginFillFields || 'Preencha e-mail e senha.'); return; }
@@ -1004,8 +1072,34 @@ function LoginScreen({ lang, onDone, onBack }) {
                 if (!u) { setErr(t.loginFailed || 'Não foi possível entrar. Confira e-mail e senha.'); return; }
                 onDone(u);
             })
-            .catch(e => { setBusy(false); setErr((e && e.message) || t.loginFailed || 'Não foi possível entrar.'); });
+            .catch(e => { setBusy(false); setErr(t[authErrorKey(e)] || t.loginFailed || 'Não foi possível entrar.'); });
     };
+    // Supabase resetPasswordForEmail() sempre "resolve" (não revela se o
+    // e-mail existe — evita enumeração de contas), então a mensagem de
+    // sucesso é sempre a mesma, exista conta ou não.
+    const sendReset = () => {
+        setResetMsg('');
+        if (!emailOk) { setResetMsg(t.invalidEmail); return; }
+        setResetBusy(true);
+        TrippinAPI.auth.resetPassword(email)
+            .then(() => { setResetBusy(false); setResetMsg(t.resetLinkSent); })
+            .catch(() => { setResetBusy(false); setResetMsg(t.resetLinkFailed); });
+    };
+    if (forgot) {
+        return (React.createElement("div", { className: "screen" },
+            React.createElement("div", { className: "appbar" },
+                React.createElement("button", { className: "iconbtn", onClick: () => { setForgot(false); setResetMsg(''); } }, "←"),
+                React.createElement("div", { className: "ttl" }, t.resetPwdTitle),
+                React.createElement("div", { style: { width: 38 } })),
+            React.createElement("div", { className: "pad" },
+                React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.resetPwdSub),
+                React.createElement("div", { className: "field" },
+                    React.createElement("label", null, t.email),
+                    React.createElement("input", { className: "inp", type: "email", autoComplete: "email", maxLength: 254, value: email, onChange: e => setEmail(e.target.value) })),
+                resetMsg && React.createElement("p", { className: "sub", style: { marginTop: -8, marginBottom: 12 } }, resetMsg),
+                React.createElement("button", { className: "btn btn-primary", disabled: resetBusy, onClick: sendReset }, resetBusy ? '…' : t.sendResetLink),
+                React.createElement("button", { className: "btn btn-ghost", style: { marginTop: 8 }, onClick: () => { setForgot(false); setResetMsg(''); } }, t.backToLogin))));
+    }
     return (React.createElement("div", { className: "screen" },
         React.createElement("div", { className: "appbar" },
             React.createElement("button", { className: "iconbtn", onClick: onBack }, "←"),
@@ -1015,10 +1109,11 @@ function LoginScreen({ lang, onDone, onBack }) {
             React.createElement("p", { className: "sub", style: { marginBottom: 18 } }, t.loginSub || 'Entre com a conta que você já criou em outro dispositivo.'),
             React.createElement("div", { className: "field" },
                 React.createElement("label", null, t.email),
-                React.createElement("input", { className: "inp" + (err ? ' err' : ''), type: "email", autoComplete: "email", value: email, onChange: e => setEmail(e.target.value) })),
+                React.createElement("input", { className: "inp" + (err ? ' err' : ''), type: "email", autoComplete: "email", maxLength: 254, value: email, onChange: e => setEmail(e.target.value) })),
             React.createElement("div", { className: "field" },
                 React.createElement("label", null, t.password || 'Senha'),
                 React.createElement("input", { className: "inp" + (err ? ' err' : ''), type: "password", autoComplete: "current-password", value: password, onChange: e => setPassword(e.target.value) })),
+            React.createElement("a", { href: "#", style: { display: 'inline-block', fontSize: 13, marginBottom: 12 }, onClick: e => { e.preventDefault(); setErr(''); setForgot(true); } }, t.forgotPwd),
             err && React.createElement("p", { className: "sub", style: { color: 'var(--danger)', marginTop: -8, marginBottom: 12 } }, err),
             React.createElement("button", { className: "btn btn-primary", disabled: busy, onClick: submit }, busy ? '…' : (t.enter || 'Entrar')))));
 }
@@ -1192,7 +1287,7 @@ function PrivacyPolicyScreen({ lang, onBack }) {
             React.createElement(H, null, "Seus direitos"),
             React.createElement(P, null, "Exportar tudo que é seu, excluir um documento específico, ou excluir sua conta inteira — tudo pela tela \"Privacidade e dados\" em Configurações, sem precisar pedir pra ninguém."))));
 }
-function ProfileScreen({ lang, onDone, onOpenPolicy }) {
+function ProfileScreen({ lang, onDone, onOpenPolicy, onGoToLogin }) {
     const t = dict(lang);
     const [f, setF] = useState({ firstName: '', lastName: '', birth: '', cpf: '', email: '', country: '🇧🇷 +55', phone: '', photo: '', password: '', confirmPwd: '' });
     const [touched, setTouched] = useState(false);
@@ -1200,8 +1295,17 @@ function ProfileScreen({ lang, onDone, onOpenPolicy }) {
     const [consent, setConsent] = useState(false);
     const [remoteErr, setRemoteErr] = useState('');
     const [busy, setBusy] = useState(false);
+    // Fase X: quando o signUp falha porque o e-mail já tem conta, em vez de
+    // só mostrar um erro, oferece recuperar a senha direto por aqui — ver
+    // sendReset() abaixo.
+    const [dupEmail, setDupEmail] = useState(false);
+    const [resetBusy, setResetBusy] = useState(false);
+    const [resetMsg, setResetMsg] = useState('');
+    const [pendingConfirm, setPendingConfirm] = useState(false);
     const set = (k, v) => setF({ ...f, [k]: v });
-    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+    const emailFormatOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email);
+    const emailTooLong = f.email.length > 254;
+    const emailOk = emailFormatOk && !emailTooLong;
     const pwdOk = f.password.length >= 6;
     const pwdMatch = f.password === f.confirmPwd;
     const valid = f.firstName && f.lastName && f.birth && emailOk && f.phone && pwdOk && pwdMatch && consent;
@@ -1209,7 +1313,7 @@ function ProfileScreen({ lang, onDone, onOpenPolicy }) {
     // (bcrypt no servidor — nada de hashPwd/passwordHash aqui). Em 'local'
     // (o padrão hoje) o comportamento é exatamente o de antes da Fase 2B.
     const submitRemote = () => {
-        setRemoteErr(''); setBusy(true);
+        setRemoteErr(''); setDupEmail(false); setPendingConfirm(false); setBusy(true);
         TrippinAPI.auth.signUp({
             firstName: f.firstName, lastName: f.lastName, email: f.email,
             password: f.password, phone: f.country + ' ' + f.phone,
@@ -1218,7 +1322,24 @@ function ProfileScreen({ lang, onDone, onOpenPolicy }) {
             setBusy(false);
             if (!u) { setRemoteErr(t.signupFailed || 'Não foi possível criar a conta.'); return; }
             onDone(u);
-        }).catch(e => { setBusy(false); setRemoteErr((e && e.message) || t.signupFailed || 'Não foi possível criar a conta.'); });
+        }).catch(e => {
+            setBusy(false);
+            const key = authErrorKey(e);
+            // "e-mail já cadastrado" e "confirmação de e-mail pendente" ganham
+            // blocos próprios em vez do errmsg genérico — são os motivos reais
+            // por trás do "não foi possível criar a conta" que o usuário via
+            // antes (um nem é uma falha de verdade: a conta foi criada).
+            if (key === 'emailAlreadyRegistered') { setDupEmail(true); return; }
+            if (key === 'signupPendingConfirmation') { setPendingConfirm(true); return; }
+            setRemoteErr(t[key] || t.signupFailed || 'Não foi possível criar a conta.');
+        });
+    };
+    const sendReset = () => {
+        setResetMsg('');
+        setResetBusy(true);
+        TrippinAPI.auth.resetPassword(f.email)
+            .then(() => { setResetBusy(false); setResetMsg(t.resetLinkSent); })
+            .catch(() => { setResetBusy(false); setResetMsg(t.resetLinkFailed); });
     };
     const submitLocal = () => {
         const finish = (passwordHash) => {
@@ -1258,8 +1379,9 @@ function ProfileScreen({ lang, onDone, onOpenPolicy }) {
                 React.createElement("input", { className: "inp", placeholder: "000.000.000-00", value: f.cpf, onChange: e => set('cpf', e.target.value) })),
             React.createElement("div", { className: "field" },
                 React.createElement("label", null, t.email, " ", React.createElement("span", { className: "req" }, "*")),
-                React.createElement("input", { className: "inp" + (touched && !emailOk ? ' err' : ''), placeholder: "voce@email.com", value: f.email, onChange: e => set('email', e.target.value) }),
-                touched && !emailOk && React.createElement("div", { className: "errmsg" }, t.invalidEmail)),
+                React.createElement("input", { className: "inp" + (touched && !emailOk ? ' err' : ''), type: "email", maxLength: 254, placeholder: "voce@email.com", value: f.email, onChange: e => { set('email', e.target.value); setDupEmail(false); } }),
+                touched && !emailFormatOk && React.createElement("div", { className: "errmsg" }, t.invalidEmail),
+                touched && emailFormatOk && emailTooLong && React.createElement("div", { className: "errmsg" }, t.emailTooLong)),
             React.createElement("div", { className: "field" },
                 React.createElement("label", null, t.phone, " ", React.createElement("span", { className: "req" }, "*")),
                 React.createElement("div", { className: "row" },
@@ -1277,6 +1399,16 @@ function ProfileScreen({ lang, onDone, onOpenPolicy }) {
                 React.createElement("input", { type: showPwd ? "text" : "password", className: "inp" + (touched && !pwdMatch ? ' err' : ''), placeholder: "repita a senha", value: f.confirmPwd, onChange: e => set('confirmPwd', e.target.value) }),
                 touched && !pwdMatch && React.createElement("div", { className: "errmsg" }, t.pwdMismatch)),
             remoteErr && React.createElement("div", { className: "errmsg" }, remoteErr),
+            dupEmail && React.createElement("div", { className: "card", style: { marginBottom: 14, textAlign: 'center' } },
+                React.createElement("p", { style: { fontSize: 13.5, marginBottom: 4 } }, t.emailAlreadyRegistered),
+                React.createElement("p", { className: "sub", style: { marginBottom: 12 } }, t.emailAlreadyRegisteredHint),
+                resetMsg
+                    ? React.createElement("p", { className: "sub" }, resetMsg)
+                    : React.createElement("button", { className: "btn btn-lagoon", style: { marginBottom: 8 }, disabled: resetBusy, onClick: sendReset }, resetBusy ? '…' : t.recoverPwd),
+                React.createElement("button", { className: "btn btn-ghost", onClick: () => onGoToLogin && onGoToLogin() }, t.goToLogin)),
+            pendingConfirm && React.createElement("div", { className: "card", style: { marginBottom: 14, textAlign: 'center' } },
+                React.createElement("p", { style: { fontSize: 13.5, marginBottom: 12 } }, t.signupPendingConfirmation),
+                React.createElement("button", { className: "btn btn-ghost", onClick: () => onGoToLogin && onGoToLogin() }, t.goToLogin)),
             React.createElement("div", { className: "row", style: { alignItems: 'flex-start', gap: 8, margin: '10px 0' } },
                 React.createElement("input", { type: "checkbox", checked: consent, onChange: e => setConsent(e.target.checked), style: { marginTop: 3 } }),
                 React.createElement("span", { className: "sub", style: { fontSize: 12.5 } },
@@ -4501,7 +4633,7 @@ function App() {
     return (React.createElement(React.Fragment, null,
         screen === 'lang' && React.createElement(LanguageScreen, { onPick: l => { setLang(l); setScreen('profile'); }, onLogin: apiMode === 'remote' ? (l => { setLang(l); setLoginBack('lang'); setScreen('login'); }) : null }),
         screen === 'login' && React.createElement(LoginScreen, { lang: lang, onBack: () => setScreen(loginBack), onDone: afterAuth }),
-        screen === 'profile' && React.createElement(ProfileScreen, { lang: lang, onDone: afterAuth, onOpenPolicy: () => setScreen('privacy-policy') }),
+        screen === 'profile' && React.createElement(ProfileScreen, { lang: lang, onDone: afterAuth, onOpenPolicy: () => setScreen('privacy-policy'), onGoToLogin: () => { setLoginBack('profile'); setScreen('login'); } }),
         screen === 'privacy-policy' && React.createElement(PrivacyPolicyScreen, { lang: lang, onBack: () => setScreen('profile') }),
         screen === 'migrate' && React.createElement(MigrationAssistantScreen, { lang: lang, onDone: () => { setScreen('home'); toast(t.profileCreated); } }),
         screen === 'synclog' && React.createElement(SyncLogScreen, { lang: lang, onBack: () => setScreen('settings') }),

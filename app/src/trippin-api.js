@@ -349,7 +349,19 @@
         .then(function (r) {
           if (r.error) throw r.error;
           var uid = r.data.user && r.data.user.id;
-          if (!uid) throw new Error('signUp: sessão não retornou usuário (confirmação de e-mail pendente?)');
+          if (!uid) throw new Error('signUp: resposta sem usuário');
+          // Projeto com "Confirm email" ligado: signUp cria o usuário mas
+          // não devolve sessão até o link do e-mail ser clicado. Sem sessão
+          // o update abaixo rodaria sem autenticação e a RLS o bloquearia
+          // silenciosamente (0 linhas afetadas, sem erro) — então nem
+          // tentamos: sinalizamos o motivo real pro chamador em vez de
+          // deixar currentUser() devolver null e virar um "não foi possível
+          // criar a conta" genérico.
+          if (!r.data.session) {
+            var pendingErr = new Error('signup pending email confirmation');
+            pendingErr.code = 'signup_pending_confirmation';
+            throw pendingErr;
+          }
           return sb.from('profiles').update({
             first_name: p.firstName || '', last_name: p.lastName || '',
             phone: p.phone || '', cpf: p.cpf || '', birth: p.birth || null,
