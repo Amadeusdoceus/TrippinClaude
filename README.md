@@ -6,7 +6,19 @@
 
 Protótipo funcional do aplicativo de viagens *Trippin*, construído a partir da Visão de Negócio pelo time de agentes do projeto **Tripping - Claude**.
 
+### 🔗 [Testar o app ao vivo](https://amadeusdoceus.github.io/TrippinClaude/)
+
 </div>
+
+---
+
+## 🌐 Link para testar
+
+**https://amadeusdoceus.github.io/TrippinClaude/**
+
+Publicado via GitHub Pages a cada push em `master` que passa em `npm run review`
+(veja `.github/workflows/deploy.yml`). Se o link parar de funcionar ou mudar
+(ex.: repositório renomeado), atualize aqui e no link no topo deste arquivo.
 
 ---
 
