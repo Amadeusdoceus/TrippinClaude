@@ -168,10 +168,11 @@ test.describe('Fase 2B · mode remoto (mockado)', () => {
       btn.click();
     });
 
-    // O app mostra a mensagem de erro que veio do servidor (aqui, a mockada
-    // "Invalid login credentials"), não um texto fixo — checa que apareceu
-    // *algum* erro visível, sem travar a UI nem avançar indevidamente.
-    await expect(page.locator('text=Invalid login credentials')).toBeVisible({ timeout: 10_000 });
+    // authErrorKey() (app/index.html) traduz "Invalid login credentials" —
+    // texto cru do GoTrue mockado acima — para a mensagem em pt-BR; o app
+    // não deve mais vazar o inglês direto pro usuário. Checa a tradução,
+    // sem travar a UI nem avançar indevidamente.
+    await expect(page.locator('text=E-mail ou senha incorretos.')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('input[type="email"]')).toBeVisible();
   });
 });
