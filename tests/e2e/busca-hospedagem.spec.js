@@ -15,6 +15,21 @@ const { test, expect } = require('./local-mode');
 
 const PAGE = '/buscar-hospedagem.html';
 
+/**
+ * Datas relativas ao dia em que os testes rodam (nunca hardcoded): a página
+ * define `min` do check-in/check-out como "hoje" (app/buscar-hospedagem.html),
+ * e um valor de data anterior ao `min` faz o browser bloquear silenciosamente
+ * o evento `submit` do formulário — sem erro de JS, sem exceção — quando o
+ * teste clica no botão.
+ */
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return isoDate(d); }
+
+const VALID_CI = addDays(14);
+const VALID_CO = addDays(17);
+const INVALID_CI = addDays(10); // depois do min, mas depois do "check-out" abaixo
+const INVALID_CO = addDays(5);  // depois do min, porém antes do check-in acima
+
 /** Evita chamadas externas: autocomplete (Nominatim) responde vazio. */
 async function stubNominatim(page) {
   await page.route('**/nominatim.openstreetmap.org/**', route =>
@@ -33,8 +48,8 @@ async function routeEngine(page, { status = 200, payload = null } = {}) {
 
 async function fillForm(page, dest = 'Lisboa') {
   await page.fill('#dest', dest);
-  await page.fill('#ci', '2026-08-01');
-  await page.fill('#co', '2026-08-04');
+  await page.fill('#ci', VALID_CI);
+  await page.fill('#co', VALID_CO);
 }
 
 async function submit(page) {
@@ -68,8 +83,8 @@ test.describe('2 · Validação do formulário', () => {
 
     await page.goto(PAGE);
     await page.fill('#dest', 'Roma');
-    await page.fill('#ci', '2026-08-10');
-    await page.fill('#co', '2026-08-05'); // inválido
+    await page.fill('#ci', INVALID_CI);
+    await page.fill('#co', INVALID_CO); // inválido: check-out antes do check-in
     await submit(page);
 
     await expect(page.locator('#errDate')).toBeVisible();
@@ -80,8 +95,8 @@ test.describe('2 · Validação do formulário', () => {
   test('destino vazio mostra erro', async ({ page }) => {
     await stubNominatim(page);
     await page.goto(PAGE);
-    await page.fill('#ci', '2026-08-01');
-    await page.fill('#co', '2026-08-04');
+    await page.fill('#ci', VALID_CI);
+    await page.fill('#co', VALID_CO);
     await submit(page);
     await expect(page.locator('#errDest')).toBeVisible();
   });
