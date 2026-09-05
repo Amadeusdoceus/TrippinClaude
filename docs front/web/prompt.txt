@@ -1,0 +1,27 @@
+PROMPT
+
+Você é um consultor sênior de produto digital, UX/UI e engenharia front-end. Preciso que você gere, em paralelo, um conjunto completo de documentos para a criação de um website de viagens com identidade visual imersiva (vídeos/imagens de fundo animadas, contextuais por página, com efeito 3D/parallax ao interagir).
+
+Contexto do produto: com base no aplicativo que está sendo desenvolvido com as funcionalidades principais e parte das informações de negócio. Antes de gerar cada documento, consulte a documentação/código desse app para reaproveitar dados, fluxos e nomenclaturas já existentes, evitando divergência entre app e site.
+
+Conceito central do site:
+
+Homepage: vídeo em loop de um avião sobrevoando nuvens ao pôr do sol.
+Cada página tem um plano de fundo animado/vídeo relacionado ao contexto do conteúdo (ex: hospedagem → ambiente 3D do local; voo → vista de janela de avião/aeronave voando; localização/turismo → ponto turístico; shows/eventos → imagem do show).
+Ao arrastar/scrollar a página, o fundo reage com efeito 3D (parallax), como se o usuário estivesse dentro do ambiente.
+Páginas com múltiplos destinos usam carrossel de imagens, um por ponto turístico.
+Cards de conteúdo com efeito "glass/blur" sobre o fundo, como nos exemplos anexos.
+
+Gere os seguintes documentos, em paralelo, cada um em uma seção separada:
+
+PRD (Product Requirements Document) — objetivo do site, público-alvo, páginas principais, funcionalidades, critérios de sucesso.
+Sitemap e Arquitetura de Informação — lista de páginas, hierarquia, navegação entre elas.
+Especificação de Conteúdo por Página — para cada tipo de página (home, hospedagem, voo, localização/turismo, evento/show, roteiro com múltiplos destinos): textos necessários, dados dinâmicos vindos do app, estrutura dos cards.
+Especificação de Mídia/Assets — para cada página: tipo de mídia de fundo (vídeo loop, imagem 3D, carrossel), duração, resolução, formato, critérios de seleção de imagem/vídeo por contexto.
+Especificação de Interação e Animação — comportamento do efeito parallax/3D ao arrastar, transições entre cards, comportamento do carrossel, performance esperada (fps, fallback para dispositivos fracos).
+Design System / Guia de Estilo — paleta de cores, tipografia, estilo dos cards (glassmorphism), ícones, espaçamentos, componentes reutilizáveis.
+Especificação Técnica Front-end — stack recomendada (utilizar a que faz um trabalho com o visual mais profissional, não necessariamente a que foi gerada a primeira versão do ap, nosso objetivo é fazer melhor), bibliotecas para parallax 3D e vídeo de fundo, estrutura de componentes, requisitos de responsividade (mobile/desktop).
+Mapeamento de Integração com o App Existente — quais dados/endpoints/funcionalidades do app serão reaproveitados no site, e onde há necessidade de criar algo novo.
+Checklist de Acessibilidade e Performance — legibilidade sobre fundo animado, contraste, redução de movimento (prefers-reduced-motion), otimização de carregamento de vídeo/imagens.
+
+Ao final, entregue também um resumo executivo com a lista de todos os documentos gerados e pendências que exigem decisão humana (ex: aprovação de identidade visual, orçamento de produção de vídeo). Se necessário mais informações me questione

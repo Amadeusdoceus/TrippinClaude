@@ -345,7 +345,15 @@
   var auth = {
     signUp: function (p) {
       if (mode !== 'remote') return Promise.reject(new Error('auth.signUp requer mode="remote" (Fase 2B)'));
-      return sb.auth.signUp({ email: p.email, password: p.password })
+      // Sem emailRedirectTo, o link do e-mail de confirmação cai no "Site
+      // URL" padrão do projeto no painel do Supabase — que pode estar
+      // desatualizado (ex.: apontando pro placeholder localhost:3000 de
+      // quando o projeto foi criado, nunca trocado). resetPassword() já
+      // manda cfg.APP_URL explicitamente por isso; signUp() precisa do
+      // mesmo tratamento. Ainda depende de cfg.APP_URL estar na allowlist
+      // de Redirect URLs do projeto (painel → Authentication → URL
+      // Configuration) — sem isso o Supabase ignora este campo.
+      return sb.auth.signUp({ email: p.email, password: p.password, options: { emailRedirectTo: cfg.APP_URL } })
         .then(function (r) {
           if (r.error) throw r.error;
           var uid = r.data.user && r.data.user.id;

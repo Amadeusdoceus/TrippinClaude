@@ -1,0 +1,36 @@
+Analisando as imagens e extraindo o sistema visual...
+
+## 🎨 Design System — Travel Group App
+
+**Estilo geral:** Glassmorphism escuro + fotografia cinematográfica (golden hour), luxo e imersão.
+
+### Cores
+**Principal**
+- Preto/Navy profundo (fundo): `#0D0F14`
+- Dourado/Âmbar (destaque, CTA): `#E8A94C`
+
+**Secundária**
+- Roxo lavanda (gradientes, seção "hotel/alpes"): `#7C6FA8`
+- Ciano/Verde neon (dados, status, HUD): `#B4F42A`
+
+**Suporte**
+- Branco translúcido (glass cards): `#FFFFFF` a 8–15% opacidade
+- Cinza texto secundário: `#A0A4AD`
+- Preto overlay (contraste sobre fotos): `#000000` a 40–60% opacidade
+
+### Tipografia
+- **Display/H1**: Fonte serifada leve (ex: *Playfair Display* ou *Canela*) — usada em títulos de destino ("Acropolis", "Okinawa")
+- **H2/H3**: Sans-serif geométrica (ex: *General Sans*, *Inter*) — peso Medium/Semibold
+- **Corpo de texto**: *Inter* ou *Satoshi*, Regular, alto contraste sobre fundo escuro
+- **Dados/labels (UI técnica)**: Monoespaçada leve (ex: *Space Mono*) — usada em horários, coordenadas, specs de voo
+
+### Componentes
+- **Botões**: pílula (full rounded), fundo translúcido com blur, borda 1px branca a baixa opacidade; CTA principal em dourado sólido
+- **Inputs**: campo de busca em glass, ícone à esquerda, cantos bem arredondados (pill), placeholder em cinza claro
+- **Cards**: fundo com blur (glassmorphism), borda sutil, imagem de fundo full-bleed com overlay gradiente escuro na base para legibilidade do texto
+
+### Estética
+- **Border-radius**: 16–24px em cards, full/pill em botões e inputs
+- **Sombras**: suaves e difusas, leve glow dourado em elementos ativos
+- **Espaçamento**: generoso (16–24px entre elementos), respiro visual para priorizar a fotografia
+- **Fotografia**: paisagens/pontos turísticos em golden hour, alto contraste, sempre como protagonista visual
