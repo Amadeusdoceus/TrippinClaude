@@ -909,6 +909,9 @@ function authErrorKey(err) {
         return 'networkError';
     return null; // sem tradução conhecida — quem chama cai pro texto genérico
 }
+// remove acentos/diacríticos pra busca de destino não depender de digitar
+// "Valencia" com o acento certo de "Valência" (bug reportado em QA 2026-09-05)
+const foldDiacritics = s => (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const CITIES = ['Lisboa, Portugal', 'Porto, Portugal', 'Faro, Portugal', 'Barcelona, Espanha', 'Madrid, Espanha',
     'Sevilha, Espanha', 'Valência, Espanha', 'Málaga, Espanha', 'Paris, França', 'Nice, França', 'Lyon, França',
     'Roma, Itália', 'Florença, Itália', 'Milão, Itália', 'Nápoles, Itália', 'Veneza, Itália', 'Turim, Itália',
@@ -1572,7 +1575,7 @@ function NewTripScreen({ lang, user, onCreate, onCancel, toast }) {
     const [dq, setDq] = useState('');
     const [askDel, setAskDel] = useState(false);
     const includeBtnRef = useRef(null);
-    const matches = q.length >= 3 ? CITIES.filter(c => c.toLowerCase().includes(q.toLowerCase()) && c.toLowerCase() !== q.trim().toLowerCase()).slice(0, 5) : [];
+    const matches = q.length >= 3 ? CITIES.filter(c => foldDiacritics(c).includes(foldDiacritics(q)) && foldDiacritics(c) !== foldDiacritics(q.trim())).slice(0, 5) : [];
     // inclui o destino digitado (texto livre) + data na lista; permite empilhar vários
     const includeDest = () => {
         const name = q.trim();
