@@ -87,13 +87,12 @@ métricas específicas do site como **entrada de funil**, não como métricas de
 
 Consolidadas com detalhe no `10-resumo-executivo.md`, citadas aqui porque moldam o PRD:
 
-1. **O site terá cadastro/login próprio ou só linka para o app?** Recomendação: linkar (evita
-   duplicar Supabase Auth e a lógica de `trippin-api.js`); ver `08-mapeamento-integracao-app.md`.
+1. **O site terá cadastro/login próprio ou só linka para o app?** SIM
 2. **Existe orçamento para produção de vídeo original** (avião, ambientes 3D, pôr do sol) ou o
-   site usa banco de vídeo licenciado/stock na v1? Afeta `04-especificacao-midia-assets.md`.
+   site usa banco de vídeo licenciado/stock na v1? alterar para uma sequencia de imagens passando tipo carrossel de fotos.
 3. **A "página pública de viagem compartilhada" entra nesta v1 do site ou fica para v2?** Ela
    reaproveitaria dados reais de uma viagem (com permissão do Organizador) — maior valor, maior
-   escopo e implica LGPD (mesma cautela de `docs/00` §10).
+   escopo e implica LGPD (mesma cautela de `docs/00` §10). V2
 4. **Aprovação de identidade visual:** o site herda a paleta do app (`06-design-system.md`) com
    extensões para overlay/glass — precisa de sign-off antes de produção de assets.
 
@@ -101,7 +100,5 @@ Consolidadas com detalhe no `10-resumo-executivo.md`, citadas aqui porque moldam
 
 | Item | Por quê |
 |---|---|
-| Edição de cronograma/despesas/membros no site | Fica no app — o site não duplica gestão de viagem |
-| Autenticação própria completa (senha, recuperação) | Reaproveita o fluxo do app (ver decisão §7.1) |
 | Blog/CMS de conteúdo editorial | Não citado no briefing original; candidato a v2 |
 | Suporte aos 10 idiomas no lançamento | Segue o mesmo critério do app (`docs/00` §8): PT-BR + EN-US completos, demais como stub |
