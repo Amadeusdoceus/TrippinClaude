@@ -24,9 +24,6 @@ direto). O site cobre esse vão: **apresentar o produto de forma imersiva e cine
 convertendo visitantes em Organizadores, e servir de **vitrine ao vivo** das features mais fortes
 do app (inteligência de Docs, busca de hospedagem) sem exigir instalação.
 
-**Não-objetivo:** o site não recria a gestão de viagem completa (cronograma editável, despesas,
-membros). Esses fluxos continuam exclusivos do app — o site linka para lá.
-
 ## 2. Público-alvo
 
 Reaproveita as personas de `docs/00` §4, com um recorte de funil:
