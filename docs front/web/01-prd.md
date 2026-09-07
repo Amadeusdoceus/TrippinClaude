@@ -44,8 +44,6 @@ Reaproveita as personas de `docs/00` §4, com um recorte de funil:
   do ambiente.
 - **Carrossel para múltiplos destinos:** páginas de roteiro com mais de um destino mostram um
   carrossel, um cartão por ponto turístico.
-- **Cards "glass/blur"** sobre o fundo animado, herdando a paleta e a assinatura visual do app
-  (ver `06-design-system.md`) em vez de criar uma identidade nova.
 
 ## 4. Páginas principais (visão de produto — hierarquia completa em `02-sitemap...`)
 
