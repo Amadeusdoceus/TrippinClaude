@@ -342,9 +342,40 @@
       // auth.users do Supabase (bcrypt), nunca no cliente (finding C-01).
     };
   }
+  // Achado em prod (2026-09-19): com "Confirm email" ligado no projeto,
+  // signUp() nunca tem sessão na hora (ver comentário abaixo) — os campos
+  // digitados no cadastro (nome, telefone, CPF, nascimento) eram descartados
+  // porque só existia UM lugar que os gravava em `profiles`, condicionado a
+  // ter sessão imediata. Guarda-los aqui (por e-mail, sobrevive ao reload
+  // que a confirmação por e-mail causa) e aplica no primeiro currentUser()
+  // que encontrar a sessão de verdade — seja por login manual ou por já
+  // existir uma sessão restaurada pelo SDK (ver App() em index.html).
+  var PENDING_PROFILE_PREFIX = 'trippin_pending_profile:';
+  function pendingProfileKey(email) { return PENDING_PROFILE_PREFIX + String(email || '').trim().toLowerCase(); }
+  function buildProfilePatch(p) {
+    return {
+      first_name: p.firstName || '', last_name: p.lastName || '',
+      phone: p.phone || '', cpf: p.cpf || '', birth: p.birth || null,
+      language: p.lang || 'pt-BR', onboarded: true
+    };
+  }
+  function stashPendingProfile(email, patch) {
+    try { localStorage.setItem(pendingProfileKey(email), JSON.stringify(patch)); } catch (e) {}
+  }
+  function takePendingProfile(email) {
+    var key = pendingProfileKey(email);
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return null;
+      localStorage.removeItem(key);
+      return JSON.parse(raw);
+    } catch (e) { return null; }
+  }
   var auth = {
     signUp: function (p) {
       if (mode !== 'remote') return Promise.reject(new Error('auth.signUp requer mode="remote" (Fase 2B)'));
+      var profilePatch = buildProfilePatch(p);
+      stashPendingProfile(p.email, profilePatch);
       // Sem emailRedirectTo, o link do e-mail de confirmação cai no "Site
       // URL" padrão do projeto no painel do Supabase — que pode estar
       // desatualizado (ex.: apontando pro placeholder localhost:3000 de
@@ -364,17 +395,15 @@
           // silenciosamente (0 linhas afetadas, sem erro) — então nem
           // tentamos: sinalizamos o motivo real pro chamador em vez de
           // deixar currentUser() devolver null e virar um "não foi possível
-          // criar a conta" genérico.
+          // criar a conta" genérico. `profilePatch` fica guardado (acima) pra
+          // currentUser() aplicar assim que a sessão existir de verdade.
           if (!r.data.session) {
             var pendingErr = new Error('signup pending email confirmation');
             pendingErr.code = 'signup_pending_confirmation';
             throw pendingErr;
           }
-          return sb.from('profiles').update({
-            first_name: p.firstName || '', last_name: p.lastName || '',
-            phone: p.phone || '', cpf: p.cpf || '', birth: p.birth || null,
-            language: p.lang || 'pt-BR', onboarded: true
-          }).eq('id', uid);
+          takePendingProfile(p.email);
+          return sb.from('profiles').update(profilePatch).eq('id', uid);
         })
         .then(auth.currentUser);
     },
@@ -393,7 +422,16 @@
         return sb.from('profiles').select('*').eq('id', s.user.id).single()
           .then(function (p) {
             if (p.error || !p.data) return null;
-            return profileToUser(p.data, s.user.email);
+            // `onboarded=false` quer dizer "linha ainda não recebeu o
+            // profilePatch do cadastro" — acontece sempre que a sessão só
+            // passou a existir DEPOIS do signUp() original (confirmação de
+            // e-mail). Se sobrou um profilePatch guardado pra este e-mail,
+            // este é o primeiro momento com sessão válida pra aplicá-lo.
+            var pending = !p.data.onboarded ? takePendingProfile(s.user.email) : null;
+            if (!pending) return profileToUser(p.data, s.user.email);
+            return sb.from('profiles').update(pending).eq('id', s.user.id).then(function () {
+              return profileToUser(Object.assign({}, p.data, pending), s.user.email);
+            });
           });
       });
     },

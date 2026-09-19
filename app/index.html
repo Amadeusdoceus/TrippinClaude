@@ -4498,6 +4498,20 @@ function App() {
     const [apiMode, setApiMode] = useState(TrippinAPI.mode);
     const [loginBack, setLoginBack] = useState('lang');
     useEffect(() => { TrippinAPI.init().then(() => { setApiMode(TrippinAPI.mode); TrippinAPI.migration.sweepIfExpired(); }); }, []);
+    // Achado em prod (2026-09-19): quem confirma o cadastro pelo link do
+    // e-mail (ou reabre o app numa aba/instalação nova) já tem uma sessão
+    // válida no SDK do Supabase, mas `user` aqui só vem do cache local do
+    // PRÓPRIO app (`persisted.user`, acima) — sem isso a pessoa ficava presa
+    // na tela de onboarding mesmo autenticada. Só roda se ainda não há
+    // usuário local: login/cadastro normais já chamam afterAuth() direto.
+    useEffect(() => {
+        if (apiMode !== 'remote' || user) return;
+        let alive = true;
+        TrippinAPI.auth.currentUser().then(u => {
+            if (alive && u) { setUser(u); setScreen(s => (s === 'lang' ? 'home' : s)); }
+        }).catch(() => {});
+        return () => { alive = false; };
+    }, [apiMode]);
     // Fase 4 (tarefa 4.1): em modo remoto, a lista de viagens vem do Postgres,
     // não do localStorage — carrega assim que login + apiMode='remote' resolverem.
     // (persisted.trips continua servindo só o modo local, como sempre.)
